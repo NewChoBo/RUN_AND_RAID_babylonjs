@@ -18,7 +18,7 @@ import {
   canUseRaidSkill,
   raidSkill,
 } from './heroes/hero-catalog.ts';
-import { HERO_IDS, type RaidHero } from './heroes/hero-id.ts';
+import type { RaidHero } from './heroes/hero-id.ts';
 import type { HeroCombat, HeroView, RaidHeroRuntime } from './heroes/hero-definition.ts';
 import { castInput, resolveSkill, type TargetRead } from './skills/skill-targeting.ts';
 import {
@@ -115,6 +115,8 @@ const makeRunner = (hero: RaidHero, slot: number, view: () => HeroView): Runner 
   basic: 0,
   cooldowns: [0, 0, 0, 0],
   shield: 0,
+  barrier: null,
+  taunt: null,
   silenced: 0,
   slowed: 0,
   staggered: 0,
@@ -162,7 +164,14 @@ export class RaidMatch implements RaidView {
     playerAspect: () => number = () => standardAspect,
   ) {
     const heroes =
-      typeof hero === 'string' ? [hero, ...HERO_IDS.filter((id) => id !== hero).slice(0, 3)] : hero;
+      typeof hero === 'string'
+        ? [
+            hero,
+            ...(['hammer', 'abyss', 'longshot', 'jade'] as const)
+              .filter((id) => id !== hero)
+              .slice(0, 3),
+          ]
+        : hero;
     this.#heroes = heroes.map((id) => heroCatalog[id].create());
     this.#runners = heroes.map((id, slot) =>
       makeRunner(id, slot, () => this.#heroes[slot]!.events.view ?? emptyView),
@@ -211,7 +220,15 @@ export class RaidMatch implements RaidView {
   }
   jump(slot: number) {
     const r = this.#active(slot);
-    if (!r || r.jumping || r.leap || r.dash || r.staggered) return false;
+    if (
+      !r ||
+      r.jumping ||
+      r.leap ||
+      r.dash ||
+      r.staggered ||
+      this.#heroes[slot]!.events.blocksJump?.()
+    )
+      return false;
     r.jumping = RAID_JUMP_TICKS;
     return true;
   }
@@ -258,7 +275,9 @@ export class RaidMatch implements RaidView {
     return (
       !!caster &&
       heroCatalog[caster.hero].skills.some(
-        (rule) => rule.kind === 'ward' && this.#wardInRange(slot, ally, rule.range),
+        (rule) =>
+          (rule.kind === 'ward' || (rule.kind === 'target' && rule.allyEffect)) &&
+          this.#wardInRange(slot, ally, rule.range),
       )
     );
   }
@@ -282,6 +301,11 @@ export class RaidMatch implements RaidView {
       tick: () => this.tick,
       position: (id) => this.#position(r, id),
       enemies: (p, radius) => this.#areaTargets(r, p, radius),
+      allies: (p, radius) =>
+        this.#runners
+          .filter((ally) => this.#inHealingArea(r, ally, p, radius))
+          .map((ally) => ally.slot),
+      controlImmune: () => !!this.#heroes[r.slot]!.events.resistsControl?.(r),
       height: raidRunnerHeight,
       targetPoint: (id) => (id === 'wagon' ? WAGON : (this.#runners[id] ?? null)),
       canTarget: (id) =>
@@ -316,6 +340,9 @@ export class RaidMatch implements RaidView {
       },
       gainRage: (amount) => gainRage(r, amount),
       heal: (id, amount, mode) => this.#hits.heal(this.tick, r, id, amount, mode),
+      barrier: (id, amount, ticks) => {
+        this.#runners[id]!.barrier = { amount, until: this.tick + ticks };
+      },
       shield: (id, ticks, replace) => {
         const ally = this.#runners[id]!;
         ally.shield = replace ? ticks : Math.max(ticks, ally.shield);
@@ -423,7 +450,7 @@ export class RaidMatch implements RaidView {
     );
     if (!resolved) return false;
     const hero = this.#heroes[slot]!;
-    const spendRage = skill === 3 && !r.heroView.ultimateRecasts;
+    const spendRage = skill === 3 && !rule.noRageCost && !r.heroView.ultimateRecasts;
     const cooldown = hero.cast(c, resolved) ?? rule.cooldownTicks ?? SKILL_COOLDOWNS[skill];
     if (spendRage) r.rage = 0;
     hero.events.onCast?.(c, skill);
@@ -447,9 +474,10 @@ export class RaidMatch implements RaidView {
     const stats = HEROES[r.hero];
     const reach = raidBasicReach(r, this.tick);
     // Prefer the lock in reach, then the nearest legal target. A distant lock cannot suppress melee.
-    let target = r.target;
+    let target = r.taunt?.from ?? r.target;
     const point = this.#basicTarget(r, target);
     if (target === null || !point || distance(r, point) > reach) {
+      if (r.taunt) return;
       let nearest: number = reach;
       let found: RaidTarget | undefined;
       for (const candidate of RAID_TARGETS) {
@@ -499,6 +527,9 @@ export class RaidMatch implements RaidView {
       if (r.marked) r.marked--;
       if (r.jumping) r.jumping--;
       if (r.shield) r.shield--;
+      if (r.barrier && r.barrier.until <= this.tick) r.barrier = null;
+      if (r.taunt && (r.taunt.until <= this.tick || this.#runners[r.taunt.from]!.respawn))
+        r.taunt = null;
       for (const skill of [0, 1, 2, 3]) if (r.cooldowns[skill]!) r.cooldowns[skill]!--;
       this.#heroes[r.slot]!.events.onTimersAdvanced?.(this.#contexts[r.slot]!);
       if (r.basic) r.basic--;

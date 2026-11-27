@@ -78,11 +78,15 @@ def write_drive_checksums(work, groups):
     write_changed(work / "SHA256SUMS.txt", "".join(sums).encode())
 
 
-def main(timeline=None):
+def main(timeline=None, selected=()):
     work = WORK / "player-release"
     groups = {}
     for row in read_json(PUBLIC / "catalog.json")["files"]:
         groups.setdefault(row["group"], []).append(row)
+    selected = {g.casefold() for g in selected} or {g.casefold() for g in groups}
+    unknown = selected - {g.casefold() for g in groups}
+    if unknown:
+        raise ValueError(f"Unknown Player groups: {sorted(unknown)}")
     if timeline:
         package_fbx(groups, work, timeline)
     manifest = ROOT / "src/content/raid/published-outfits.json"
@@ -99,6 +103,8 @@ def main(timeline=None):
     archive_folder.mkdir(parents=True, exist_ok=True)
     installed = []
     for group, rows in groups.items():
+        if group.casefold() not in selected:
+            continue
         archive = archive_folder / (group + ".zip")
         tmp = archive.with_suffix(".partial.zip")
         entries = []
@@ -150,10 +156,10 @@ def main(timeline=None):
             if bundle.testzip():
                 raise ValueError("GLB archive CRC mismatch")
         tmp.replace(archive)
-    if len(installed) != len(approved):
+    if len(installed) != sum(i["group"] in selected for i in approved):
         raise ValueError("Incomplete game outfit set")
     by_key = {(i["group"], i["skin"]): i for i in installed}
-    installed = [by_key[i["group"], i["skin"]] for i in approved]
+    installed = [by_key.get((i["group"], i["skin"]), i) for i in approved]
     if approved != installed:
         save_json(manifest, installed)
     write_changed(
@@ -161,10 +167,12 @@ def main(timeline=None):
     )
     if timeline or (work / "fbx-index.csv").exists():
         write_drive_checksums(work, groups)
-    print("Packaged", len(groups), "groups and", len(installed), "game outfits")
+    print("Packaged", len(selected), "groups and", len(by_key), "game outfits")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fbx-index", type=Path, help="Also package native FBX files, timeline and Drive checksums")
-    main(parser.parse_args().fbx_index)
+    parser.add_argument("--groups", nargs="+", help="Only rebuild these groups' game outfits and GLB archives")
+    args = parser.parse_args()
+    main(args.fbx_index, args.groups or ())

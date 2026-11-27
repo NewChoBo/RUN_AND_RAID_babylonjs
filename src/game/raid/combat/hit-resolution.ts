@@ -1,6 +1,6 @@
 import type { HeroCombat, HeroEvents, Hit } from '../heroes/hero-definition.ts';
-import { RAID_HZ, raidRespawnTicks, WAGON, WAGON_HP } from '../raid-rules.ts';
-import { raidRunnerHeight } from '../runner-motion.ts';
+import { RAID_HZ, RAID_RUN_LIMIT_X, raidRespawnTicks, WAGON, WAGON_HP } from '../raid-rules.ts';
+import { limitRaidPlacement, RAID_JUMP_TICKS, raidRunnerHeight } from '../runner-motion.ts';
 import type { RaidHealthChange, RaidRunner, RaidTarget, Runner } from '../raid-view.ts';
 import { applyCrowdControl } from '../raid-control.ts';
 export function raidBossBonusPercent(runners: readonly RaidRunner[], attackingTeam: number) {
@@ -51,11 +51,11 @@ export class RaidHitResolution {
       elevation: runner ? raidRunnerHeight(runner) : 0,
     });
   }
-  heal(tick: number, from: Runner, target: number, amount: number, mode?: 'lifesteal') {
+  heal(tick: number, from: Runner, target: number, amount: number, mode?: 'lifesteal' | 'aura') {
     const { self, stats } = this.contexts[target]!;
     const healed = Math.min(amount, stats.hp - self.hp);
     self.hp += healed;
-    if (mode !== 'lifesteal') gainRage(from, healed);
+    if (!mode) gainRage(from, healed);
     this.#record(tick, from.slot, target, healed);
   }
   resolve(tick: number) {
@@ -92,10 +92,17 @@ export class RaidHitResolution {
         continue;
       }
       if (!victim) continue;
-      const damage = Math.min(
-        victim.hp,
-        victim.shield && !hit.rule?.piercesShield ? Math.ceil(base / 2) : base,
-      );
+      let remaining = this.events(victim.slot).onIncomingDamage?.(base) ?? base;
+      if (!hit.rule?.piercesShield) {
+        if (victim.shield) remaining = Math.ceil(remaining / 2);
+        if (victim.barrier) {
+          const absorbed = Math.min(remaining, victim.barrier.amount);
+          victim.barrier.amount -= absorbed;
+          remaining -= absorbed;
+          if (!victim.barrier.amount) victim.barrier = null;
+        }
+      }
+      const damage = Math.min(victim.hp, remaining);
       victim.hp -= damage;
       this.#record(tick, hit.from, hit.target, -damage);
       if (attacker && hit.designated && damage > 0) attacker.lastStrike = victim.slot;
@@ -105,8 +112,28 @@ export class RaidHitResolution {
         contributors.set(attacker.slot, tick);
         // Fury can charge its victim, but cannot refund its own cost.
         if (hit.skill !== 3) gainRage(attacker, damage);
-        if (hit.rule?.control && !this.events(victim.slot).resistsControl?.(victim))
-          applyCrowdControl(victim, hit.rule.control);
+        if (hit.rule && !this.events(victim.slot).resistsControl?.(victim)) {
+          if (hit.rule.control) applyCrowdControl(victim, hit.rule.control);
+          if (hit.rule.tauntTicks)
+            victim.taunt = { from: attacker.slot, until: tick + hit.rule.tauntTicks };
+          if (hit.rule.displacement) {
+            victim.dash = victim.leap = null;
+            if (hit.rule.displacement === 'launch') victim.jumping = RAID_JUMP_TICKS;
+            else {
+              const dx = victim.x - attacker.x;
+              const dz = victim.z - attacker.z;
+              const separation = Math.hypot(dx, dz);
+              const push = hit.rule.displacement === 'push';
+              const reach = push ? separation + 2.5 : Math.min(1, separation);
+              const to = limitRaidPlacement({
+                x: attacker.x + (separation ? dx / separation : 0) * reach,
+                z: attacker.z + (separation ? dz / separation : 1) * reach,
+              });
+              victim.x = Math.min(RAID_RUN_LIMIT_X, Math.max(-RAID_RUN_LIMIT_X, to.x));
+              victim.z = to.z;
+            }
+          }
+        }
         outgoing?.onDamageDealt?.(this.contexts[attacker.slot]!, hit, victim, damage);
       }
       if (victim.hp === 0) {
@@ -124,6 +151,8 @@ export class RaidHitResolution {
         victim.marked = 0;
         victim.respawn = raidRespawnTicks(victim.deaths);
         victim.jumping = 0;
+        victim.barrier = null;
+        victim.taunt = null;
         victim.leap = null;
         victim.dash = null;
         this.resetHero(victim.slot);

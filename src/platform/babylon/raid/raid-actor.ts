@@ -183,6 +183,16 @@ export function createRaidActor(
   const shield = raidMaterial(scene, hero + ' ward glow', raidColors.jade, 0.8);
   shield.alpha = 0.19;
   ward.material = shield;
+  const orb =
+    hero === 'alice'
+      ? MeshBuilder.CreateSphere('Holy Orb', { diameter: 0.36, segments: 12 }, scene)
+      : undefined;
+  if (orb) {
+    orb.parent = root;
+    orb.isPickable = false;
+    orb.material = raidMaterial(scene, 'Holy Orb light', raidColors.alice, 0.95);
+    orb.setEnabled(false);
+  }
   const mark = MeshBuilder.CreateTorus(
     hero + ' tracking mark',
     { diameter: 0.36, thickness: 0.05, tessellation: 4 },
@@ -209,6 +219,14 @@ export function createRaidActor(
     localTeam = 0,
   ) {
     const now = tick + subtick;
+    if (orb) {
+      orb.setEnabled(!r.respawn && !!r.heroView.orbTicks);
+      orb.position.set(
+        Math.cos(now * 0.08) * 0.56,
+        1.5 + 0.12 * Math.sin(now * 0.12),
+        Math.sin(now * 0.08) * 0.56,
+      );
+    }
     spinTrail?.setEnabled(r.spinTicks > 0 && !r.respawn);
     const fallAge = raidRespawnTicks(r.deaths) - r.respawn;
     root.setEnabled(!r.respawn || fallAge < 18);
@@ -219,7 +237,9 @@ export function createRaidActor(
     if (!root.isEnabled()) return;
     bar.setEnabled(!r.respawn);
     mark.setEnabled(r.marked > 0);
-    ward.setEnabled(!r.respawn && (r.shield > 0 || (r.heroView.guardUntil ?? 0) > tick));
+    ward.setEnabled(
+      !r.respawn && (r.shield > 0 || !!r.barrier || (r.heroView.guardUntil ?? 0) > tick),
+    );
     const { x, z } = position;
     root.position.set(x, raidRunnerHeight(r, subtick), z);
     ring.position.set(x, 0.055, z);
@@ -238,12 +258,20 @@ export function createRaidActor(
       return;
     }
     const active = raidActiveAction(actions, r.slot, now);
+    const modeClip = (alternate: string, normal: string) =>
+      r.heroView.shieldMode && motion?.has(alternate) ? alternate : normal;
     let facing = raidFacing(r, active);
     if (r.leap) {
       const { elapsed } = r.leap;
       const progress = (elapsed + subtick) / RAID_LEAP_TICKS;
       if (progress < 0.5) motion?.seek('jump', progress * 2, dt);
       else motion?.seek('bolt', progress - 0.5, dt);
+    } else if (r.dash && r.heroView.shieldMode) {
+      motion?.seek(
+        modeClip('shieldCharge', 'pulse'),
+        (r.dash.elapsed + subtick) / r.dash.ticks,
+        dt,
+      );
     } else if (art.dashClip && r.dash) {
       motion?.seek(art.dashClip, (r.dash.elapsed + subtick) / r.dash.ticks, dt);
     } else if (r.heroView.rootedTicks && r.heroView.rootDuration) {
@@ -256,13 +284,17 @@ export function createRaidActor(
       motion?.seek('bolt', 0.5 + (0.5 * (now - active.tick)) / raidActionTicks(active), dt);
     } else if (active) {
       motion?.seek(
-        active.skill === 'basic' ? 'basic' : clips[active.skill],
+        active.skill === 'basic' ? modeClip('shieldBasic', 'basic') : clips[active.skill],
         (now - active.tick) / raidActionTicks(active),
         dt,
       );
-    } else if (r.jumping) motion?.loop('jump', now / RAID_HZ, dt);
+    } else if (r.jumping) motion?.loop(modeClip('shieldJump', 'jump'), now / RAID_HZ, dt);
     else
-      motion?.loop(r.slowed || r.brake >= 0.5 ? 'walk' : 'run', now / RAID_HZ + r.slot * 0.13, dt);
+      motion?.loop(
+        modeClip('shieldRun', r.slowed || r.brake >= 0.5 ? 'walk' : 'run'),
+        now / RAID_HZ + r.slot * 0.13,
+        dt,
+      );
     const turn = facing - rig.rotation.y;
     rig.rotation.y += Math.atan2(Math.sin(turn), Math.cos(turn)) * Math.min(1, dt * 20);
   }

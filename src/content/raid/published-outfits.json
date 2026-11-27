@@ -183,19 +183,19 @@
     "group": "elfprince",
     "skin": "default",
     "model": "./assets/fighters/elfprince-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "field", "fury"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "elfprince",
     "skin": "skin2",
     "model": "./assets/fighters/elfprince-skin2.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "field", "fury"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "ella",
     "skin": "bigbird#default",
     "model": "./assets/fighters/ella-bigbird-default.glb",
-    "clips": ["run", "walk", "pulse", "bolt", "fury"]
+    "clips": ["run", "walk", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "ella",
@@ -333,19 +333,19 @@
     "group": "hof",
     "skin": "astronaut",
     "model": "./assets/fighters/hof-astronaut.glb",
-    "clips": ["run", "walk", "fall", "basic", "pulse"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "hof",
     "skin": "default",
     "model": "./assets/fighters/hof-default.glb",
-    "clips": ["run", "walk", "fall", "basic", "pulse"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "hof",
     "skin": "western",
     "model": "./assets/fighters/hof-western.glb",
-    "clips": ["run", "walk", "fall", "basic", "pulse"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "jade",
@@ -465,19 +465,61 @@
     "group": "magnus",
     "skin": "armoredforces",
     "model": "./assets/fighters/magnus-armoredforces.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "shieldCharge",
+      "shieldRun",
+      "shieldBasic",
+      "shieldJump"
+    ]
   },
   {
     "group": "magnus",
     "skin": "default",
     "model": "./assets/fighters/magnus-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "shieldCharge",
+      "shieldRun",
+      "shieldBasic",
+      "shieldJump"
+    ]
   },
   {
     "group": "magnus",
     "skin": "oz",
     "model": "./assets/fighters/magnus-oz.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "shieldCharge",
+      "shieldRun",
+      "shieldBasic",
+      "shieldJump"
+    ]
   },
   {
     "group": "orc",
@@ -615,24 +657,24 @@
     "group": "vallet",
     "skin": "default",
     "model": "./assets/fighters/vallet-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "vallet",
     "skin": "lady",
     "model": "./assets/fighters/vallet-lady.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "vallet",
     "skin": "navy",
     "model": "./assets/fighters/vallet-navy.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "vallet",
     "skin": "skin1",
     "model": "./assets/fighters/vallet-skin1.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   }
 ]

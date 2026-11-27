@@ -56,7 +56,8 @@ export class RaidFields {
         } else {
           for (const id of combat.enemies(center, field.radius)) {
             if (effect.kind === 'damageEnemies') combat.strike(id, effect.hit, field.skill);
-            else if (id !== 'wagon') applyCrowdControl(participants[id]!.self, effect.control);
+            else if (id !== 'wagon' && !participants[id]!.controlImmune())
+              applyCrowdControl(participants[id]!.self, effect.control);
           }
         }
       }

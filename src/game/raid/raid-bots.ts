@@ -123,13 +123,45 @@ export function driveRaidBots(
           ? needsHealing
           : distance <= pulseRange;
     const inSlamRange = opener !== 'leap' || distance <= HEROES[r.hero].radius;
+    const wounded = [r, partner]
+      .filter((ally) => ally.hp <= HEROES[ally.hero].hp - 15 && view.canShield(r.slot, ally.slot))
+      .sort((a, b) => a.hp / HEROES[a.hero].hp - b.hp / HEROES[b.hero].hp)[0];
+    const supportSkill =
+      wounded &&
+      ([1, 2] as const).find((slot) => {
+        const rule = raidSkill(r.hero, slot);
+        return (
+          canUseRaidSkill(r, slot) &&
+          rule.kind === 'target' &&
+          (rule.allyEffect === 'heal' ||
+            (rule.allyEffect === 'barrier' &&
+              !wounded.barrier &&
+              wounded.hp < HEROES[wounded.hero].hp * 0.65))
+        );
+      });
     let skill: Skill;
+    if (supportSkill !== undefined && wounded) {
+      send(r.slot, 'cast', { skill: supportSkill, target: wounded.slot });
+      continue;
+    }
     if (canUseRaidSkill(r, 3)) skill = 3;
-    else if (usePulse && !r.cooldowns[0]) skill = 0;
-    else if (inSlamRange && !r.cooldowns[1]) skill = 1;
-    else if (inSlamRange && !r.cooldowns[2]) skill = 2;
+    else if (
+      r.heroView.iceCrystals !== undefined &&
+      r.heroView.iceCrystals < 4 &&
+      distance <= 6 &&
+      canUseRaidSkill(r, 1)
+    )
+      skill = 1;
+    else if (usePulse && canUseRaidSkill(r, 0)) skill = 0;
+    else if (inSlamRange && canUseRaidSkill(r, 1)) skill = 1;
+    else if (
+      inSlamRange &&
+      (canUseRaidSkill(r, 2) || (raidSkill(r.hero, 2).requiresJump && !r.cooldowns[2]))
+    )
+      skill = 2;
     else if (opener === 'leap' && canLeap && !r.cooldowns[0]) skill = 0;
     else continue;
+    if (raidSkill(r.hero, skill).requiresJump && !r.jumping) send(r.slot, 'jump');
     const kind = raidAimKind(r.hero, skill);
     if (kind === 'leap') send(r.slot, 'cast', { skill, ...leapAim });
     else if (kind === 'field') send(r.slot, 'cast', { skill, x: point.x, z: point.z });

@@ -13,6 +13,7 @@ import {
   type Skill,
   type RaidTarget,
 } from '../game/raid/raid-match.ts';
+import { practiceRoster } from '../game/raid/raid-draft.ts';
 import type { RaidCommandName } from '../game/raid/raid-feature.ts';
 import { RaidSimulation } from '../game/raid/raid-simulation.ts';
 import type { openRaidCourse } from '../platform/babylon/raid/raid-course.ts';
@@ -199,7 +200,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   }
   function launchSolo() {
     slot = 0;
-    match = new RaidMatch(chosenHero, course.viewAspect);
+    match = new RaidMatch(practiceRoster(chosenHero), course.viewAspect);
     solo = new RaidSimulation(match, new Set([slot]));
     launch();
   }

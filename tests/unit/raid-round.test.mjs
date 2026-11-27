@@ -104,19 +104,20 @@ test('two to four players alternate teams and each runner is assigned once', () 
 test('the first lock wins, unlocking and leaving free a hero, and a join needs a fresh pick', () => {
   const seats = draftMembers([], [5, 2]);
   assert.equal(isRaidRoster(seats), false);
-  assert.ok(applyPick(seats, 5, 'rend'));
-  assert.equal(applyPick(seats, 2, 'rend'), false);
-  assert.equal(applyPick(seats, 8, 'rime'), false);
-  assert.ok(applyPick(seats, 2, 'rime'));
+  assert.equal(applyPick(seats, 5, 'rend'), false);
+  assert.ok(applyPick(seats, 5, 'drizz'));
+  assert.equal(applyPick(seats, 2, 'drizz'), false);
+  assert.equal(applyPick(seats, 8, 'froze'), false);
+  assert.ok(applyPick(seats, 2, 'froze'));
   assert.ok(isRaidRoster(seats));
   assert.ok(applyPick(seats, 5, null));
   assert.equal(isRaidRoster(seats), false);
   const next = draftMembers(seats, [2, 7]);
   assert.deepEqual(next, [
-    { actor: 2, hero: 'rime' },
+    { actor: 2, hero: 'froze' },
     { actor: 7, hero: null },
   ]);
-  assert.ok(applyPick(next, 7, 'rend'));
+  assert.ok(applyPick(next, 7, 'drizz'));
 });
 test('each player can fill their own input budget and submit again on the next tick', () => {
   const round = new RaidRound(players);

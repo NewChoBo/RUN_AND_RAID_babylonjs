@@ -12,6 +12,9 @@ export interface HeroStats {
   readonly radius: number;
 }
 export interface HeroView {
+  readonly shieldMode?: boolean;
+  readonly iceCrystals?: number;
+  readonly orbTicks?: number;
   readonly poisonArmed?: boolean;
   readonly comboPoints?: number;
   readonly ultimateRecasts?: number;
@@ -42,8 +45,11 @@ export interface HeroCombat extends CombatRead {
   counter(skill: Skill): void;
   fire(skill: Skill, direction: RaidDirection, attack: ProjectileAttack): void;
   gainRage(amount: number): void;
-  heal(ally: number, amount: number, mode?: 'lifesteal'): void;
+  heal(ally: number, amount: number, mode?: 'lifesteal' | 'aura'): void;
+  allies(center: RaidPoint, radius: number): number[];
+  controlImmune(): boolean;
   shield(ally: number, ticks: number, replace?: boolean): void;
+  barrier(ally: number, amount: number, ticks: number): void;
   shieldRecipients(): number[];
   canTarget(id: RaidTarget): boolean;
 }
@@ -64,9 +70,11 @@ export interface HeroEvents {
   onDashEnd?(combat: HeroCombat, target?: RaidTarget): void;
   onBasicAttack?(combat: HeroCombat): { amount: number; cooldown: number };
   onIncomingHit?(combat: HeroCombat, hit: Hit): boolean;
+  onIncomingDamage?(amount: number): number;
   onOutgoingHit?(combat: HeroCombat, hit: Hit, victim?: Runner): number;
   onDamageDealt?(combat: HeroCombat, hit: Hit, victim: Runner, damage: number): void;
   resistsControl?(runner: RaidRunner): boolean;
+  blocksJump?(): boolean;
   onRespawn?(combat: HeroCombat): void;
   onTickEnd?(combat: HeroCombat): void;
 }

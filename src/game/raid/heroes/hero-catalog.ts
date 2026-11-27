@@ -12,6 +12,10 @@ import { rildin } from './rildin.ts';
 import { kaiken } from './kaiken.ts';
 import { swift } from './swift.ts';
 import { kali } from './kali.ts';
+import { drizz } from './drizz.ts';
+import { alice } from './alice.ts';
+import { flare, froze, theresa, hof, vallet, freesia } from './archive-champions.ts';
+import { magnus } from './magnus.ts';
 export const heroCatalog = {
   hammer,
   abyss,
@@ -24,6 +28,15 @@ export const heroCatalog = {
   kaiken,
   swift,
   kali,
+  drizz,
+  alice,
+  flare,
+  froze,
+  theresa,
+  hof,
+  vallet,
+  freesia,
+  magnus,
 } satisfies Record<RaidHero, RaidHeroDefinition>;
 export const HEROES = Object.fromEntries(
   HERO_IDS.map((id) => [id, heroCatalog[id].stats]),
@@ -40,14 +53,23 @@ export const raidRunnerAimKind = (runner: RaidRunner, skill: Skill) =>
   raidAimKind(runner.hero, skill);
 export const isRaidLeap = (hero: RaidHero, skill: Skill) => raidAimKind(hero, skill) === 'leap';
 export function canUseRaidSkill(runner: RaidRunner, skill: Skill) {
-  if (runner.respawn || runner.silenced || runner.staggered || runner.leap || runner.spinTicks)
+  if (
+    runner.respawn ||
+    runner.silenced ||
+    runner.taunt ||
+    runner.staggered ||
+    runner.leap ||
+    runner.spinTicks
+  )
     return false;
   const rule = raidSkill(runner.hero, skill);
   if (runner.dash)
     return runner.dash.skill === skill && rule.kind === 'pulse' && !!rule.recastDuringDash;
   return (
     !runner.cooldowns[skill] &&
+    (!rule.available || rule.available(runner)) &&
+    (!rule.requiresJump || runner.jumping > 0) &&
     !(rule.kind === 'leap' && runner.jumping) &&
-    (skill !== 3 || runner.rage >= 100 || !!runner.heroView.ultimateRecasts)
+    (skill !== 3 || rule.noRageCost || runner.rage >= 100 || !!runner.heroView.ultimateRecasts)
   );
 }

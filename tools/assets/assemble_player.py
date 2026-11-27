@@ -21,6 +21,13 @@ STANDARD = {
     "fury": "skill4start",
 }
 OVERRIDES = {
+    "elfprince": {"bolt": "skill2start1"},
+    "vallet": {"fury": "skill4"},
+    "hof": {"jump": ("jump_loopup", "jump_loopdown"), "bolt": "humanmissle",
+            "field": "megabomb", "fury": "rapidrockets"},
+    "magnus": {"pulse": "shockwave", "bolt": "shield_attack2", "field": "battleshout",
+               "fury": "switchmode", "shieldCharge": "rollingattack", "shieldRun": "shield_run",
+               "shieldBasic": "shield_attack1", "shieldJump": "shield_jump_loop"},
     "rildin": {"pulse": "skill1start1", "fury": "unleashedsword"},
     "kali": {
         "bolt": "attack1"
@@ -34,13 +41,13 @@ def rig_and_body(scene):
     return body.find_armature(), body
 
 
-def motion_action(name, target, mesh, scene):
+def sample_motion(target, mesh, scene, body):
     bpy.context.window.scene = scene
     first, last = scene.frame_start, scene.frame_end
     if first >= last:
         raise ValueError(f"Empty take: {scene.name}")
     scene.frame_set(first)
-    source, body = rig_and_body(scene)
+    source = body.find_armature()
     # Evaluate skinning in the source mesh's coordinates. A Max file may store a different
     # animated armature object transform and bind pose for each take of the same character.
     target_world = target.matrix_world.copy()
@@ -86,11 +93,27 @@ def motion_action(name, target, mesh, scene):
                 rot.make_compatible(previous[n])
             previous[n] = rot
             samples[n].append((*loc, *rot, *scale))
+    return samples
+
+
+def motion_action(name, target, mesh, takes):
+    samples = {b.name: [] for b in target.data.bones}
+    times = []
+    for scene, body in takes:
+        segment = sample_motion(target, mesh, scene, body)
+        step = (1.55 if name == "walk" else 1.0) * 30 / scene.render.fps
+        start = times[-1] + step if times else 0
+        times.extend(start + i * step for i in range(scene.frame_end - scene.frame_start + 1))
+        for n, values in segment.items():
+            if samples[n]:
+                # Preserve quaternion continuity where two original takes meet.
+                if sum(a * b for a, b in zip(samples[n][-1][3:7], values[0][3:7])) < 0:
+                    values = [(*v[:3], *(-q for q in v[3:7]), *v[7:]) for v in values]
+            samples[n].extend(values)
     action = bpy.data.actions.new(name)
     slot = action.slots.new("OBJECT", target.name)
     strip = action.layers.new(name).strips.new(type="KEYFRAME")
     bag = strip.channelbag(slot, ensure=True)
-    speed = (1.55 if name == "walk" else 1.0) * 30 / scene.render.fps
     for n, values in samples.items():
         bone = target.pose.bones[n]
         column = 0
@@ -100,13 +123,35 @@ def motion_action(name, target, mesh, scene):
                 points = fcurve.keyframe_points
                 points.add(len(values))
                 points.foreach_set(
-                    "co", [v for j, row in enumerate(values) for v in (j * speed, row[column + i])]
+                    "co", [v for time, row in zip(times, values) for v in (time, row[column + i])]
                 )
                 for point in points:
                     point.interpolation = "LINEAR"
                 fcurve.update()
             column += count
     return action
+
+
+def find_take(scenes, prefixes, tokens, weights):
+    minimum = 0.90 * sum(weights.values())
+    if not minimum:
+        return None
+    for prefix in prefixes:
+        for token in tokens:
+            suffixes = (f"/{prefix}#{token}.max", f"/{prefix}_{token}.max")
+            for key in sorted((k for k in scenes if k.endswith(suffixes)), key=lambda k: (k.count("/"), k)):
+                scene = scenes[key]
+                if scene.frame_end <= scene.frame_start:
+                    continue
+                bodies = [o for o in scene.objects if o.type == "MESH" and o.find_armature()]
+                def match(body):
+                    bones = body.find_armature().data.bones
+                    return sum(w for n, w in weights.items() if n in bones), len(body.data.vertices)
+                if bodies:
+                    body = max(bodies, key=match)
+                    if match(body)[0] >= minimum:
+                        return scene, body
+    return None
 
 
 def assemble(blend, outfit=None, item=None):
@@ -152,42 +197,26 @@ def assemble(blend, outfit=None, item=None):
         for g in vertex.groups:
             n = mesh.vertex_groups[g.group].name
             weights[n] = weights.get(n, 0.0) + g.weight
-    for clip, take in (STANDARD | OVERRIDES.get(hero, {})).items():
-        src = None
-        for name in dict.fromkeys(prefixes):
-            takes = [take]
-            if clip == "run":
-                takes += ["fly", "idle"]
-            for token in takes:
-                suffixes = (f"/{name}#{token}.max", f"/{name}_{token}.max")
-                keys = sorted(
-                    (k for k in scenes if k.endswith(suffixes)), key=lambda k: (k.count("/"), k)
-                )
-                for key in keys:
-                    candidate = scenes[key]
-                    if candidate.frame_end <= candidate.frame_start:
-                        continue
-                    meshes = [
-                        o for o in candidate.objects if o.type == "MESH" and o.find_armature()
-                    ]
-                    if not meshes:
-                        continue
-                    arm, _ = rig_and_body(candidate)
-                    coverage = sum(w for n, w in weights.items() if n in arm.data.bones)
-                    if coverage >= 0.90 * sum(weights.values()):
-                        src = candidate
-                        break
-                if src:
-                    break
-            if src:
-                break
-        if src is None:
+    mapping = STANDARD | OVERRIDES.get(hero, {})
+    if hero == "ella" and skin == "bigbird#default":
+        mapping["field"] = "skill3hit_a"
+    for clip, take in mapping.items():
+        stages = take if isinstance(take, tuple) else (take,)
+        takes = []
+        for stage in stages:
+            tokens = [stage, "fly", "idle"] if clip == "run" else [stage]
+            found = find_take(scenes, dict.fromkeys(prefixes), tokens, weights)
+            if found:
+                takes.append(found)
+        if len(takes) != len(stages):
             continue
-        action = motion_action(clip, target, mesh, src)
+        action = motion_action(clip, target, mesh, takes)
         track = data.nla_tracks.new()
         track.name = clip
         track.strips.new(clip, 0, action)
-        paths[clip] = {"source": src["source_max"], "frames": [src.frame_start, src.frame_end]}
+        parts = [{"source": s["source_max"], "frames": [s.frame_start, s.frame_end], "mesh": ob.name}
+                 for s, ob in takes]
+        paths[clip] = parts[0] if len(parts) == 1 else {"stages": parts}
     if not paths and item:
         keep_source()
         return

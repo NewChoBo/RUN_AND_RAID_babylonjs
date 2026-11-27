@@ -2,10 +2,17 @@ import { uiText } from '../content/locales/ui.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { characterArt } from '../content/raid/gallery.ts';
 import { isRaidRoster, type DraftSeat } from '../game/raid/raid-draft.ts';
-import { HERO_IDS, HEROES, type RaidHero } from '../game/raid/raid-match.ts';
+import { HEROES, type RaidHero } from '../game/raid/raid-match.ts';
+import { ORIGINAL_HERO_IDS } from '../game/raid/heroes/hero-id.ts';
+import {
+  adaptedSkills,
+  pendingProfile,
+  pendingProfiles,
+  type DraftProfile,
+} from '../content/raid/draft-profiles.ts';
 import type { RaidEntry, RoomError } from '../platform/photon/raid-room.ts';
 
-function setDraftArt(image: HTMLImageElement, hero: RaidHero) {
+function setDraftArt(image: HTMLImageElement, hero: DraftProfile) {
   if (image.dataset.hero === hero) return;
   image.dataset.hero = hero;
   image.referrerPolicy = 'no-referrer';
@@ -94,11 +101,11 @@ export function createRaidLobby(
   notice.setAttribute('aria-live', 'polite');
   const lock = document.createElement('button');
   lock.type = 'button';
-  let preview: RaidHero = actions.selected();
+  let preview: DraftProfile = actions.selected();
   let seats: DraftSeat[] = [];
   let self = 0;
   let soloRoom = false;
-  const choices = HERO_IDS.map((hero) => {
+  const choices = [...ORIGINAL_HERO_IDS, ...pendingProfiles].map((hero) => {
     const card = document.createElement('button');
     card.type = 'button';
     const image = document.createElement('img');
@@ -109,7 +116,8 @@ export function createRaidLobby(
     const name = document.createElement('span');
     name.textContent = t(hero);
     const taken = document.createElement('small');
-    taken.textContent = t('pickTaken');
+    taken.textContent = t(pendingProfile(hero) ? 'notImplemented' : 'pickTaken');
+    card.classList.toggle('pending-profile', pendingProfile(hero));
     card.append(image, name, taken);
     card.onclick = () => {
       preview = hero;
@@ -124,16 +132,28 @@ export function createRaidLobby(
     for (const { hero, card, taken } of choices) {
       const occupied = seats.some((s) => s.hero === hero && s.actor !== self);
       card.disabled = occupied || (!!mine && hero !== mine);
-      taken.hidden = !occupied;
+      taken.hidden = !occupied && !pendingProfile(hero);
       card.setAttribute('aria-pressed', String(hero === preview));
     }
     setDraftArt(portrait, preview);
     heroName.textContent = t(preview);
+    if (pendingProfile(preview)) {
+      range.textContent = t('notImplemented') + ' · ' + preview;
+      detail.textContent = t('pendingProfileHelp');
+      skills.textContent = '';
+      lock.textContent = t('notImplemented');
+      lock.disabled = true;
+      notice.textContent = t('pendingProfileHelp');
+      return;
+    }
+    const hero = preview;
     range.textContent = t('reach', { range: HEROES[preview].reach });
     detail.textContent = t(`${preview}Info`);
     skills.textContent = (['Pulse', 'Bolt', 'Field', 'Fury'] as const)
-      .map((s) => t(`${preview}${s}`))
+      .map((s, i) => t(`${hero}${s}`) + (adaptedSkills[hero]?.includes(i) ? '*' : ''))
       .join(' · ');
+    if (adaptedSkills[hero]?.length)
+      skills.append(document.createElement('br'), '* ' + t('adaptedSkill'));
     lock.textContent = t(mine ? 'unlockPick' : 'lockPick');
     if (!mine) lock.textContent += ' · ' + t(preview);
     lock.disabled = !mine && seats.some((s) => s.hero === preview);
@@ -149,7 +169,10 @@ export function createRaidLobby(
             : 'pickWait',
     );
   }
-  lock.onclick = () => actions.pick(seats.find((s) => s.actor === self)?.hero ? null : preview);
+  lock.onclick = () => {
+    if (!pendingProfile(preview))
+      actions.pick(seats.find((s) => s.actor === self)?.hero ? null : preview);
+  };
   const choose = document.createElement('button');
   choose.textContent = uiText('chooseCharacter');
   choose.onclick = () => picker.showModal();
@@ -207,7 +230,7 @@ export function createRaidLobby(
     host.hidden = enterCode.hidden = room || page !== 'private';
     code.hidden = join.hidden = room || page !== 'code';
     back.hidden = room || page === 'entry';
-    practice.hidden = true;
+    practice.hidden = room || page !== 'private';
     group.dataset.stage = stage;
     heading.textContent =
       stage === 'connecting'
@@ -253,7 +276,6 @@ export function createRaidLobby(
     reset(reason?: RoomError) {
       show('entry');
       message.textContent = reason ? t(reason) : '';
-      practice.hidden = !(reason && page === 'private');
     },
     room(roomCode: string, members: DraftSeat[], actor: number, isHost: boolean, offline = false) {
       seats = members;

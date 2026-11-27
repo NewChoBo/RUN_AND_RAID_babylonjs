@@ -54,7 +54,7 @@ export function resolveSkill(
         !(
           rule.allowAlly &&
           typeof target === 'number' &&
-          target !== combat.self.slot &&
+          (target !== combat.self.slot || rule.allowAlly === 'includingSelf') &&
           combat.canShield(target, range)
         )))
   )

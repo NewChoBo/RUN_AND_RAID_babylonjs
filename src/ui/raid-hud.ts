@@ -323,6 +323,7 @@ export function createRaidHud(
       runner.staggered && t('stagger'),
       runner.slowed && t('slow'),
       runner.silenced && t('silence'),
+      runner.taunt && t('taunted'),
     ]
       .filter(Boolean)
       .join(' · ');
@@ -347,6 +348,10 @@ export function createRaidHud(
     if (runner.heroView.comboPoints !== undefined)
       rage.textContent += ' · ' + t('shadowCombo', { count: runner.heroView.comboPoints });
     if (runner.heroView.poisonArmed) rage.textContent += ' · ' + t('poisonArmed');
+    if (runner.heroView.iceCrystals !== undefined)
+      rage.textContent += ' · ' + t('iceCrystals', { count: runner.heroView.iceCrystals });
+    if (runner.heroView.shieldMode !== undefined)
+      rage.textContent += ' · ' + t(runner.heroView.shieldMode ? 'magnusFury' : 'magnusBattle');
     const target =
       runner.target === null
         ? 'noTarget'
@@ -364,11 +369,15 @@ export function createRaidHud(
       }
       const recastMoon = runner.dash?.skill === i && instant && !!rule.recastDuringDash;
       name.textContent = recastMoon ? t('moonFinish') : t(`${runner.hero}${skillNames[i]!}`);
+      if (runner.heroView.shieldMode)
+        name.textContent = t(
+          (['magnusCharge', 'magnusTaunt', 'magnusCry', 'magnusBattle'] as const)[i]!,
+        );
       const cd = Math.ceil(runner.cooldowns[i]! / RAID_HZ);
       b.disabled = !canUseRaidSkill(runner, i as Skill);
       if (b.disabled && gesture?.slot === i) endGesture();
       if (b.disabled && aimPad.skill === i) aimPad.close();
-      if (i === 3) {
+      if (i === 3 && !rule.noRageCost) {
         const recasts = runner.heroView.ultimateRecasts;
         b.style.setProperty('--rage-fill', recasts ? '100%' : runner.rage + '%');
         charge.textContent = recasts

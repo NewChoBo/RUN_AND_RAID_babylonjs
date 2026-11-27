@@ -1,4 +1,13 @@
-import { HERO_IDS, type RaidHero } from './heroes/hero-id.ts';
+import { HERO_IDS, ORIGINAL_HERO_IDS, type RaidHero } from './heroes/hero-id.ts';
+
+export function practiceRoster(hero: RaidHero): RaidHero[] {
+  const start = ORIGINAL_HERO_IDS.findIndex((id) => id === hero) + 1;
+  const bots = Array.from(
+    { length: 3 },
+    (_, offset) => ORIGINAL_HERO_IDS[(start + offset) % ORIGINAL_HERO_IDS.length]!,
+  );
+  return [hero, ...bots];
+}
 
 export interface DraftSeat {
   actor: number;
@@ -9,6 +18,9 @@ export interface RaidSeat extends DraftSeat {
 }
 export function isHero(value: unknown): value is RaidHero {
   return HERO_IDS.some((hero) => hero === value);
+}
+function isDraftPick(value: unknown): value is (typeof ORIGINAL_HERO_IDS)[number] {
+  return ORIGINAL_HERO_IDS.some((hero) => hero === value);
 }
 export function isDraft(value: unknown): value is DraftSeat[] {
   if (!Array.isArray(value) || value.length < 1 || value.length > 4) return false;
@@ -39,7 +51,8 @@ export function applyPick(seats: DraftSeat[], actor: number, hero: unknown): boo
   const seat = seats.find((s) => s.actor === actor);
   if (
     !seat ||
-    (hero !== null && (!isHero(hero) || seat.hero !== null || seats.some((s) => s.hero === hero)))
+    (hero !== null &&
+      (!isDraftPick(hero) || seat.hero !== null || seats.some((s) => s.hero === hero)))
   )
     return false;
   seat.hero = hero;

@@ -22,6 +22,15 @@ export interface HeroAppearance {
 }
 // Model attachments and particle styles belong to the renderer. Combat never reads this table.
 export const appearance: Record<RaidHero, HeroAppearance> = {
+  flare: { cape: '#ff7544', sprite: 'scorch_01', particles: 'vortex' },
+  hof: { cape: '#e9bf63', sprite: 'scorch_01', particles: 'heavy' },
+  froze: { cape: '#69d8fb', sprite: 'twirl_01', particles: 'spiral' },
+  magnus: { cape: '#eab251', sprite: 'scorch_01', particles: 'heavy' },
+  theresa: { cape: '#f0d168', sprite: 'spark_05', particles: 'heavy' },
+  vallet: { cape: '#ea9a8c', sprite: 'spark_05', particles: 'arrows' },
+  freesia: { cape: '#98efbc', sprite: 'magic_01', particles: 'spiral' },
+  drizz: { cape: '#75394e', sprite: 'scorch_01', dashClip: 'fury', particles: 'heavy' },
+  alice: { cape: '#f0cb8b', sprite: 'magic_01', particles: 'spiral' },
   kali: { cape: '#713594', sprite: 'twirl_01', dashClip: 'fury', dashTrail: 'shadowBlades' },
   rildin: { cape: '#a12f29', sprite: 'spark_05', empoweredMesh: '2H_Sword' },
   kaiken: {

@@ -46,6 +46,9 @@ export class ModelMotion {
     }
   }
 
+  has(name: string) {
+    return this.clips.has(name);
+  }
   loop(name: string, seconds: number, dt: number) {
     const clip = this.clips.get(name) ?? this.clips.get('run');
     if (!clip) return;

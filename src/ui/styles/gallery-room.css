@@ -230,9 +230,18 @@
   background: #403a34;
 }
 #overlay .runner-picker .raid-pick-grid {
+  overflow-y: auto;
+  max-height: 62dvh;
+  overscroll-behavior: contain;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 3px;
   gap: 3px;
+}
+#overlay .raid-pick-grid .pending-profile img {
+  filter: saturate(0.45);
+}
+#overlay .raid-pick-grid .pending-profile small {
+  display: block;
 }
 #overlay .runner-picker .raid-pick-grid img {
   object-fit: cover;

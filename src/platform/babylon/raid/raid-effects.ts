@@ -74,6 +74,7 @@ export function createRaidEffects(scene: Scene) {
       ),
     );
     let sector: LinesMesh | undefined;
+    let turret: Mesh | undefined;
     let sectorAngle: number | undefined;
     let rain: ReturnType<typeof createRaidArrowRain> | undefined;
     let blades: ReturnType<typeof createShadowBlades> | undefined;
@@ -81,6 +82,7 @@ export function createRaidEffects(scene: Scene) {
     function hide() {
       for (const part of parts) part.setEnabled(false);
       sector?.setEnabled(false);
+      turret?.setEnabled(false);
       rain?.hide();
       blades?.hide();
     }
@@ -110,6 +112,27 @@ export function createRaidEffects(scene: Scene) {
           : cue.to;
       const t = age / lifetime(cue);
       const { sigil, light } = materials.get(hero)!;
+      if (hero === 'hof' && skill === 0) {
+        if (!turret) {
+          turret = MeshBuilder.CreateCylinder(
+            'Hof frost turret',
+            { height: 0.6, diameterTop: 0.52, diameterBottom: 0.82, tessellation: 8 },
+            scene,
+          );
+          const barrel = MeshBuilder.CreateBox(
+            'Frost turret barrel',
+            { width: 0.19, height: 0.2, depth: 0.74 },
+            scene,
+          );
+          barrel.parent = turret;
+          barrel.position.set(0, 0.26, 0.3);
+          barrel.isPickable = turret.isPickable = false;
+          barrel.material = turret.material = light;
+        }
+        turret.setEnabled(age <= 32);
+        turret.position.set(to.x, 0.32, to.z);
+        turret.rotation.y = Math.sin(age * 0.14) * 0.55;
+      }
       const area = kind === 'field' || kind === 'leap' || kind === 'pulse';
       const healing = kind === 'ward';
       const impactTime = area || healing || art.particles === 'heavy' ? 0 : 0.48;
