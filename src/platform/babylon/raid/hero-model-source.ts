@@ -1,4 +1,3 @@
-import { KAIKEN_BODY_HEIGHT } from './hero-appearance.ts';
 import { raidOutfits } from '../../../content/raid/outfits.ts';
 import type { RaidHero } from '../../../game/raid/heroes/hero-id.ts';
 
@@ -20,12 +19,6 @@ export function heroModelSource(hero: RaidHero, outfit?: string) {
   const original = outfit
     ? raidOutfits.find((o) => o.model === outfit)
     : raidOutfits.find((o) => o.group === hero && o.skin === 'default');
-  if (original)
-    return {
-      url: original.model,
-      authored: true,
-      still: true,
-      bodyHeight: original.group === 'kaiken' ? KAIKEN_BODY_HEIGHT : undefined,
-    };
+  if (original) return { url: original.model, authored: true, still: true };
   return { url: './assets/raid/' + hero + '.glb', authored: false, still: false };
 }

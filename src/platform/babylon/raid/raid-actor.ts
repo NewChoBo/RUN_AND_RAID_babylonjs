@@ -38,30 +38,13 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
       : new ModelMotion(model.animationGroups, ['run', 'walk', 'jump', 'fall', 'basic', ...clips]);
     model.addAllToScene();
     const root = model.meshes[0]!;
-    let bodyHeight = source.bodyHeight;
+    let bodyHeight: number | undefined;
     if (source.still) {
-      if (source.bodyHeight !== undefined) {
-        // Kaiken's first body primitive contains the head and boots; the sword is separate.
-        const bodyMesh = model.meshes.find((mesh) =>
-          /^Kaiken_body(?:_primitive0)?$/i.test(mesh.name),
-        );
-        if (!bodyMesh) throw new Error('Missing Kaiken body mesh');
-        const bounds = root.getHierarchyBoundingVectors(true, (mesh) => mesh === bodyMesh);
-        const height = bounds.max.y - bounds.min.y;
-        if (!(height > 0)) throw new Error('Empty Kaiken body bounds');
-        const worldScale = RAID_RUNNER_SCALE * rig.scaling.y;
-        root.scaling.scaleInPlace(source.bodyHeight / (height * worldScale));
-        root.position.y -= root.getHierarchyBoundingVectors(
-          true,
-          (mesh) => mesh === bodyMesh,
-        ).min.y;
-      } else {
-        root.normalizeToUnitCube(true);
-        root.scaling.scaleInPlace(2);
-        const bounds = root.getHierarchyBoundingVectors(true);
-        root.position.y -= bounds.min.y;
-        bodyHeight = (bounds.max.y - bounds.min.y) * RAID_RUNNER_SCALE * rig.scaling.y;
-      }
+      root.normalizeToUnitCube(true);
+      root.scaling.scaleInPlace(2);
+      const bounds = root.getHierarchyBoundingVectors(true);
+      root.position.y -= bounds.min.y;
+      bodyHeight = (bounds.max.y - bounds.min.y) * RAID_RUNNER_SCALE * rig.scaling.y;
     }
     root.parent = rig;
     if (!source.authored) {
