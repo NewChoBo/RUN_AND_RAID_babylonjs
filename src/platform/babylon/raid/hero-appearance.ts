@@ -3,6 +3,9 @@ import type { Skill } from '../../../game/raid/raid-view.ts';
 
 /** Scale of runner models and body markings relative to the course. Attack footprints use world metres. */
 export const RAID_RUNNER_SCALE = 0.75;
+// Kaiken's head-to-boot height before and after camera calibration (docs/CAMERA.md).
+export const KAIKEN_BODY_HEIGHT = 1.9;
+export const RAID_MODEL_SCALE = KAIKEN_BODY_HEIGHT / 1.2;
 
 export interface HeroAppearance {
   cape: string;

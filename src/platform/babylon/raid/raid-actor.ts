@@ -1,4 +1,4 @@
-import { appearance, RAID_RUNNER_SCALE } from './hero-appearance.ts';
+import { appearance, RAID_MODEL_SCALE, RAID_RUNNER_SCALE } from './hero-appearance.ts';
 import { heroModelSource } from './hero-model-source.ts';
 import { equipRaidGear } from './raid-equipment.ts';
 import {
@@ -38,6 +38,7 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
       : new ModelMotion(model.animationGroups, ['run', 'walk', 'jump', 'fall', 'basic', ...clips]);
     model.addAllToScene();
     const root = model.meshes[0]!;
+    let bodyHeight = source.bodyHeight;
     if (source.still) {
       if (source.bodyHeight !== undefined) {
         // Kaiken's first body primitive contains the head and boots; the sword is separate.
@@ -57,7 +58,9 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
       } else {
         root.normalizeToUnitCube(true);
         root.scaling.scaleInPlace(2);
-        root.position.y -= root.getHierarchyBoundingVectors().min.y;
+        const bounds = root.getHierarchyBoundingVectors(true);
+        root.position.y -= bounds.min.y;
+        bodyHeight = (bounds.max.y - bounds.min.y) * RAID_RUNNER_SCALE * rig.scaling.y;
       }
     }
     root.parent = rig;
@@ -71,7 +74,7 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
       model.materials.push(...scene.materials.slice(materialCount));
     }
     for (const mesh of rig.getChildMeshes()) mesh.isPickable = false;
-    return { model, motion, bodyHeight: source.bodyHeight };
+    return { model, motion, bodyHeight };
   } catch (error) {
     model.dispose();
     throw error;
@@ -92,7 +95,7 @@ export function createRaidActor(
   body.scaling.setAll(RAID_RUNNER_SCALE);
   const rig = new TransformNode(hero + ' facing', scene);
   rig.parent = body;
-  rig.scaling.setAll(art.scale ?? 0.8);
+  rig.scaling.setAll((art.scale ?? 0.8) * RAID_MODEL_SCALE);
   // The moving hand, cape and weapon do not change the touch target's size.
   const hit = MeshBuilder.CreateCapsule(
     hero + ' body target',
@@ -116,6 +119,7 @@ export function createRaidActor(
     motion = undefined;
     greatsword = undefined;
     hit.visibility = 1;
+    bar.position.y = defaultBarHeight;
     requested = outfit;
     loading = true;
     return loadModel(scene, hero, rig, outfit).then(
@@ -126,7 +130,10 @@ export function createRaidActor(
         }
         current = loaded;
         motion = loaded.motion;
-        bar.position.y = Math.max(defaultBarHeight, (loaded.bodyHeight ?? 0) + 0.26);
+        bar.position.y =
+          loaded.bodyHeight === undefined
+            ? defaultBarHeight * RAID_MODEL_SCALE
+            : Math.max(defaultBarHeight, loaded.bodyHeight + 0.26);
         loading = false;
         if (art.empoweredMesh)
           greatsword = rig.getChildMeshes().find((mesh) => mesh.name === art.empoweredMesh);
@@ -273,5 +280,13 @@ export function createRaidActor(
     const turn = facing - rig.rotation.y;
     rig.rotation.y += Math.atan2(Math.sin(turn), Math.cos(turn)) * Math.min(1, dt * 20);
   }
-  return { draw, hide, prepareModel, hit };
+  return {
+    draw,
+    hide,
+    prepareModel,
+    hit,
+    get barHeight() {
+      return bar.position.y;
+    },
+  };
 }

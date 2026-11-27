@@ -281,10 +281,15 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   const look = new Vector3();
   const impact = new Vector3();
   const projected = new Vector3();
+  function barHeight(slot: number) {
+    const runner = displayedMatch?.runners[slot];
+    return (runner && actors.get(runner.hero)?.barHeight) ?? 2.2 * RAID_RUNNER_SCALE;
+  }
   function projectHealthChange(change: RaidHealthChange) {
     impact.set(
       change.x,
-      change.elevation + (change.target === 'wagon' ? 3.75 : 2.35 * RAID_RUNNER_SCALE),
+      change.elevation +
+        (change.target === 'wagon' ? 3.75 : barHeight(change.target) + 0.15 * RAID_RUNNER_SCALE),
       change.z,
     );
     // Project into the normalized canvas viewport, independently of the drawing-buffer density.
@@ -351,7 +356,9 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
         p.x,
         quarry === 'wagon'
           ? 4.3
-          : 2.7 * RAID_RUNNER_SCALE + raidRunnerHeight(view.runners[quarry]!, subtick),
+          : barHeight(quarry) +
+              0.5 * RAID_RUNNER_SCALE +
+              raidRunnerHeight(view.runners[quarry]!, subtick),
         p.z,
       );
     }
@@ -371,7 +378,9 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
         ? boss
           ? 5.85
           : 4.4
-        : 2.4 * RAID_RUNNER_SCALE + raidRunnerHeight(view.runners[call.target]!, subtick);
+        : barHeight(call.target) +
+          0.2 * RAID_RUNNER_SCALE +
+          raidRunnerHeight(view.runners[call.target]!, subtick);
       callMarker.position.set(
         point.x,
         height + 0.12 * Math.sin((view.tick + subtick) / 4),
