@@ -1,12 +1,16 @@
 import Photon from 'photon-realtime';
 import {
-  isDraft,
+  isDraftPick,
+  nextDraftClock,
+  readDraftSnapshot,
+  timeoutPick,
   isRaidRoster,
-  applyPick,
+  applyTurnPick,
   draftMembers,
   draftMessage,
   draftTeammates,
   type DraftSeat,
+  type DraftClock,
   type RaidSeat,
 } from '../../game/raid/raid-draft.ts';
 import type { RaidCommandName } from '../../game/raid/raid-feature.ts';
@@ -16,7 +20,7 @@ const Client = Photon.LoadBalancing.LoadBalancingClient;
 // The npm distribution defaults to its Node ws adapter. Browsers use native WSS.
 Photon.PhotonPeer.setWebSocketImpl(WebSocket);
 // Replaying approved inputs requires every peer to use the same combat rules.
-const version = 'run-and-raid-8';
+const version = 'run-and-raid-9';
 const event = {
   start: 10,
   intent: 11,
@@ -25,12 +29,13 @@ const event = {
   draft: 14,
   syncDraft: 15,
   chat: 16,
+  prefer: 17,
 } as const;
 export type RoomError = 'connectError' | 'roomUnavailable' | 'roomEnded' | 'syncError';
 export type RaidEntry = 'host' | 'join' | 'quick';
 interface Callbacks {
   chat(actor: number, text: string): void;
-  lobby(seats: DraftSeat[], self: number, host: boolean): void;
+  lobby(seats: DraftSeat[], self: number, host: boolean, clock: DraftClock | null): void;
   start(seats: RaidSeat[], self: number, host: boolean): void;
   solo(hero: RaidHero): void;
   intent(sender: number, data: unknown): void;
@@ -46,6 +51,8 @@ export class RaidRoom {
   #host = 0;
   #roster: RaidSeat[] = [];
   #draft: DraftSeat[] = [];
+  #clock: DraftClock | null = null;
+  #draftTimer: ReturnType<typeof setTimeout> | undefined;
   #seq = 0;
   #timer: ReturnType<typeof setTimeout> | undefined;
   constructor(appId: string, code: string, entry: RaidEntry, callbacks: Callbacks) {
@@ -124,19 +131,19 @@ export class RaidRoom {
           return;
         }
         const master = client.myRoomMasterActorNr();
-        if (this.self === master && (code === event.pick || code === event.syncDraft)) {
-          if (code === event.pick) applyPick(this.#draft, sender, data);
-          this.#lobby();
+        if (
+          this.self === master &&
+          (code === event.pick || code === event.prefer || code === event.syncDraft)
+        ) {
+          this.#lobby(code, sender, data);
           return;
         }
-        if (
-          code === event.draft &&
-          sender === master &&
-          isDraft(data) &&
-          data.some((s) => s.actor === this.self)
-        ) {
-          this.#draft = data;
-          callbacks.lobby(data, this.self, false);
+        if (code === event.draft && sender === master && this.self !== master) {
+          const snapshot = readDraftSnapshot(data, performance.now());
+          if (!snapshot || !snapshot.seats.some((s) => s.actor === this.self)) return;
+          this.#draft = snapshot.seats;
+          this.#clock = snapshot.clock;
+          callbacks.lobby(this.#draft, this.self, false, this.#clock);
           return;
         }
       }
@@ -168,20 +175,50 @@ export class RaidRoom {
       this.#client.myRoomActorsArray().map((a) => a.actorNr),
     );
   }
-  #lobby() {
-    if (!this.#joined || this.#roster.length || this.#closed) return;
-    const master = this.self === this.#client.myRoomMasterActorNr();
+  #lobby(code?: number, sender?: number, data?: unknown) {
+    if (
+      !this.#joined ||
+      this.#roster.length ||
+      this.#closed ||
+      this.self !== this.#client.myRoomMasterActorNr()
+    )
+      return;
+    clearTimeout(this.#draftTimer);
     this.#draft = this.#members();
-    if (master) this.#client.raiseEvent(event.draft, JSON.stringify(this.#draft));
-    this.#callbacks.lobby(this.#draft, this.self, master);
+    const now = performance.now();
+    this.#clock = nextDraftClock(this.#draft, this.#clock, now);
+    if (this.#clock && now >= this.#clock.endsAt) {
+      if (this.#clock.actor === null) {
+        this.start();
+        return;
+      }
+      timeoutPick(this.#draft, this.#clock.actor);
+      this.#clock = nextDraftClock(this.#draft, this.#clock, now);
+    }
+    const seat = this.#draft.find((s) => s.actor === sender);
+    if (seat && code === event.prefer && !seat.hero && isDraftPick(data)) seat.preferred = data;
+    if (seat && code === event.pick) applyTurnPick(this.#draft, this.#clock, seat.actor, data);
+    this.#clock = nextDraftClock(this.#draft, this.#clock, now);
+    const remaining = this.#clock ? Math.max(0, this.#clock.endsAt - now) : null;
+    if (remaining !== null)
+      this.#draftTimer = setTimeout(() => this.#lobby(), Math.ceil(remaining));
+    this.#client.raiseEvent(
+      event.draft,
+      JSON.stringify({ seats: this.#draft, turn: this.#clock?.actor ?? null, remaining }),
+    );
+    this.#callbacks.lobby(this.#draft, this.self, true, this.#clock);
   }
-  pick(hero: RaidHero | null) {
+  #choose(code: number, hero: RaidHero | null) {
     if (!this.#joined || this.#roster.length || this.#closed) return;
     const master = this.#client.myRoomMasterActorNr();
-    if (this.self === master) {
-      applyPick(this.#draft, this.self, hero);
-      this.#lobby();
-    } else this.#client.raiseEvent(event.pick, JSON.stringify(hero), { targetActors: [master] });
+    if (this.self === master) this.#lobby(code, this.self, hero);
+    else this.#client.raiseEvent(code, JSON.stringify(hero), { targetActors: [master] });
+  }
+  pick(hero: RaidHero | null) {
+    this.#choose(event.pick, hero);
+  }
+  prefer(hero: RaidHero) {
+    this.#choose(event.prefer, hero);
   }
   chat(value: string) {
     const text = draftMessage(value);
@@ -213,6 +250,7 @@ export class RaidRoom {
     this.#begin(seats, this.self);
   }
   #begin(roster: RaidSeat[], host: number) {
+    clearTimeout(this.#draftTimer);
     this.#roster = roster;
     this.#host = host;
     this.#callbacks.start(roster, this.self, this.host);
@@ -237,6 +275,7 @@ export class RaidRoom {
     if (this.#closed) return;
     this.#closed = true;
     clearTimeout(this.#timer);
+    clearTimeout(this.#draftTimer);
     this.#client.disconnect();
   }
 }

@@ -6,7 +6,12 @@ import { characterArt } from '../content/raid/gallery.ts';
 import { officialGuides } from '../content/raid/official-guides.ts';
 import { battleIconIndex, skillLabel } from './raid-skill-icon.ts';
 import { createDraftChat } from './raid-draft-chat.ts';
-import { isRaidRoster, type DraftSeat } from '../game/raid/raid-draft.ts';
+import {
+  isRaidRoster,
+  pickNumber,
+  type DraftClock,
+  type DraftSeat,
+} from '../game/raid/raid-draft.ts';
 import { HEROES, type RaidHero, type Skill } from '../game/raid/raid-match.ts';
 import { ORIGINAL_HERO_IDS } from '../game/raid/heroes/hero-id.ts';
 import {
@@ -59,6 +64,7 @@ export function createRaidLobby(
     chat(text: string): void;
     leave(): void;
     pick(hero: RaidHero | null): void;
+    prefer(hero: RaidHero): void;
     selected(): RaidHero;
   },
 ) {
@@ -92,10 +98,11 @@ export function createRaidLobby(
   teams.className = 'team-seats';
   const versus = document.createElement('div');
   versus.className = 'team-versus';
-  versus.innerHTML = '<div><strong><b></b> <b></b></strong><span></span><output></output></div>';
+  versus.innerHTML = '<div><strong><b></b> <b></b></strong><span></span><time></time></div>';
   versus.querySelector('b:first-child')!.textContent = uiText('blueTeam');
   versus.querySelector('b:last-child')!.textContent = uiText('redTeam');
-  versus.querySelector('span')!.textContent = uiText('lockedPicks');
+  const clockLabel = versus.querySelector('span')!;
+  const roomTime = versus.querySelector('time')!;
   const picker = document.createElement('dialog');
   picker.className = 'runner-picker';
   picker.setAttribute('aria-label', uiText('chooseCharacter'));
@@ -106,6 +113,11 @@ export function createRaidLobby(
   draft.className = 'raid-draft';
   const title = document.createElement('h3');
   title.textContent = t('pickHeading');
+  const pickerClock = document.createElement('span');
+  pickerClock.className = 'picker-clock';
+  const pickerTime = document.createElement('time');
+  pickerClock.append(uiText('timeLeft') + ' ', pickerTime);
+  title.append(pickerClock);
   const cards = document.createElement('div');
   cards.className = 'raid-pick-grid';
   const profile = document.createElement('figure');
@@ -147,6 +159,18 @@ export function createRaidLobby(
   let seats: DraftSeat[] = [];
   let self = 0;
   let soloRoom = false;
+  let clock: DraftClock | null = null;
+  let clockTimer: number | undefined;
+  function paintClock() {
+    window.clearTimeout(clockTimer);
+    pickerClock.hidden = roomTime.hidden = !clock;
+    clockLabel.textContent = uiText(clock ? 'timeLeft' : 'noTimeLimit');
+    if (!clock) return;
+    const ms = Math.max(0, clock.endsAt - performance.now());
+    const seconds = Math.ceil(ms / 1000);
+    roomTime.textContent = pickerTime.textContent = String(seconds);
+    if (ms > 0) clockTimer = window.setTimeout(paintClock, Math.ceil(ms - (seconds - 1) * 1000));
+  }
   const choices = [...ORIGINAL_HERO_IDS, ...pendingProfiles].map((hero) => {
     const card = document.createElement('button');
     card.type = 'button';
@@ -164,6 +188,7 @@ export function createRaidLobby(
     card.append(image, taken);
     card.onclick = () => {
       preview = hero;
+      if (!pendingProfile(hero)) actions.prefer(hero);
       paint();
     };
     cards.append(card);
@@ -171,6 +196,16 @@ export function createRaidLobby(
   });
   function paint() {
     const mine = seats.find((s) => s.actor === self)?.hero;
+    const active = clock?.actor;
+    const n = pickNumber(seats.findIndex((seat) => seat.actor === active));
+    notice.classList.toggle('own-turn', active === self);
+    notice.textContent = n
+      ? uiText(active === self ? 'yourDraftTurn' : 'draftTurn', { n })
+      : clock
+        ? uiText('matchStarting')
+        : soloRoom && mine
+          ? uiText('soloReady')
+          : t(soloRoom ? 'pickSolo' : 'pickPlayers');
     if (mine) preview = mine;
     for (const { hero, card, taken } of choices) {
       const occupied = seats.some((s) => s.hero === hero && s.actor !== self);
@@ -228,25 +263,14 @@ export function createRaidLobby(
       detail.textContent = t('pendingProfileHelp');
       lock.textContent = t('notImplemented');
       lock.disabled = true;
-      notice.textContent = t('pendingProfileHelp');
       return;
     }
     range.textContent = t('reach', { range: HEROES[preview].reach });
     detail.textContent = t(`${preview}Info`);
-    lock.textContent = t(mine ? 'unlockPick' : 'lockPick');
+    lock.textContent = uiText(mine ? 'cancelReady' : 'readyUp');
     if (!mine) lock.textContent += ' · ' + t(preview);
-    lock.disabled = !mine && seats.some((s) => s.hero === preview);
-    notice.textContent = t(
-      lock.disabled
-        ? 'pickConflict'
-        : seats.length < 2
-          ? soloRoom
-            ? 'pickSolo'
-            : 'pickPlayers'
-          : isRaidRoster(seats)
-            ? 'pickReady'
-            : 'pickWait',
-    );
+    lock.disabled =
+      !mine && ((!!clock && active !== self) || seats.some((s) => s.hero === preview));
   }
   lock.onclick = () => {
     if (!pendingProfile(preview))
@@ -329,6 +353,11 @@ export function createRaidLobby(
     teams.replaceChildren();
     draft.hidden = versus.hidden = stage !== 'draft';
     if (stage !== 'draft') {
+      window.clearTimeout(clockTimer);
+      clock = null;
+      seats = [];
+      self = 0;
+      preview = actions.selected();
       chat.reset();
       picker.close();
     }
@@ -351,17 +380,21 @@ export function createRaidLobby(
       menu('entry');
     },
     close() {
+      window.clearTimeout(clockTimer);
       toolbarChat.disabled = true;
       dialog.close();
       chat.reset();
       picker.close();
     },
     closePicker() {
+      window.clearTimeout(clockTimer);
       chat.dialog.close();
       if (picker.open) picker.close();
     },
     chat(actor: number, text: string) {
-      chat.append(actor, text, actor === self);
+      const n = pickNumber(seats.findIndex((seat) => seat.actor === actor));
+      const name = n ? uiText('pickSeat', { n }) : uiText('chatPlayer', { actor });
+      chat.append(actor === self ? t('you') + ' · ' + name : name, text, actor === self);
     },
     pending() {
       preview = actions.selected();
@@ -371,29 +404,41 @@ export function createRaidLobby(
       show('entry');
       message.textContent = reason ? t(reason) : '';
     },
-    room(roomCode: string, members: DraftSeat[], actor: number, isHost: boolean, offline = false) {
+    room(
+      roomCode: string,
+      members: DraftSeat[],
+      actor: number,
+      isHost: boolean,
+      nextClock: DraftClock | null,
+      offline = false,
+    ) {
       const ownSeat = seats.findIndex((seat) => seat.actor === self);
       const nextSeat = members.findIndex((seat) => seat.actor === actor);
       if (ownSeat >= 0 && ownSeat % 2 !== nextSeat % 2) chat.reset();
       seats = members;
       self = actor;
+      clock = nextClock;
       soloRoom = (!!roomCode || offline) && isHost && seats.length === 1;
       outfitButton.hidden = !soloRoom;
       chat.mode(offline);
       show('draft');
       paint();
+      paintClock();
       status.textContent = offline
         ? uiText('offlinePractice')
         : roomCode
           ? t('roomStatus', { code: roomCode, count: seats.length })
           : t('quickRoomStatus', { count: seats.length });
-      versus.querySelector('output')!.textContent =
-        seats.filter((s) => s.hero).length + ' / ' + seats.length;
       for (let i = 0; i < 4; i++) {
         const item = document.createElement('li');
         const seat = seats[i];
         item.className = i % 2 ? 'red-seat' : 'blue-seat';
         if (seat?.actor === self) item.classList.add('own-seat');
+        const current = !!seat && (clock ? clock.actor === seat.actor : !seat.hero);
+        if (current) item.setAttribute('aria-current', 'step');
+        const pick = document.createElement('small');
+        pick.className = 'seat-pick';
+        pick.textContent = uiText('pickSeat', { n: pickNumber(i) });
         const name = document.createElement('span');
         name.textContent =
           uiText(i % 2 ? 'redTeam' : 'blueTeam') +
@@ -401,14 +446,21 @@ export function createRaidLobby(
           (Math.floor(i / 2) + 1) +
           (seat?.actor === self ? ' · ' + t('you') : '');
         const runner = document.createElement('strong');
-        runner.textContent = seat?.hero ? t(seat.hero) : seat ? t('picking') : t('bot');
+        runner.textContent = seat?.hero
+          ? t(seat.hero)
+          : current
+            ? t('picking')
+            : seat
+              ? uiText('seatWaiting')
+              : t('bot');
         if (seat?.hero) {
+          runner.className = 'locked-runner';
           const img = document.createElement('img');
           img.alt = '';
           setDraftArt(img, seat.hero, true);
           item.append(img);
         }
-        item.append(name, runner);
+        item.append(pick, name, runner);
         if (seat?.hero) {
           const ready = document.createElement('b');
           ready.textContent = uiText('seatReady');
@@ -416,10 +468,10 @@ export function createRaidLobby(
         }
         teams.append(item);
       }
-      choose.hidden = !!seats.find((s) => s.actor === actor)?.hero;
       start.textContent = t(soloRoom ? 'startSoloRoom' : 'startRound');
       start.disabled = soloRoom ? !seats[0]?.hero : !isRaidRoster(seats);
       start.hidden = !isHost || start.disabled;
+      choose.hidden = !start.hidden;
     },
   };
 }

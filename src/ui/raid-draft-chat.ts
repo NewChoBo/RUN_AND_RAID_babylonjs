@@ -1,5 +1,4 @@
 import { uiText } from '../content/locales/ui.ts';
-import { raidText } from '../content/locales/run-and-raid.ts';
 import { draftMessage, draftMessageLimit } from '../game/raid/raid-draft.ts';
 
 export function createDraftChat(send: (text: string) => void) {
@@ -38,16 +37,27 @@ export function createDraftChat(send: (text: string) => void) {
   const expand = document.createElement('button');
   expand.type = 'button';
   expand.className = 'draft-chat-expand';
-  expand.setAttribute('aria-label', uiText('teamChat'));
+  expand.textContent = uiText('viewChat');
   expand.setAttribute('aria-haspopup', 'dialog');
   messages.append(expand);
   const quick = document.createElement('div');
   quick.className = 'draft-quick-chat';
   quick.setAttribute('role', 'group');
   quick.setAttribute('aria-label', uiText('quickChat'));
-  for (const key of ['chatHello', 'chatGoodLuck', 'chatGoodPick', 'chatSupport'] as const) {
+  const quickMessages = [
+    'chatFront',
+    'chatSupport',
+    'chatHello',
+    'chatGoodLuck',
+    'chatGoodPick',
+    'chatOtherPick',
+  ] as const;
+  const phrases = [
+    ...quickMessages.map((key) => uiText(key)),
+    ...[1, 2, 3, 4].map((n) => uiText('chatFocusPick', { n })),
+  ];
+  for (const text of phrases) {
     const button = document.createElement('button');
-    const text = uiText(key);
     button.type = 'button';
     button.textContent = text;
     button.onclick = () => send(text);
@@ -89,11 +99,11 @@ export function createDraftChat(send: (text: string) => void) {
     mode(offline: boolean) {
       heading.textContent = uiText(offline ? 'practiceChat' : 'teamChat');
     },
-    append(actor: number, text: string, own: boolean) {
+    append(sender: string, text: string, own: boolean) {
       const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 4;
       const line = document.createElement('p');
       const name = document.createElement('b');
-      name.textContent = own ? raidText('you') : uiText('chatPlayer', { actor });
+      name.textContent = sender;
       line.append(name, ' · ', text);
       log.append(line);
       if (log.childElementCount > 50) log.firstElementChild?.remove();

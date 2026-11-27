@@ -6,6 +6,13 @@ import { RaidRound } from '../../src/game/raid/raid-round.ts';
 import {
   isRaidRoster,
   applyPick,
+  applyTurnPick,
+  nextDraftClock,
+  pickNumber,
+  pickTimeMs,
+  readDraftSnapshot,
+  readyTimeMs,
+  timeoutPick,
   draftMembers,
   draftMessage,
   draftMessageLimit,
@@ -192,6 +199,60 @@ test('the first lock wins, unlocking and leaving free a hero, and a join needs a
     { actor: 7, hero: null },
   ]);
   assert.ok(applyPick(next, 7, 'drizz'));
+});
+test('online turns follow the numbered seats; other players can preview but cannot ready early', () => {
+  const seats = draftMembers([], [4, 7, 19, 58]);
+  assert.deepEqual(
+    seats.map((_, i) => pickNumber(i)),
+    [1, 2, 4, 3],
+  );
+  let clock = null;
+  for (const [actor, hero] of [
+    [4, 'hammer'],
+    [7, 'longshot'],
+    [58, 'kali'],
+    [19, 'drizz'],
+  ]) {
+    clock = nextDraftClock(seats, clock, 100);
+    assert.deepEqual(clock, { actor, endsAt: 100 + pickTimeMs });
+    assert.equal(nextDraftClock(seats, clock, 1000), clock);
+    assert.equal(applyTurnPick(seats, clock, actor === 19 ? 4 : 19, hero), false);
+    assert.ok(applyTurnPick(seats, clock, actor, hero));
+  }
+  clock = nextDraftClock(seats, clock, 2000);
+  assert.deepEqual(clock, { actor: null, endsAt: 2000 + readyTimeMs });
+  assert.equal(nextDraftClock(seats, clock, 2500), clock);
+  assert.ok(applyTurnPick(seats, clock, 7, null));
+  assert.equal(nextDraftClock(seats, clock, 3000).actor, 7);
+});
+test('timeouts use the preview if free and preserve the active turn across joins and host changes', () => {
+  let seats = draftMembers([], [5, 8, 15]);
+  applyPick(seats, 5, 'hammer');
+  seats[1].preferred = 'freesia';
+  timeoutPick(seats, 8);
+  assert.equal(seats[1].hero, 'freesia');
+  const active = nextDraftClock(seats, null, 1000);
+  seats = draftMembers(seats, [5, 8, 15, 23]);
+  assert.equal(nextDraftClock(seats, active, 4000), active);
+  const packet = { seats, turn: 15, remaining: active.endsAt - 4000 };
+  const migrated = readDraftSnapshot(packet, 10);
+  seats = draftMembers(migrated.seats, [8, 15, 23]);
+  assert.deepEqual(nextDraftClock(seats, migrated.clock, 20), {
+    actor: 15,
+    endsAt: 10 + pickTimeMs - 3000,
+  });
+  seats[1].preferred = 'freesia';
+  timeoutPick(seats, 15);
+  assert.equal(seats[1].hero, 'hammer');
+  assert.equal(nextDraftClock(seats, active, 5000).actor, 23);
+  assert.equal(nextDraftClock(seats.slice(0, 1), active, 6000), null);
+  for (const patch of [
+    { turn: 5 },
+    { turn: null },
+    { remaining: -1 },
+    { remaining: pickTimeMs + 1 },
+  ])
+    assert.equal(readDraftSnapshot({ ...packet, ...patch }, 0), null);
 });
 test('each player can fill their own input budget and submit again on the next tick', () => {
   const round = new RaidRound(players);

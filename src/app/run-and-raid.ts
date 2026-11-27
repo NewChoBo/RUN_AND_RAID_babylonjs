@@ -319,7 +319,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     { ...RAID_SKILL_SIZE, value: preferences.raidSkillSize },
   );
   function drawOffline() {
-    lobby.room('', [{ actor: 1, hero: offlinePick }], 1, true, true);
+    lobby.room('', [{ actor: 1, hero: offlinePick }], 1, true, null, true);
   }
   const lobby = createRaidLobby(
     document.querySelector<HTMLElement>('#menu-actions')!,
@@ -344,6 +344,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
         } else room?.pick(hero);
       },
       selected: () => chosenHero,
+      prefer: (hero) => room?.prefer(hero),
       chat(text) {
         if (offline) lobby.chat(1, text);
         else room?.chat(text);
@@ -384,9 +385,9 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       if (token !== attempt) return;
       room = new RaidRoom(id, code, entry, {
         chat: (actor, text) => lobby.chat(actor, text),
-        lobby(seats, self, host) {
+        lobby(seats, self, host, clock) {
           if (seats.length > 1) hud.closeOutfits();
-          lobby.room(code, seats, self, host);
+          lobby.room(code, seats, self, host, clock);
         },
         solo(hero) {
           room = undefined;
