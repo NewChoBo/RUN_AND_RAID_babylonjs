@@ -1,65 +1,28 @@
-﻿import './app/home.ts';
-import { prepareRaid } from './app/run-and-raid.ts';
-import { installLandscapeRecovery } from './platform/browser/landscape.ts';
-import { installViewportLimit } from './ui/viewport-limit.ts';
+import { landscapeFrame, mountLandscapeFrame } from './platform/browser/game-navigation.ts';
+import { installLandscapeRecovery, requestLandscape } from './platform/browser/landscape.ts';
 
-const lobby = document.querySelector<HTMLElement>('.lobby')!;
-const overlay = document.querySelector<HTMLElement>('#overlay')!;
-const library = document.querySelector<HTMLElement>('#library')!;
-const home = document.querySelector<HTMLButtonElement>('[data-home]')!;
-const shop = document.querySelector<HTMLButtonElement>('[data-shop]')!;
-const gallery = document.querySelector<HTMLElement>('#shop-gallery')!;
-const play = document.querySelector<HTMLAnchorElement>('.play')!;
-let exitRaid: (() => void) | undefined;
-
-function route() {
-  const screen =
-    location.hash === '#/ready'
-      ? 'ready'
-      : location.hash === '#/assets'
-        ? 'assets'
-        : location.hash === '#/shop'
-          ? 'shop'
-          : 'home';
-  if (lobby.dataset.screen === screen) return;
-  if (lobby.dataset.screen === 'ready') exitRaid?.();
-  lobby.dataset.screen = screen;
-  document.body.classList.toggle('raid-mode', screen === 'ready');
-  overlay.hidden = screen !== 'ready';
-  library.hidden = screen !== 'assets';
-  gallery.hidden = screen !== 'shop';
-  document.title =
-    '런앤레이드 · ' +
-    { home: '로비', ready: '경기 대기실', assets: '원작 에셋', shop: '상점' }[screen];
-  shop.classList.toggle('current', screen === 'shop');
-  if (screen === 'shop') shop.setAttribute('aria-current', 'page');
-  else shop.removeAttribute('aria-current');
-  home.classList.toggle('current', screen === 'home');
-  if (screen === 'home') home.setAttribute('aria-current', 'page');
-  else home.removeAttribute('aria-current');
-  play.textContent = screen === 'ready' ? '대기실' : '게임시작';
-  if (screen === 'ready') {
-    exitRaid ??= prepareRaid((error) => {
-      console.error(error);
-      document.querySelector<HTMLElement>('#startup-progress')!.hidden = true;
-      const message = document.querySelector<HTMLElement>('#startup-error')!;
-      message.textContent = '경기장을 열지 못했습니다. 다시 시도해 주세요.';
-      message.hidden = false;
+const frame = landscapeFrame();
+const splash = document.querySelector<HTMLElement>('#launch-splash')!;
+if (
+  !frame &&
+  matchMedia('(any-pointer: coarse), (max-width: 600px) and (orientation: portrait)').matches
+) {
+  installLandscapeRecovery();
+  void requestLandscape(false);
+  mountLandscapeFrame(requestLandscape, splash);
+} else {
+  void import('./routes.ts')
+    .then(() => {
+      splash.remove();
+      frame?.gameReady();
+    })
+    .catch(() => {
+      frame?.gameReady();
+      splash.hidden = false;
+      splash.querySelector('p')!.textContent = '게임 화면을 불러오지 못했습니다.';
+      const retry = document.createElement('button');
+      retry.textContent = '다시 불러오기';
+      retry.onclick = () => location.reload();
+      splash.append(retry);
     });
-    document.querySelector<HTMLElement>('#title-name')!.focus({ preventScroll: true });
-  } else if (screen === 'shop') {
-    void import('./app/shop.ts');
-  } else if (screen === 'assets') {
-    void import('./app/asset-library.ts');
-  }
 }
-home.addEventListener('click', () => {
-  location.hash = '/home';
-});
-shop.onclick = () => {
-  location.hash = '/shop';
-};
-window.addEventListener('hashchange', route);
-route();
-installLandscapeRecovery();
-installViewportLimit(document.querySelector<HTMLDialogElement>('#viewport-limit')!);

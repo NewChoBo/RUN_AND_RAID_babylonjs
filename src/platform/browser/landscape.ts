@@ -37,8 +37,9 @@ async function acquire(fromGesture: boolean) {
 export function requestLandscape(fromGesture: boolean): Promise<boolean> {
   const frame = landscapeFrame();
   if (frame) return frame.requestGameLandscape(fromGesture);
-  if (!canRequestLandscape() || document.hidden) return Promise.resolve(false);
-  if (fromGesture) wanted = true;
+  if (!canRequestLandscape()) return Promise.resolve(false);
+  wanted = true;
+  if (document.hidden) return Promise.resolve(false);
   if (locked === 'window' || (locked === 'fullscreen' && document.fullscreenElement))
     return Promise.resolve(true);
   if (pending && (!fromGesture || pending.gesture)) return pending.promise;

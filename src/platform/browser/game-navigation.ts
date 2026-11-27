@@ -1,7 +1,8 @@
-// Mobile fullscreen and the orientation lock belong to the outer document. Each game
-// still loads in a fresh document so its scene, input and audio have their usual lifetime.
+// The outer document owns fullscreen. The mobile SPA keeps one landscape viewport
+// so canvas input, modal dialogs and layout all use the same coordinate system.
 type LandscapeFrame = HTMLIFrameElement & {
   requestGameLandscape(fromGesture: boolean): Promise<boolean>;
+  gameReady(): void;
 };
 
 export function landscapeFrame(): LandscapeFrame | null {
@@ -9,14 +10,31 @@ export function landscapeFrame(): LandscapeFrame | null {
   return frame && 'requestGameLandscape' in frame ? (frame as LandscapeFrame) : null;
 }
 
-export function mountLandscapeFrame(request: LandscapeFrame['requestGameLandscape']) {
+export function mountLandscapeFrame(
+  request: LandscapeFrame['requestGameLandscape'],
+  splash: HTMLElement,
+) {
+  const host = document.createElement('div');
+  host.className = 'landscape-host';
   const frame = document.createElement('iframe') as LandscapeFrame;
-  frame.name = 'archive-game';
+  frame.name = 'run-and-raid';
   frame.className = 'landscape-game';
   frame.title = document.title;
   frame.requestGameLandscape = request;
+  frame.gameReady = () => {
+    splash.remove();
+    frame.inert = false;
+  };
+  frame.inert = true;
+  frame.allowFullscreen = true;
   frame.src = location.href;
-  document.body.replaceChildren(frame);
+  host.append(frame, splash);
+  splash.hidden = false;
+  document.body.replaceChildren(host);
+  window.addEventListener('hashchange', () => {
+    const child = frame.contentWindow;
+    if (child && child.location.hash !== location.hash) child.location.replace(location.href);
+  });
   // Existing diagnostics in the tab console should follow the active game after navigation.
   for (const name of [
     '__ROOM_DEMO__',
@@ -33,7 +51,9 @@ export function mountLandscapeFrame(request: LandscapeFrame['requestGameLandscap
 export function syncGameUrl() {
   // Frame navigations already participate in the tab's back/forward history.
   // Mirror the active URL for sharing and reload without inserting a second entry.
-  if (landscapeFrame() && window.parent.location.href !== location.href)
+  if (!landscapeFrame()) return;
+  window.parent.document.title = document.title;
+  if (window.parent.location.href !== location.href)
     window.parent.history.replaceState(window.parent.history.state, '', location.href);
 }
 
