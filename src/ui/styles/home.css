@@ -119,32 +119,51 @@ a:focus-visible {
   min-width: 0;
 }
 .wallet {
-  padding: 0.52cqw;
+  padding: clamp(2px, 0.45cqw, 4px);
+  gap: 2px;
   background: #d3c5a5;
-  border-radius: 0.65cqw;
+  border-radius: 6px;
 }
 .wallet button {
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
-  gap: 0.6cqw;
-  padding-right: 0.6cqw;
+  display: grid;
+  grid-template-columns: 1em minmax(0, 1fr) 1em;
+  gap: 0.25em;
+  padding-inline: 0.35em;
+  border-radius: 3px;
   background: linear-gradient(#544c3d, #302a22);
   color: #fff;
 }
-.wallet i {
-  position: absolute;
-  left: -0.35cqw;
-  color: #fac338;
-  font: 900 calc(3 * var(--unit))/1 Georgia;
-  text-shadow: 1px 1px #9a5807;
+.wallet-icon {
+  width: 1em;
+  height: 1em;
 }
-.wallet button + button i {
-  color: #26aff5;
+.gold-coin {
+  border: 1px solid #e6a42f;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fff4a5, #ffcd4f 50%, #d9911e);
+  box-shadow:
+    inset 0 0 0 1px #ffe188,
+    inset 0 0 0 2px #ce8b21;
+}
+.blue-die {
+  border: 1px solid #69c9ff;
+  border-radius: 22%;
+  background:
+    radial-gradient(circle at 28% 28%, #effaff 10%, transparent 13%),
+    radial-gradient(circle at center, #effaff 10%, transparent 13%),
+    radial-gradient(circle at 72% 72%, #effaff 10%, transparent 13%),
+    linear-gradient(145deg, #68caff, #2782cc 60%, #20549c);
+}
+.wallet-balance {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 .wallet b {
-  color: #fff9e6;
+  border-radius: 2px;
+  color: #392e21;
+  background: #e7d8bd;
+  text-align: center;
+  line-height: 1;
 }
 .lobby-toolbar .alerts {
   background: linear-gradient(#71654c, #56472c);
@@ -415,9 +434,6 @@ html[data-mobile] body > #launch-splash:not(.launch-error) {
   }
   .lobby-toolbar {
     padding: 4px 0;
-  }
-  .wallet {
-    padding: 4px;
   }
   .board {
     grid-template-columns: minmax(280px, min(33%, 480px)) minmax(0, 1fr);

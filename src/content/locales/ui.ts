@@ -14,7 +14,7 @@ const english = {
   play: 'Play',
   currency: 'Currency',
   gold: '23,873 gold, top up',
-  gems: '0 gems',
+  blueDice: '0 Blue Dice',
   alerts: 'Alerts',
   friends: 'Friends',
   settings: 'Settings',

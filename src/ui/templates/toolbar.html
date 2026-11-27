@@ -15,10 +15,16 @@
   </nav>
   <a data-i18n="play" class="play" href="#/ready" aria-haspopup="dialog">게임시작</a>
   <div class="toolbar-utilities">
-    <div data-i18n-aria="currency" class="wallet" aria-label="재화">
-      <button data-i18n-aria="gold" data-wip aria-label="골드 23873, 충전">
-        <i>●</i>23873 <b>+</b></button
-      ><button data-i18n-aria="gems" data-wip aria-label="보석 0"><i>◆</i>0</button>
+    <div data-i18n-aria="currency" class="wallet" role="group" aria-label="재화">
+      <button data-i18n-aria="gold" data-wip aria-label="골드 23,873, 충전">
+        <span class="wallet-icon gold-coin" aria-hidden="true"></span>
+        <span class="wallet-balance">23,873</span>
+        <b aria-hidden="true">+</b>
+      </button>
+      <button data-i18n-aria="blueDice" data-wip aria-label="블루다이스 0">
+        <span class="wallet-icon blue-die" aria-hidden="true"></span>
+        <span class="wallet-balance">0</span>
+      </button>
     </div>
     <button data-i18n="alerts" class="alerts" data-wip>
       <svg><use href="#chat" /></svg>알림</button
