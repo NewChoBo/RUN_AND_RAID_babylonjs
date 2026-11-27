@@ -12,12 +12,17 @@ import {
 } from '../content/raid/draft-profiles.ts';
 import type { RaidEntry, RoomError } from '../platform/photon/raid-room.ts';
 
-function setDraftArt(image: HTMLImageElement, hero: DraftProfile) {
+function setDraftArt(image: HTMLImageElement, hero: DraftProfile, thumbnail = false) {
   if (image.dataset.hero === hero) return;
   image.dataset.hero = hero;
   image.referrerPolicy = 'no-referrer';
   const fallback = './assets/raid/portraits/' + hero + '.webp';
   const source = characterArt(hero);
+  image.style.background =
+    source === fallback ? '' : `url("${fallback}") center / contain no-repeat`;
+  image.onload = () => {
+    image.style.background = '';
+  };
   image.onerror =
     source === fallback
       ? null
@@ -25,7 +30,11 @@ function setDraftArt(image: HTMLImageElement, hero: DraftProfile) {
           image.onerror = null;
           image.src = fallback;
         };
-  image.src = source;
+  if (thumbnail && source.startsWith('https://cafeptthumb-phinf.pstatic.net/')) {
+    const url = new URL(source);
+    url.searchParams.set('type', 'w220');
+    image.src = url.href;
+  } else image.src = source;
 }
 
 export function createRaidLobby(
@@ -112,7 +121,7 @@ export function createRaidLobby(
     image.alt = '';
     image.width = image.height = 80;
     image.loading = 'lazy';
-    setDraftArt(image, hero);
+    setDraftArt(image, hero, true);
     const name = document.createElement('span');
     name.textContent = t(hero);
     const taken = document.createElement('small');
@@ -307,7 +316,7 @@ export function createRaidLobby(
         if (seat?.hero) {
           const img = document.createElement('img');
           img.alt = '';
-          setDraftArt(img, seat.hero);
+          setDraftArt(img, seat.hero, true);
           item.append(img);
         }
         item.append(name, runner);
