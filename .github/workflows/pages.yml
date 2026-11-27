@@ -31,8 +31,9 @@ jobs:
         working-directory: dist
         run: |
           sha256sum --check ../.github/pages-assets.sha256
-          diff -u <(cut -c67- ../.github/pages-assets.sha256 | sort) <(find . -type f -printf '%P\n' | grep -Ev '^(index|library)\.html$|^assets/[^/]+-[[:alnum:]_-]+\.(js|css)$' | sort)
+          diff -u <(cut -c67- ../.github/pages-assets.sha256 | sort) <(find . -type f -printf '%P\n' | grep -Ev '^(index|game|library)\.html$|^assets/[^/]+-[[:alnum:]_-]+\.(js|css)$' | sort)
           grep -Eq 'src="\./assets/[^"]+\.js"' index.html
+          grep -Eq 'src="\./assets/[^"]+\.js"' game.html
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist

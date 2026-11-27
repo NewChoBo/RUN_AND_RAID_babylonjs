@@ -1,35 +1,48 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <meta name="theme-color" content="#151d26" />
-    <title>런앤레이드</title>
-    <link rel="stylesheet" href="./src/ui/styles/shell.css" />
+    <meta name="theme-color" content="#191b20" />
+    <title>런앤레이드 · 로비</title>
+    <link rel="icon" href="./favicon.ico" />
+    <link rel="stylesheet" href="./src/ui/styles/home.css" />
   </head>
   <body>
-    <canvas id="game" tabindex="0" inert aria-label="런앤레이드 경기장"></canvas>
-    <section id="overlay" class="overlay" data-screen="title" aria-labelledby="title-name">
-      <div class="menu-folio">
-        <header class="title-copy">
-          <h1 id="title-name">런앤레이드</h1>
-          <a href="./library.html">원작 에셋 열기</a>
-        </header>
-        <div id="menu-actions" class="menu-actions">
-          <button type="button" id="start">봇과 연습</button>
+    <main class="lobby">
+      <header>
+        <div class="brand"><img src="./favicon.ico" alt="" width="30" height="30" />런앤레이드</div>
+        <nav aria-label="로비 메뉴">
+          <a class="active" href="#lobby" data-page="lobby"><b aria-hidden="true">⌂</b>로비</a>
+          <a href="#heroes" data-page="heroes"><b aria-hidden="true">⚔</b>주자</a>
+          <a href="#controls" data-page="controls"><b aria-hidden="true">✥</b>조작법</a>
+        </nav>
+        <a class="play" href="./game.html">게임시작 <span aria-hidden="true">▶</span></a>
+      </header>
+      <section class="banner" aria-labelledby="banner-heading">
+        <img class="fighter left" src="./assets/raid/portraits/hammer.webp" alt="" />
+        <div class="banner-copy">
+          <p>RUN &amp; RAID</p>
+          <h1 id="banner-heading">런앤레이드</h1>
+          <span>두 팀, 하나의 마차</span>
         </div>
-        <p id="startup-progress" role="status" hidden>경기장 불러오는 중…</p>
-        <p id="startup-error" role="alert" hidden></p>
-      </div>
-    </section>
-    <dialog id="viewport-limit" aria-labelledby="viewport-heading">
-      <h2 id="viewport-heading" tabindex="-1">화면 크기를 확인하세요</h2>
-      <p id="viewport-instructions">가로 화면으로 돌려 주세요.</p>
-      <p id="viewport-minimum"></p>
-      <button id="viewport-expand" type="button" hidden>전체 화면</button
-      ><button id="viewport-rotate" type="button" hidden>화면 회전</button>
-      <p id="viewport-orientation-status" role="status"></p>
-    </dialog>
-    <script type="module" src="./src/bootstrap.ts"></script>
+        <img class="fighter right" src="./assets/raid/portraits/kaiken.webp" alt="" />
+      </section>
+      <section class="board" aria-labelledby="list-title">
+        <div class="list">
+          <h2 id="list-title">새소식</h2>
+          <div id="items"></div>
+        </div>
+        <article aria-live="polite">
+          <h2>내용</h2>
+          <div class="article-body">
+            <h3 id="subject"></h3>
+            <p id="body"></p>
+            <p id="extra"></p>
+          </div>
+        </article>
+      </section>
+    </main>
+    <script type="module" src="./src/app/home.ts"></script>
   </body>
 </html>
