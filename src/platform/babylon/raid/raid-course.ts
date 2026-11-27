@@ -385,17 +385,18 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
       lock.scaling.setAll(player.target === 'wagon' ? 1 : RAID_RUNNER_SCALE);
     }
     const call = view.calls[localTeam];
-    callMarker.setEnabled(!!call && !view.result);
-    if (call) {
-      const onWagon = call.target === 'wagon';
-      const point = onWagon ? WAGON : positions[call.target]!;
+    const mark = call && 'target' in call ? call : null;
+    callMarker.setEnabled(!!mark && !view.result);
+    if (mark) {
+      const onWagon = mark.target === 'wagon';
+      const point = onWagon ? WAGON : positions[mark.target]!;
       const height = onWagon
         ? boss
           ? 5.85
           : 4.4
-        : barHeight(call.target) +
+        : barHeight(mark.target) +
           0.2 * RAID_RUNNER_SCALE +
-          raidRunnerHeight(view.runners[call.target]!, subtick);
+          raidRunnerHeight(view.runners[mark.target]!, subtick);
       callMarker.position.set(
         point.x,
         height + 0.12 * Math.sin((view.tick + subtick) / 4),

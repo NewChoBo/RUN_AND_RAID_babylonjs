@@ -40,6 +40,7 @@ import {
   raidRunnerHeight,
   raidRunnerPositionAfter,
 } from './runner-motion.ts';
+import { enemySlots, type RaidPing } from './raid-view.ts';
 import type {
   RaidAction,
   RaidAim,
@@ -374,10 +375,18 @@ export class RaidMatch implements RaidView {
     r.target = target;
     return true;
   }
-  callTarget(slot: number, target: RaidTarget) {
+  callTarget(slot: number, intent: RaidTarget | RaidPing) {
     const r = this.#active(slot);
-    if (!r || this.#calls[r.team] || !this.#visibleTarget(r, target)) return false;
-    this.#calls[r.team] = { from: slot, target, until: this.tick + 4 * RAID_HZ };
+    if (!r || this.#calls[r.team]) return false;
+    const until = this.tick + 4 * RAID_HZ;
+    if (intent === 'advance' || intent === 'retreat') {
+      this.#calls[r.team] = { from: slot, movement: intent, until };
+    } else {
+      const portrait = intent === 'enemy1' || intent === 'enemy2';
+      const target = portrait ? enemySlots[r.team][intent === 'enemy1' ? 0 : 1] : intent;
+      if (!(portrait ? this.#position(r, target) : this.#visibleTarget(r, target))) return false;
+      this.#calls[r.team] = { from: slot, target, until };
+    }
     return true;
   }
   repeatCast(slot: number, skill: Skill) {
@@ -597,7 +606,9 @@ export class RaidMatch implements RaidView {
       if (
         call &&
         (call.until <= this.tick ||
-          (call.target !== 'wagon' && this.#runners[call.target]!.respawn))
+          ('target' in call &&
+            typeof call.target === 'number' &&
+            this.#runners[call.target]!.respawn))
       )
         this.#calls[team] = null;
     }

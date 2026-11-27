@@ -51,7 +51,7 @@ export function driveRaidBots(
     const behind = view.damage[1 - r.team]! - view.damage[r.team]! > WAGON_HP * 0.2;
     const call = view.calls[r.team];
     const target =
-      call && view.canTarget(r.slot, call.target)
+      call && 'target' in call && view.canTarget(r.slot, call.target)
         ? call.target === 'wagon'
           ? undefined
           : view.runners[call.target]
@@ -77,7 +77,10 @@ export function driveRaidBots(
     }
     send(r.slot, 'move', {
       side: Math.abs(goalX - r.x) < 0.5 ? 0 : Math.sign(goalX - r.x),
-      walk: !target && partner.respawn > 0 && r.hp < 40 && r.z > 0,
+      walk:
+        call && 'movement' in call
+          ? call.movement === 'retreat'
+          : !target && partner.respawn > 0 && r.hp < 40 && r.z > 0,
     });
     if (
       counter?.kind === 'lane' &&

@@ -17,6 +17,8 @@ import {
   type RaidView,
   type Skill,
 } from '../game/raid/raid-match.ts';
+import { createRaidPing } from './raid-ping.ts';
+import type { RaidPing } from '../game/raid/raid-view.ts';
 import { createTouchPad } from './touch-pad.ts';
 import { createRaidCombatNumbers } from './raid-combat-numbers.ts';
 import { battleIconIndex, setSkillIcon } from './raid-skill-icon.ts';
@@ -53,7 +55,7 @@ const counterLabels = {
 const skillNames = ['Pulse', 'Bolt', 'Field', 'Fury'] as const;
 interface RaidActions extends RaidAimActions {
   repeatCast(slot: Skill): void;
-  callTarget(): void;
+  ping(intent: RaidPing): void;
   skill(slot: Skill): void;
   target(): void;
   pause(): void;
@@ -160,29 +162,23 @@ export function createRaidHud(
   const orders = element('div', vitals);
   orders.className = 'raid-orders';
   const lock = button(orders, '', actions.target);
-  const call = button(orders, t('callTarget'));
-  call.setAttribute('aria-keyshortcuts', 'G');
+  const ping = createRaidPing(deck, actions.ping);
   const jump = button(deck, t('jump'));
-  // The second finger does not always generate a click while a steering finger is held.
-  for (const [b, activate] of [
-    [jump, actions.jump],
-    [call, actions.callTarget],
-  ] as const) {
-    b.onpointerdown = (e) => {
-      if (e.button === 0) b.setPointerCapture(e.pointerId);
-    };
-    b.onpointerup = (e) => {
-      if (
-        e.button === 0 &&
-        b.hasPointerCapture(e.pointerId) &&
-        b.contains(document.elementFromPoint(e.clientX, e.clientY))
-      )
-        activate();
-    };
-    b.onclick = (e) => {
-      if (e.detail === 0) activate();
-    };
-  }
+  // A second thumb does not always produce a compatibility click while steering.
+  jump.onpointerdown = (e) => {
+    if (e.button === 0) jump.setPointerCapture(e.pointerId);
+  };
+  jump.onpointerup = (e) => {
+    if (
+      e.button === 0 &&
+      jump.hasPointerCapture(e.pointerId) &&
+      jump.contains(document.elementFromPoint(e.clientX, e.clientY))
+    )
+      actions.jump();
+  };
+  jump.onclick = (e) => {
+    if (e.detail === 0) actions.jump();
+  };
   jump.className = 'raid-jump';
   const rack = element('div', deck);
   rack.className = 'raid-skills';
@@ -311,13 +307,22 @@ export function createRaidHud(
     });
     jump.disabled = !!runner.leap || !!runner.jumping || !!runner.respawn || !!runner.staggered;
     const request = view.calls[runner.team];
-    call.disabled = !!runner.respawn || runner.target === null || !!request || !!view.result;
-    const message = request
-      ? t('attackRequest', {
-          from: t(view.runners[request.from]!.hero),
-          target: t(request.target === 'wagon' ? 'wagon' : view.runners[request.target]!.hero),
-        })
-      : '';
+    ping.update(
+      view,
+      runner.team,
+      !!runner.respawn || !!request || !!view.result || aiming !== null || aimPad.skill !== null,
+    );
+    const from = request && t(view.runners[request.from]!.hero);
+    let message = '';
+    if (request && from) {
+      message =
+        'movement' in request
+          ? t('moveRequest', { from, movement: t(request.movement) })
+          : t('attackRequest', {
+              from,
+              target: t(request.target === 'wagon' ? 'wagon' : view.runners[request.target]!.hero),
+            });
+    }
     if (callout.textContent !== message) callout.textContent = message;
     callout.hidden = !message;
     const counterText = view.hazard ? t(counterLabels[view.hazard.kind]) : '';
@@ -415,6 +420,7 @@ export function createRaidHud(
   }
   function showPanel(view: RaidView | null, slot = 0, online = false) {
     stick.reset();
+    ping.close();
     aimPad.close();
     endGesture();
     actions.clearPreview();
@@ -436,7 +442,7 @@ export function createRaidHud(
             duration: matchClock(Math.floor(view.tick / RAID_HZ)),
             count: view.leadChanges,
           })
-        : t('controls');
+        : t('controls') + ' ' + t('pingHelp');
     records.hidden = !view;
     if (view) {
       records.replaceChildren();
@@ -479,6 +485,7 @@ export function createRaidHud(
     outfit: () => outfit,
     reset() {
       outfitPicker?.close();
+      ping.close();
       root.hidden = panel.hidden = true;
       aimPad.close();
       stick.reset();

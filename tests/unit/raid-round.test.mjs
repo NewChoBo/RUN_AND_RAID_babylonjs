@@ -85,6 +85,55 @@ test('a team attack request is validated once, guides its bot, replays and expir
       host.match.runners.filter((r) => r.team === team).reduce((sum, r) => sum + r.wagonDamage, 0),
     );
 });
+test('drag pings address the two stable enemy seats from either team, even outside the camera', () => {
+  for (const [actor, team, expected] of [
+    [8, 0, [2, 3]],
+    [12, 1, [0, 1]],
+  ]) {
+    for (const [index, intent] of ['enemy1', 'enemy2'].entries()) {
+      const host = new RaidRound(players),
+        peer = new RaidRound(players);
+      for (const round of [host, peer]) round.match.runners[expected[index]].z = -45;
+      assert.equal(host.match.canTarget(host.slot(actor), expected[index]), false);
+      assert.ok(host.enqueue(actor, { seq: 1, action: 'call', payload: intent }));
+      assert.ok(peer.replay(host.advance(1)));
+      assert.equal(host.match.calls[team].target, expected[index]);
+      assert.equal(host.match.calls[1 - team], null);
+      assert.deepEqual(peer.match.calls, host.match.calls);
+    }
+  }
+});
+test('movement pings survive replay, guide the team bot and leave human controls alone', () => {
+  for (const movement of ['advance', 'retreat']) {
+    const host = new RaidRound(players.slice(0, 2)),
+      peer = new RaidRound(players.slice(0, 2));
+    for (const [seq, payload] of ['invalid', movement, 'enemy1'].entries())
+      assert.ok(host.enqueue(8, { seq: seq + 1, action: 'call', payload }));
+    const frames = host.advance(6);
+    assert.deepEqual(
+      frames.frames.flat().map((o) => o.payload),
+      [movement],
+    );
+    assert.ok(peer.replay(frames));
+    assert.equal(host.match.calls[0].movement, movement);
+    assert.equal(host.match.calls[1], null);
+    assert.equal(host.match.runners[1].brake, Number(movement === 'retreat'));
+    assert.equal(host.match.runners[0].brake, 0);
+    for (let i = 6; i < 120; i += 6) assert.ok(peer.replay(host.advance(6)));
+    assert.equal(host.match.calls[0], null);
+    assert.deepEqual(peer.match.runners, host.match.runners);
+  }
+});
+test('a ping cannot attack a downed portrait or originate from a downed runner', () => {
+  const match = new RaidRound(players).match;
+  match.runners[2].respawn = 5;
+  assert.equal(match.callTarget(0, 'enemy1'), false);
+  assert.equal(match.callTarget(2, 'retreat'), false);
+  assert.ok(match.callTarget(0, 'enemy2'));
+  match.runners[3].respawn = 5;
+  match.step();
+  assert.equal(match.calls[0], null);
+});
 test('two to four players alternate teams and each runner is assigned once', () => {
   for (const count of [2, 3, 4]) {
     const seats = players.slice(0, count);

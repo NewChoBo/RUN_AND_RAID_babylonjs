@@ -300,7 +300,10 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       preview: previewSkill,
       jump: evade,
       repeatCast,
-      callTarget,
+      ping(intent) {
+        if (state === 'playing' && aiming === null && hud.aimPad.skill === null)
+          order('call', intent);
+      },
       drop,
       skill: cast,
       target: cycle,

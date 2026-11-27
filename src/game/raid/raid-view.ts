@@ -21,6 +21,15 @@ export interface RaidPoint {
   z: number;
 }
 export type RaidTarget = 'wagon' | number;
+export type RaidMovementPing = 'advance' | 'retreat';
+export type RaidPing = RaidMovementPing | 'enemy1' | 'enemy2';
+export const enemySlots = [
+  [2, 3],
+  [0, 1],
+] as const;
+type RaidCall = Readonly<
+  { from: number; until: number } & ({ target: RaidTarget } | { movement: RaidMovementPing })
+>;
 /** Effective HP delta at the impact position, in the wagon frame. A null source is the boss. */
 export interface RaidHealthChange extends Readonly<RaidPoint> {
   readonly tick: number;
@@ -105,7 +114,7 @@ export type RaidRunner = Readonly<Omit<Runner, 'cooldowns'>> & {
 };
 export interface RaidView {
   readonly healthChanges: readonly RaidHealthChange[];
-  readonly calls: readonly (Readonly<{ from: number; target: RaidTarget; until: number }> | null)[];
+  readonly calls: readonly (RaidCall | null)[];
   readonly projectiles: readonly RaidProjectile[];
   readonly actions: readonly RaidAction[];
   readonly runners: readonly RaidRunner[];

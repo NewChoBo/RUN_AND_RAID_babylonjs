@@ -26,7 +26,12 @@ export function createRaidFeature(match: RaidMatch): GameFeature<RaidPlayer> {
       jump: ({ slot }) => result(match.jump(slot)),
       call: ({ slot }, p) =>
         result(
-          (p === 'wagon' || (typeof p === 'number' && Number.isInteger(p))) &&
+          (p === 'advance' ||
+            p === 'retreat' ||
+            p === 'enemy1' ||
+            p === 'enemy2' ||
+            p === 'wagon' ||
+            (typeof p === 'number' && Number.isInteger(p))) &&
             match.callTarget(slot, p),
         ),
       lock: ({ slot }, p) =>
