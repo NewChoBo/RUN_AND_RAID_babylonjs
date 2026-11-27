@@ -25,6 +25,20 @@ uv run --no-project --python 3.13 --with pillow==11.1.0 python tools/assets/veri
 
 `convert.py --group hammer`로 한 폴더를 지정할 수 있다. 재실행하면 같은 입력으로 완료된 결과는 재사용하고 실패 파일은 다시 시도한다. 원본 버전이 달라졌다면 ZIP과 쌍을 이루는 FBX만 사용한다.
 
+## Blender 작업본 열기
+
+위의 `prepare.py`로 원본 ZIP을 준비한 뒤, 영웅 본체와 비교할 모션 장면을 하나의 편집용 파일로 만들 수 있다. 다음 명령은 해머를 예로 든다.
+
+```powershell
+uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/prepare_blend.py hammer --motion 'Animation/hammer#default#run.max' --motion 'Animation/hammer#default#attack1.max' --motion 'Animation/hammer#default#skill1start.max'
+```
+
+Blender에서 `.asset-work/blender/hammer.blend`를 연다. 처음 열리는 `Model` 장면에서 본체를 편집하고, 상단 Scene 선택기로 `Reference` 장면을 열어 달리기·평타·스킬 원본을 확인한다. Text Editor의 `PORTING.txt`에는 장면별 MAX 경로, 가져온 Armature와 Action 수, 원본 모션 목록, 게임이 요구하는 클립 이름이 있다. 다른 작업본은 `--output`으로 새 파일명을 지정한다. 결과물은 로컬에 저장하며, 원본 텍스처는 작업본에 패킹한다.
+
+직접 가져올 때는 Blender의 **Preferences → Get Extensions**에서 **Import Autodesk MAX (.max)**를 설치한 뒤 **File → Import → Autodesk MAX (.max)**를 사용한다. Blender 5.3과 확장 1.9.2로 해머 본체·달리기·평타 1·스킬 1 시작을 각각 열었다. 각 장면에서 메시 1개와 Empty 42개가 나왔고, Armature·가중치가 있는 정점·Action은 모두 0개였다. 본체의 512×512 디퓨즈 텍스처는 패킹된 상태로 다시 열었다. [Blender 확장](https://extensions.blender.org/add-ons/io-scene-max/) · [Biped 처리 변경 기록](https://extensions.blender.org/add-ons/io-scene-max/versions/?page=5)
+
+Blender에서 새 모션을 제작할 때는 `Model` 장면에서 리그를 만들고 메시 가중치를 연결한다. 현재 게임의 대체 리그와 9개 클립은 [해머 게임 모델](../public/assets/raid/hammer.glb)을 Blender에서 별도로 가져와 비교할 수 있다. 원작 키프레임을 옮기려면 아래 절차로 같은 소스의 FBX를 만든다. `prepare_blend.py`는 해당 FBX가 있으면 장면별로 우선 사용한다.
+
 ## 원작 모션 내보내기
 
 해머의 기본·달리기·스킬 장면을 직접 시험했다. 사용한 Blender MAX 임포터는 해머의 메시와 UV를 읽지만 원작 스킨 가중치와 키프레임은 가져오지 못했다. 네이티브 내보내기에는 해당 MAX 장면을 열 수 있는 3ds Max와 FBX 플러그인이 필요하다. 현재 작업 PC에서 이 단계는 실행 검증하지 못했다. [Blender MAX 임포터](https://extensions.blender.org/add-ons/io-scene-max/) · [Autodesk FBX 애니메이션 베이크](https://help.autodesk.com/cloudhelp/2023/ENU/3DSMax-Data-Exchange/files/GUID-31EA2A4F-A126-498B-96E8-31811522738A.htm)
