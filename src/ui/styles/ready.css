@@ -199,3 +199,19 @@ body.raid-mode #game {
     grid-template-columns: 1fr;
   }
 }
+
+@media (orientation: landscape) and (max-height: 480px) {
+  #overlay .solo-setup label {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.4em;
+  }
+  #overlay .solo-setup > p {
+    margin: 0.35rem;
+    line-height: 1.35;
+  }
+  #overlay .solo-setup select {
+    width: 100%;
+    padding: 0.2em;
+  }
+}
