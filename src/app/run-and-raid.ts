@@ -384,7 +384,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   async function connect(code: string, entry: RaidEntry) {
     if (state !== 'setup' || room) return;
     const token = ++attempt;
-    lobby.pending();
+    lobby.pending(entry);
     if (!(await prepareCourse()) || token !== attempt) return;
     try {
       const id = import.meta.env.VITE_PHOTON_APP_ID;
@@ -392,6 +392,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       const { RaidRoom } = await import('../platform/photon/raid-room.ts');
       if (token !== attempt) return;
       room = new RaidRoom(id, code, entry, {
+        waiting: (count) => lobby.waiting(count),
         chat: (actor, text) => lobby.chat(actor, text),
         lobby(seats, self, host, clock) {
           if (seats.length > 1) hud.closeOutfits();

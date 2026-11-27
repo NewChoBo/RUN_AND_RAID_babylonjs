@@ -380,6 +380,10 @@ export function createRaidLobby(
   const back = button(uiText('back'), () => menu(page === 'code' ? 'private' : 'entry'));
   const practice = button(uiText('offlinePractice'), actions.practice);
   options.append(quick, privateRooms, host, enterCode, code, join, practice, back);
+  const cancelMatch = button(t('cancelMatch'), actions.leave);
+  cancelMatch.className = 'cancel-match';
+  cancelMatch.hidden = true;
+  dialog.append(cancelMatch);
   draft.append(start);
   const roomInfo = document.createElement('div');
   roomInfo.className = 'draft-room-info';
@@ -390,10 +394,13 @@ export function createRaidLobby(
     page = next;
     show('entry');
   }
-  function show(stage: 'entry' | 'connecting' | 'draft') {
+  let quickMatch = false;
+  function show(stage: 'entry' | 'connecting' | 'waiting' | 'draft') {
+    if (stage === 'entry') quickMatch = false;
     const room = stage !== 'entry';
     toolbarChat.disabled = group.hidden = stage !== 'draft';
     options.hidden = room;
+    cancelMatch.hidden = !quickMatch || (stage !== 'connecting' && stage !== 'waiting');
     message.textContent = '';
     document.getElementById('startup-error')!.hidden = true;
     quick.hidden = privateRooms.hidden = room || page !== 'entry';
@@ -403,13 +410,15 @@ export function createRaidLobby(
     practice.hidden = room || page !== 'private';
     group.dataset.stage = stage;
     heading.textContent =
-      stage === 'connecting'
-        ? t('connecting')
-        : page === 'entry'
-          ? uiText('chooseMode')
-          : page === 'private'
-            ? uiText('privateRoom')
-            : uiText('enterCode');
+      stage === 'waiting'
+        ? t('quickSearching')
+        : stage === 'connecting'
+          ? t('connecting')
+          : page === 'entry'
+            ? uiText('chooseMode')
+            : page === 'private'
+              ? uiText('privateRoom')
+              : uiText('enterCode');
     if (stage !== 'draft') start.hidden = true;
     draft.hidden = versus.hidden = stage !== 'draft';
     if (stage !== 'draft') {
@@ -456,9 +465,15 @@ export function createRaidLobby(
       const name = n ? uiText('pickSeat', { n }) : uiText('chatPlayer', { actor });
       chat.append(actor === self ? t('you') + ' · ' + name : name, text, actor === self);
     },
-    pending() {
+    pending(entry: RaidEntry) {
+      quickMatch = entry === 'quick';
       preview = actions.selected();
       show('connecting');
+    },
+    waiting(count: number) {
+      if (group.dataset.stage !== 'waiting') show('waiting');
+      const text = t('quickWaiting', { count });
+      if (message.textContent !== text) message.textContent = text;
     },
     reset(reason?: RoomError) {
       show('entry');
@@ -472,6 +487,7 @@ export function createRaidLobby(
       nextClock: DraftClock | null,
       offline = false,
     ) {
+      const enterQuickDraft = quickMatch && group.dataset.stage !== 'draft';
       const ownSeat = seats.findIndex((seat) => seat.actor === self);
       const nextSeat = members.findIndex((seat) => seat.actor === actor);
       if (ownSeat >= 0 && ownSeat % 2 !== nextSeat % 2) chat.reset();
@@ -484,6 +500,7 @@ export function createRaidLobby(
       show('draft');
       paint();
       paintClock();
+      if (enterQuickDraft) picker.showModal();
       const roomStatus = offline
         ? uiText('offlinePractice')
         : roomCode
@@ -500,7 +517,7 @@ export function createRaidLobby(
       }
       start.textContent = t(soloRoom ? 'startSoloRoom' : 'startRound');
       start.disabled = soloRoom ? !seats[0]?.hero : !isRaidRoster(seats);
-      start.hidden = !isHost || start.disabled;
+      start.hidden = quickMatch || !isHost || start.disabled;
       choose.hidden = !start.hidden;
     },
   };

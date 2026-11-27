@@ -819,6 +819,12 @@
 #match-menu .match-options > :last-child {
   grid-column: 1 / -1;
 }
+#match-menu .cancel-match {
+  display: block;
+  min-height: 44px;
+  margin: 0.5rem auto 1rem;
+  padding-inline: 1rem;
+}
 #match-menu > :is(p, output):not(:empty) {
   display: block;
   margin: 0;

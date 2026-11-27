@@ -20,7 +20,7 @@ const Client = Photon.LoadBalancing.LoadBalancingClient;
 // The npm distribution defaults to its Node ws adapter. Browsers use native WSS.
 Photon.PhotonPeer.setWebSocketImpl(WebSocket);
 // Replaying approved inputs requires every peer to use the same combat rules.
-const version = 'run-and-raid-11';
+const version = 'run-and-raid-12';
 const event = {
   start: 10,
   intent: 11,
@@ -34,6 +34,7 @@ const event = {
 export type RoomError = 'connectError' | 'roomUnavailable' | 'roomEnded' | 'syncError';
 export type RaidEntry = 'host' | 'join' | 'quick';
 interface Callbacks {
+  waiting(count: number): void;
   chat(actor: number, text: string): void;
   lobby(seats: DraftSeat[], self: number, host: boolean, clock: DraftClock | null): void;
   start(seats: RaidSeat[], self: number, host: boolean): void;
@@ -83,11 +84,7 @@ export class RaidRoom {
       if (this.#closed) return;
       this.#joined = true;
       clearTimeout(this.#timer);
-      this.#lobby();
-      if (this.self !== client.myRoomMasterActorNr())
-        client.raiseEvent(event.syncDraft, 'null', {
-          targetActors: [client.myRoomMasterActorNr()],
-        });
+      this.#membershipChanged(true);
     };
     client.onActorJoin = (actor) => {
       // A join already in flight can arrive while the master closes the room.
@@ -99,11 +96,11 @@ export class RaidRoom {
         client.raiseEvent(event.start, JSON.stringify(this.#roster), {
           targetActors: [actor.actorNr],
         });
-      else this.#lobby();
+      else this.#membershipChanged();
     };
     client.onActorLeave = (actor) => {
       if (this.#roster.some((s) => s.actor === actor.actorNr)) this.fail('roomEnded');
-      else this.#lobby();
+      else this.#membershipChanged();
     };
     client.onError = () => this.fail('connectError');
     client.onOperationResponse = (error, _msg, op) => {
@@ -124,6 +121,14 @@ export class RaidRoom {
         return;
       }
       if (!this.#roster.length) {
+        if (code === event.pick || code === event.prefer || code === event.chat) {
+          // A late command from a dissolved quick match must not affect its replacement.
+          if (!data || typeof data !== 'object' || !('lineup' in data) || !('value' in data))
+            return;
+          const lineup = this.#lineup();
+          if (lineup === undefined || data.lineup !== lineup) return;
+          data = data.value;
+        }
         if (code === event.chat) {
           const text = draftMessage(data);
           if (text && draftTeammates(this.#members(), this.self).includes(sender))
@@ -140,7 +145,12 @@ export class RaidRoom {
         }
         if (code === event.draft && sender === master && this.self !== master) {
           const snapshot = readDraftSnapshot(data, performance.now());
-          if (!snapshot || !snapshot.seats.some((s) => s.actor === this.self)) return;
+          if (
+            !snapshot ||
+            !snapshot.seats.some((s) => s.actor === this.self) ||
+            !this.#includesQuickGroup(snapshot.seats)
+          )
+            return;
           this.#draft = snapshot.seats;
           this.#clock = snapshot.clock;
           callbacks.lobby(this.#draft, this.self, false, this.#clock);
@@ -150,6 +160,7 @@ export class RaidRoom {
       if (code === event.start && !this.#roster.length && sender === client.myRoomMasterActorNr()) {
         if (
           !isRaidRoster(data) ||
+          !this.#includesQuickGroup(data) ||
           !data.some((s) => s.actor === this.self) ||
           !data.some((s) => s.actor === sender)
         )
@@ -175,6 +186,35 @@ export class RaidRoom {
       this.#client.myRoomActorsArray().map((a) => a.actorNr),
     );
   }
+  #includesQuickGroup(seats: DraftSeat[]) {
+    if (this.#entry !== 'quick') return true;
+    const actors = this.#client.myRoomActorsArray();
+    return (
+      seats.length === 4 &&
+      actors.length === 4 &&
+      actors.every((a) => seats.some((s) => s.actor === a.actorNr))
+    );
+  }
+  #lineup() {
+    if (this.#entry !== 'quick') return '';
+    if (this.#includesQuickGroup(this.#draft)) return this.#draft.map((s) => s.actor).join(',');
+    return undefined;
+  }
+  #membershipChanged(joined = false) {
+    if (this.#closed || !this.#joined || this.#roster.length) return;
+    const count = this.#client.myRoomActorsArray().length;
+    if (this.#entry === 'quick' && count < 4) {
+      clearTimeout(this.#draftTimer);
+      this.#draft = [];
+      this.#clock = null;
+      this.#callbacks.waiting(count);
+      return;
+    }
+    const master = this.#client.myRoomMasterActorNr();
+    if (this.self === master) this.#lobby();
+    else if (joined || this.#entry === 'quick')
+      this.#client.raiseEvent(event.syncDraft, 'null', { targetActors: [master] });
+  }
   #lobby(code?: number, sender?: number, data?: unknown) {
     if (
       !this.#joined ||
@@ -183,8 +223,10 @@ export class RaidRoom {
       this.self !== this.#client.myRoomMasterActorNr()
     )
       return;
+    const members = this.#members();
+    if (this.#entry === 'quick' && members.length !== 4) return;
     clearTimeout(this.#draftTimer);
-    this.#draft = this.#members();
+    this.#draft = members;
     const now = performance.now();
     this.#clock = nextDraftClock(this.#draft, this.#clock, now);
     if (this.#clock && now >= this.#clock.endsAt) {
@@ -215,10 +257,15 @@ export class RaidRoom {
   }
   #choose(code: number, hero: RaidHero | null, outfit?: string) {
     if (!this.#joined || this.#roster.length || this.#closed) return;
+    const lineup = this.#lineup();
+    if (lineup === undefined) return;
     const master = this.#client.myRoomMasterActorNr();
     const choice = hero === null ? null : { hero, outfit };
     if (this.self === master) this.#lobby(code, this.self, choice);
-    else this.#client.raiseEvent(code, JSON.stringify(choice), { targetActors: [master] });
+    else
+      this.#client.raiseEvent(code, JSON.stringify({ lineup, value: choice }), {
+        targetActors: [master],
+      });
   }
   pick(hero: RaidHero | null, outfit?: string) {
     this.#choose(event.pick, hero, outfit);
@@ -229,9 +276,13 @@ export class RaidRoom {
   chat(value: string) {
     const text = draftMessage(value);
     if (!text || !this.#joined || this.#closed || this.#roster.length) return;
+    const lineup = this.#lineup();
+    if (lineup === undefined) return;
     const targetActors = draftTeammates(this.#members(), this.self);
     if (targetActors.length)
-      this.#client.raiseEvent(event.chat, JSON.stringify(text), { targetActors });
+      this.#client.raiseEvent(event.chat, JSON.stringify({ lineup, value: text }), {
+        targetActors,
+      });
     this.#callbacks.chat(this.self, text);
   }
   start() {
@@ -250,7 +301,7 @@ export class RaidRoom {
       this.#callbacks.solo(only.hero, only.outfit);
       return;
     }
-    if (!isRaidRoster(seats)) return;
+    if (!isRaidRoster(seats) || !this.#includesQuickGroup(seats)) return;
     this.#client.myRoom().setIsOpen(false);
     this.#client.raiseEvent(event.start, JSON.stringify(seats));
     this.#begin(seats, this.self);
