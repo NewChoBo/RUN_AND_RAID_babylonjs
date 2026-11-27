@@ -3,6 +3,23 @@ import { characterArt } from '../content/raid/gallery.ts';
 import { isRaidRoster, type DraftSeat } from '../game/raid/raid-draft.ts';
 import { HERO_IDS, HEROES, type RaidHero } from '../game/raid/raid-match.ts';
 import type { RaidEntry, RoomError } from '../platform/photon/raid-room.ts';
+
+function setDraftArt(image: HTMLImageElement, hero: RaidHero) {
+  if (image.dataset.hero === hero) return;
+  image.dataset.hero = hero;
+  image.referrerPolicy = 'no-referrer';
+  const fallback = './assets/raid/portraits/' + hero + '.webp';
+  const source = characterArt(hero);
+  image.onerror =
+    source === fallback
+      ? null
+      : () => {
+          image.onerror = null;
+          image.src = fallback;
+        };
+  image.src = source;
+}
+
 export function createRaidLobby(
   parent: HTMLElement,
   outfitButton: HTMLButtonElement,
@@ -61,11 +78,6 @@ export function createRaidLobby(
   profile.className = 'raid-pick-profile';
   const portrait = document.createElement('img');
   portrait.alt = '';
-  portrait.referrerPolicy = 'no-referrer';
-  portrait.onerror = () => {
-    const fallback = './assets/raid/portraits/' + preview + '.webp';
-    if (portrait.getAttribute('src') !== fallback) portrait.src = fallback;
-  };
   portrait.width = portrait.height = 240;
   const caption = document.createElement('figcaption');
   const heroName = document.createElement('strong');
@@ -87,10 +99,10 @@ export function createRaidLobby(
     const card = document.createElement('button');
     card.type = 'button';
     const image = document.createElement('img');
-    image.src = './assets/raid/portraits/' + hero + '.webp';
     image.alt = '';
     image.width = image.height = 80;
     image.loading = 'lazy';
+    setDraftArt(image, hero);
     const name = document.createElement('span');
     name.textContent = t(hero);
     const taken = document.createElement('small');
@@ -112,8 +124,7 @@ export function createRaidLobby(
       taken.hidden = !occupied;
       card.setAttribute('aria-pressed', String(hero === preview));
     }
-    const imageUrl = characterArt(preview);
-    if (portrait.getAttribute('src') !== imageUrl) portrait.src = imageUrl;
+    setDraftArt(portrait, preview);
     heroName.textContent = t(preview);
     range.textContent = t('reach', { range: HEROES[preview].reach });
     detail.textContent = t(`${preview}Info`);
@@ -271,12 +282,7 @@ export function createRaidLobby(
         if (seat?.hero) {
           const img = document.createElement('img');
           img.alt = '';
-          img.referrerPolicy = 'no-referrer';
-          img.src = characterArt(seat.hero);
-          img.onerror = () => {
-            img.onerror = null;
-            img.src = './assets/raid/portraits/' + seat.hero + '.webp';
-          };
+          setDraftArt(img, seat.hero);
           item.append(img);
         }
         item.append(name, runner);

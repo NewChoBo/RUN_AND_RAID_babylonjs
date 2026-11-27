@@ -130,7 +130,7 @@
   width: 80%;
   height: 100%;
   object-fit: cover;
-  object-position: center 35%;
+  object-position: var(--portrait-x, 50%) 35%;
   z-index: -1;
 }
 .team-seats .red-seat img {
@@ -233,6 +233,20 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 3px;
   gap: 3px;
+}
+#overlay .runner-picker .raid-pick-grid img {
+  object-fit: cover;
+  object-position: var(--portrait-x, 50%) 30%;
+}
+.raid-lobby
+  img:is([data-hero='hammer'], [data-hero='abyss'], [data-hero='jade'], [data-hero='kali']) {
+  --portrait-x: 66%;
+}
+.raid-lobby img[data-hero='longshot'] {
+  --portrait-x: 74%;
+}
+.raid-lobby img:is([data-hero='kaiken'], [data-hero='swift']) {
+  --portrait-x: 32%;
 }
 #overlay .runner-picker .raid-pick-profile {
   grid-column: 2;
