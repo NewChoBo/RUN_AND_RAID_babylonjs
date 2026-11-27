@@ -341,6 +341,10 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
         } else room?.pick(hero);
       },
       selected: () => chosenHero,
+      chat(text) {
+        if (offline) lobby.chat(1, text);
+        else room?.chat(text);
+      },
       leave: () => resetLobby(),
     },
   );
@@ -376,6 +380,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       const { RaidRoom } = await import('../platform/photon/raid-room.ts');
       if (token !== attempt) return;
       room = new RaidRoom(id, code, entry, {
+        chat: (actor, text) => lobby.chat(actor, text),
         lobby(seats, self, host) {
           if (seats.length > 1) hud.closeOutfits();
           lobby.room(code, seats, self, host);

@@ -16,6 +16,20 @@ export interface DraftSeat {
 export interface RaidSeat extends DraftSeat {
   hero: RaidHero;
 }
+export const draftMessageLimit = 140;
+
+export function draftMessage(value: unknown): string {
+  return typeof value === 'string' && value.length <= draftMessageLimit
+    ? value.replace(/\s+/gu, ' ').trim()
+    : '';
+}
+
+export function draftTeammates(seats: readonly DraftSeat[], actor: number) {
+  const own = seats.findIndex((seat) => seat.actor === actor);
+  return seats
+    .filter((_, i) => own >= 0 && i !== own && i % 2 === own % 2)
+    .map((seat) => seat.actor);
+}
 export function isHero(value: unknown): value is RaidHero {
   return HERO_IDS.some((hero) => hero === value);
 }

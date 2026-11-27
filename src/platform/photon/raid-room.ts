@@ -4,6 +4,8 @@ import {
   isRaidRoster,
   applyPick,
   draftMembers,
+  draftMessage,
+  draftTeammates,
   type DraftSeat,
   type RaidSeat,
 } from '../../game/raid/raid-draft.ts';
@@ -15,10 +17,19 @@ const Client = Photon.LoadBalancing.LoadBalancingClient;
 Photon.PhotonPeer.setWebSocketImpl(WebSocket);
 // Replaying approved inputs requires every peer to use the same combat rules.
 const version = 'run-and-raid-7';
-const event = { start: 10, intent: 11, frames: 12, pick: 13, draft: 14, syncDraft: 15 } as const;
+const event = {
+  start: 10,
+  intent: 11,
+  frames: 12,
+  pick: 13,
+  draft: 14,
+  syncDraft: 15,
+  chat: 16,
+} as const;
 export type RoomError = 'connectError' | 'roomUnavailable' | 'roomEnded' | 'syncError';
 export type RaidEntry = 'host' | 'join' | 'quick';
 interface Callbacks {
+  chat(actor: number, text: string): void;
   lobby(seats: DraftSeat[], self: number, host: boolean): void;
   start(seats: RaidSeat[], self: number, host: boolean): void;
   solo(hero: RaidHero): void;
@@ -106,6 +117,12 @@ export class RaidRoom {
         return;
       }
       if (!this.#roster.length) {
+        if (code === event.chat) {
+          const text = draftMessage(data);
+          if (text && draftTeammates(this.#members(), this.self).includes(sender))
+            callbacks.chat(sender, text);
+          return;
+        }
         const master = client.myRoomMasterActorNr();
         if (this.self === master && (code === event.pick || code === event.syncDraft)) {
           if (code === event.pick) applyPick(this.#draft, sender, data);
@@ -165,6 +182,14 @@ export class RaidRoom {
       applyPick(this.#draft, this.self, hero);
       this.#lobby();
     } else this.#client.raiseEvent(event.pick, JSON.stringify(hero), { targetActors: [master] });
+  }
+  chat(value: string) {
+    const text = draftMessage(value);
+    if (!text || !this.#joined || this.#closed || this.#roster.length) return;
+    const targetActors = draftTeammates(this.#members(), this.self);
+    if (targetActors.length)
+      this.#client.raiseEvent(event.chat, JSON.stringify(text), { targetActors });
+    this.#callbacks.chat(this.self, text);
   }
   start() {
     if (

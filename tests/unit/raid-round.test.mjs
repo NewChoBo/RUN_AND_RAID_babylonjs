@@ -3,7 +3,14 @@ import test from 'node:test';
 import { RaidSimulation } from '../../src/game/raid/raid-simulation.ts';
 import { RaidMatch } from '../../src/game/raid/raid-match.ts';
 import { RaidRound } from '../../src/game/raid/raid-round.ts';
-import { isRaidRoster, applyPick, draftMembers } from '../../src/game/raid/raid-draft.ts';
+import {
+  isRaidRoster,
+  applyPick,
+  draftMembers,
+  draftMessage,
+  draftMessageLimit,
+  draftTeammates,
+} from '../../src/game/raid/raid-draft.ts';
 
 const players = ['jade', 'rend', 'bastion', 'rime'].map((hero, i) => ({
   actor: [8, 12, 20, 25][i],
@@ -100,6 +107,24 @@ test('two to four players alternate teams and each runner is assigned once', () 
   ]) {
     assert.equal(isRaidRoster(roster), false);
   }
+});
+test('draft chat only targets the other current seat on the same team', () => {
+  const seats = draftMembers([], [5, 7, 10, 18]);
+  assert.deepEqual(draftTeammates(seats, 5), [10]);
+  assert.deepEqual(draftTeammates(seats, 18), [7]);
+  assert.deepEqual(draftTeammates(seats, 1), []);
+  assert.deepEqual(draftTeammates(seats.slice(0, 2), 5), []);
+  const afterLeave = draftMembers(seats, [5, 10, 18]);
+  assert.deepEqual(draftTeammates(afterLeave, 5), [18]);
+  assert.deepEqual(draftTeammates(afterLeave, 10), []);
+});
+
+test('draft chat accepts bounded plain text and discards invalid messages', () => {
+  assert.equal(draftMessage('  후방\n지원  '), '후방 지원');
+  assert.equal(draftMessage('<팀>'), '<팀>');
+  assert.equal(draftMessage('x'.repeat(draftMessageLimit)).length, draftMessageLimit);
+  for (const value of [null, 7, {}, '   ', 'x'.repeat(draftMessageLimit + 1)])
+    assert.equal(draftMessage(value), '');
 });
 test('the first lock wins, unlocking and leaving free a hero, and a join needs a fresh pick', () => {
   const seats = draftMembers([], [5, 2]);

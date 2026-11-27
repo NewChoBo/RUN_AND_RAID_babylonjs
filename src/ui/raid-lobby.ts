@@ -3,6 +3,7 @@ import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { characterArt } from '../content/raid/gallery.ts';
 import { officialGuides } from '../content/raid/official-guides.ts';
 import { battleIconIndex, skillLabel } from './raid-skill-icon.ts';
+import { createDraftChat } from './raid-draft-chat.ts';
 import { isRaidRoster, type DraftSeat } from '../game/raid/raid-draft.ts';
 import { HEROES, type RaidHero, type Skill } from '../game/raid/raid-match.ts';
 import { ORIGINAL_HERO_IDS } from '../game/raid/heroes/hero-id.ts';
@@ -46,6 +47,7 @@ export function createRaidLobby(
     connect(code: string, entry: RaidEntry): void;
     start(): void;
     practice(): void;
+    chat(text: string): void;
     leave(): void;
     pick(hero: RaidHero | null): void;
     selected(): RaidHero;
@@ -66,7 +68,9 @@ export function createRaidLobby(
     event.preventDefault();
     dismiss();
   });
-  const controls = document.createElement('div');
+  const chat = createDraftChat(actions.chat);
+  const toolbarChat = document.querySelector<HTMLButtonElement>('[data-room-chat]')!;
+  toolbarChat.onclick = () => chat.open.click();
   const code = document.createElement('input');
   code.placeholder = t('roomCode');
   code.setAttribute('aria-label', t('roomCode'));
@@ -79,7 +83,7 @@ export function createRaidLobby(
   teams.className = 'team-seats';
   const versus = document.createElement('div');
   versus.className = 'team-versus';
-  versus.innerHTML = '<strong><b></b> <b></b></strong><span></span><output></output>';
+  versus.innerHTML = '<div><strong><b></b> <b></b></strong><span></span><output></output></div>';
   versus.querySelector('b:first-child')!.textContent = uiText('blueTeam');
   versus.querySelector('b:last-child')!.textContent = uiText('redTeam');
   versus.querySelector('span')!.textContent = uiText('lockedPicks');
@@ -120,6 +124,7 @@ export function createRaidLobby(
   caption.append(heroName, range, detail, skills, guide);
   profile.append(portrait, caption);
   const notice = document.createElement('p');
+  notice.className = 'draft-notice';
   notice.setAttribute('aria-live', 'polite');
   const lock = document.createElement('button');
   lock.type = 'button';
@@ -233,9 +238,11 @@ export function createRaidLobby(
   choose.onclick = () => picker.showModal();
   const selection = document.createElement('section');
   selection.append(title, cards);
-  picker.append(selection, profile, confirm);
-  draft.append(choose, lock, outfitButton, notice);
-  group.append(status, teams, versus, draft, controls, picker);
+  const pickerTools = document.createElement('footer');
+  pickerTools.append(chat.open, outfitButton, confirm);
+  picker.append(selection, profile, pickerTools);
+  draft.append(choose, lock);
+  group.append(teams, versus, notice, chat.dock, draft, picker, chat.dialog);
   function button(label: string, click: () => void) {
     const b = document.createElement('button');
     b.type = 'button';
@@ -269,7 +276,11 @@ export function createRaidLobby(
   const back = button(uiText('back'), () => menu(page === 'code' ? 'private' : 'entry'));
   const practice = button(uiText('offlinePractice'), actions.practice);
   options.append(quick, privateRooms, host, enterCode, code, join, practice, back);
-  controls.append(start, leave);
+  draft.append(start);
+  const roomInfo = document.createElement('div');
+  roomInfo.className = 'draft-room-info';
+  roomInfo.append(status, leave);
+  versus.append(roomInfo);
   let page: 'entry' | 'private' | 'code' = 'entry';
   function menu(next: typeof page) {
     page = next;
@@ -277,7 +288,7 @@ export function createRaidLobby(
   }
   function show(stage: 'entry' | 'connecting' | 'draft') {
     const room = stage !== 'entry';
-    group.hidden = stage !== 'draft';
+    toolbarChat.disabled = group.hidden = stage !== 'draft';
     options.hidden = room;
     message.textContent = '';
     document.getElementById('startup-error')!.hidden = true;
@@ -298,7 +309,10 @@ export function createRaidLobby(
     if (stage !== 'draft') start.hidden = true;
     teams.replaceChildren();
     draft.hidden = versus.hidden = stage !== 'draft';
-    if (stage !== 'draft' && picker.open) picker.close();
+    if (stage !== 'draft') {
+      chat.reset();
+      picker.close();
+    }
     group.classList.toggle('drafting', stage === 'draft');
     parent.classList.toggle('in-room', room);
     join.disabled = code.value.length !== 6;
@@ -318,11 +332,17 @@ export function createRaidLobby(
       menu('entry');
     },
     close() {
+      toolbarChat.disabled = true;
       dialog.close();
+      chat.reset();
       picker.close();
     },
     closePicker() {
+      chat.dialog.close();
       if (picker.open) picker.close();
+    },
+    chat(actor: number, text: string) {
+      chat.append(actor, text, actor === self);
     },
     pending() {
       preview = actions.selected();
@@ -333,10 +353,14 @@ export function createRaidLobby(
       message.textContent = reason ? t(reason) : '';
     },
     room(roomCode: string, members: DraftSeat[], actor: number, isHost: boolean, offline = false) {
+      const ownSeat = seats.findIndex((seat) => seat.actor === self);
+      const nextSeat = members.findIndex((seat) => seat.actor === actor);
+      if (ownSeat >= 0 && ownSeat % 2 !== nextSeat % 2) chat.reset();
       seats = members;
       self = actor;
       soloRoom = (!!roomCode || offline) && isHost && seats.length === 1;
       outfitButton.hidden = !soloRoom;
+      chat.mode(offline);
       show('draft');
       paint();
       status.textContent = offline
@@ -373,9 +397,10 @@ export function createRaidLobby(
         }
         teams.append(item);
       }
-      start.hidden = !isHost;
+      choose.hidden = !!seats.find((s) => s.actor === actor)?.hero;
       start.textContent = t(soloRoom ? 'startSoloRoom' : 'startRound');
       start.disabled = soloRoom ? !seats[0]?.hero : !isRaidRoster(seats);
+      start.hidden = !isHost || start.disabled;
     },
   };
 }
