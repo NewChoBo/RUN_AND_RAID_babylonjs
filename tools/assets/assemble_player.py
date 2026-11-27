@@ -1,19 +1,23 @@
 """Bake source skin deformation onto the default playable body using its own bind pose."""
 
 import argparse
+import gzip
+import json
+import math
+import re
+import struct
 from functools import lru_cache
 from pathlib import Path
 
 import bpy
-import numpy as np
-from activate import activate, fighter_materials
+from activate import activate, fighter_materials, write_glb_json
 from asset_names import outfit_name
 from library import PUBLIC, ROOT, WORK, read_json, save_json
 from mathutils import Matrix
 
 STANDARD = {
     "run": "run",
-    "walk": "run",
+    "walk": "walk",
     "jump": "jump_loop",
     "fall": "die",
     "basic": "attack1",
@@ -47,36 +51,15 @@ def rig_and_body(scene):
 
 
 @lru_cache(maxsize=1)
-def longshot_references():
-    path = WORK / "longshot-grip.json"
-    if not path.exists():
-        raise FileNotFoundError("Bake longshot_reference.py in 3ds Max Batch first (docs/PLAYER-ASSETS.md)")
-    return read_json(path)
+def native_group(group):
+    path = WORK / "player-release/Reference" / (group + ".json.gz")
+    with gzip.open(path, "rt", encoding="utf8") as f:
+        return json.load(f)
 
 
-def rigid_alignment(before, after):
-    """Fit a proper rotation and translation to matching surface vertices."""
-    before, after = np.asarray(before), np.asarray(after)
-    a, b = before.mean(axis=0), after.mean(axis=0)
-    u, _, vt = np.linalg.svd((before - a).T @ (after - b))
-    if np.linalg.det(vt.T @ u.T) < 0:
-        vt[-1] *= -1
-    rotation = vt.T @ u.T
-    transform = np.eye(4)
-    transform[:3, :3], transform[:3, 3] = rotation, b - rotation @ a
-    return Matrix(transform)
-
-
-def grip_corrections(body, reference, frame):
-    # Max's Skin and the baked FBX agree on the fingers, but FBX changes the weapon
-    # helper's bind transform. Correct each rigid piece independently so the arrow can release.
-    actual = reference["frames"][frame - reference["first"]]
-    mesh = body.evaluated_get(bpy.context.evaluated_depsgraph_get())
-    imported = {name: [mesh.matrix_world @ mesh.data.vertices[i].co for i in indices]
-                for name, indices in reference["vertices"].items()}
-    hand = "Bip001 L Finger1"
-    to_hand = rigid_alignment(actual[hand], imported[hand])
-    return {name: to_hand @ rigid_alignment(imported[name], actual[name]) for name in ("Bowbone", "ArrowBn")}
+def source_record(scene):
+    key = scene["source_max"].lower()
+    return native_group(key.split("/")[0])[key]
 
 
 def sample_motion(target, mesh, scene, body):
@@ -86,8 +69,8 @@ def sample_motion(target, mesh, scene, body):
         raise ValueError(f"Empty take: {scene.name}")
     scene.frame_set(first)
     source = body.find_armature()
-    path = scene["source_max"].lower()
-    grip = longshot_references()[path] if path.startswith("longshot/") else None
+    native = source_record(scene)["meshes"][body.name]
+    fixes = native["corrections"]
     # Evaluate skinning in the source mesh's coordinates. A Max file may store a different
     # animated armature object transform and bind pose for each take of the same character.
     target_world = target.matrix_world.copy()
@@ -111,8 +94,12 @@ def sample_motion(target, mesh, scene, body):
         scene.frame_set(frame)
         source_world = source.matrix_world
         left = target_inv @ source_world
-        corrected = {n: target_inv @ fix @ source_world for n, fix in
-                     grip_corrections(body, grip, frame).items()} if grip else {}
+        corrected = {}
+        for name, frames in fixes.items():
+            rows = frames.get(str(frame))
+            if rows:
+                fix = Matrix([*rows, (0, 0, 0, 1)])
+                corrected[name] = target_inv @ fix @ source_world
         right = source_world.inverted() @ body.matrix_world @ src_mesh_bind_inv
         pose = {}
         for n, bone in bones.items():
@@ -138,16 +125,22 @@ def sample_motion(target, mesh, scene, body):
     return samples
 
 
-def motion_action(name, target, mesh, takes):
+def motion_action(name, target, mesh, takes, output_fps):
     samples = {b.name: [] for b in target.data.bones}
     times = []
     for scene, body in takes:
         segment = sample_motion(target, mesh, scene, body)
-        step = (1.55 if name == "walk" else 1.0) * 30 / scene.render.fps
-        start = times[-1] + step if times else 0
+        clock = source_record(scene)["timing"]
+        ticks = clock["ticksPerFrame"]
+        if (scene.frame_start * ticks, scene.frame_end * ticks) != (clock["startTick"], clock["endTick"]):
+            raise ValueError("Blender and Max frame ranges differ: " + scene["source_max"])
+        step = output_fps // clock["fps"]
+        # A shared boundary has one key. The following take owns its first pose.
+        start = times.pop() if times else 0
         times.extend(start + i * step for i in range(scene.frame_end - scene.frame_start + 1))
         for n, values in segment.items():
             if samples[n]:
+                samples[n].pop()
                 # Preserve quaternion continuity where two original takes meet.
                 if sum(a * b for a, b in zip(samples[n][-1][3:7], values[0][3:7])) < 0:
                     values = [(*v[:3], *(-q for q in v[3:7]), *v[7:]) for v in values]
@@ -196,12 +189,14 @@ def find_take(scenes, prefixes, tokens, weights):
     return None
 
 
-def assemble(blend, outfit=None, item=None):
+def assemble(blend, outfit=None, item=None, plan=None):
     bpy.ops.wm.open_mainfile(filepath=str(blend))
     hero = blend.stem.lower()
     scenes = {s["source_max"].lower(): s for s in bpy.data.scenes}
     base = scenes[item["path"].lower() if item else f"{hero}/{hero}#default.max"]
     skin = outfit["skin"] if outfit else "default"
+    if plan is not None:
+        plan["bodies"].add(base["source_max"].lower())
     output = WORK / "player-release" / "Fighters" / hero / outfit_name(hero, skin)
     output.parent.mkdir(parents=True, exist_ok=True)
 
@@ -212,7 +207,8 @@ def assemble(blend, outfit=None, item=None):
         save_json(output.with_suffix(".json"), {"source": item["path"], "clips": item["clips"]})
 
     if item and not any(ob.type == "MESH" and ob.find_armature() for ob in base.objects):
-        keep_source()
+        if plan is None:
+            keep_source()
         return
     bpy.context.window.scene = base
     base.frame_set(base.frame_start)
@@ -230,6 +226,10 @@ def assemble(blend, outfit=None, item=None):
         bone.matrix_basis = Matrix.Identity(4)
     data = target.animation_data_create()
     paths = {}
+    motion_nodes = set()
+    if plan is None:
+        # Every source frame boundary must land on the integer bake grid, including mixed FPS.
+        base.render.fps = math.lcm(*(v["timing"]["fps"] for v in native_group(hero).values()))
     prefix = Path(base["source_max"]).stem.lower()
     prefixes = [prefix]
     if "#" in prefix and hero != "base":
@@ -246,26 +246,38 @@ def assemble(blend, outfit=None, item=None):
         stages = take if isinstance(take, tuple) else (take,)
         takes = []
         for stage in stages:
-            tokens = [stage, "fly", "idle"] if clip == "run" else [stage]
+            tokens = [stage, "run", "fly", "idle"] if clip in {"run", "walk"} else [stage]
             found = find_take(scenes, dict.fromkeys(prefixes), tokens, weights)
             if found:
                 takes.append(found)
         if len(takes) != len(stages):
             continue
-        action = motion_action(clip, target, mesh, takes)
+        if plan is not None:
+            plan["motion"].update(s["source_max"].lower() for s, _ in takes)
+            continue
+        action = motion_action(clip, target, mesh, takes, base.render.fps)
+        for scene, _ in takes:
+            motion_nodes.update(n.casefold() for n in source_record(scene)["geometry"])
         track = data.nla_tracks.new()
         track.name = clip
         track.strips.new(clip, 0, action)
-        parts = [{"source": s["source_max"], "frames": [s.frame_start, s.frame_end], "mesh": ob.name}
-                 for s, ob in takes]
+        parts = [{"source": s["source_max"], "frames": [s.frame_start, s.frame_end], "mesh": ob.name,
+                  "timing": source_record(s)["timing"]} for s, ob in takes]
         paths[clip] = parts[0] if len(parts) == 1 else {"stages": parts}
+    if plan is not None:
+        return
     if not paths and item:
         keep_source()
         return
     bpy.context.window.scene = base
-    base.render.fps = 30
+    base.render.fps_base = 1
     bpy.ops.object.select_all(action="DESELECT")
     for ob in world:
+        # Loose workshop objects next to the outfit have no counterpart in its takes.
+        # Keep bone-parented accessories and the original archive scenes intact.
+        if (ob.type == "MESH" and not ob.find_armature() and ob.parent is None
+                and re.sub(r"\.\d{3}$", "", ob.name).casefold() not in motion_nodes):
+            continue
         ob.select_set(True)
     bpy.context.view_layer.objects.active = target
     folder = WORK / "player-release" / "Playable"
@@ -279,9 +291,24 @@ def assemble(blend, outfit=None, item=None):
         use_selection=True,
         export_animation_mode="NLA_TRACKS",
         export_anim_single_armature=False,
+        export_influence_nb=8,
         export_cameras=False,
         export_lights=False,
     )
+    data = tmp.read_bytes()
+    size = struct.unpack_from("<I", data, 12)[0]
+    gltf = json.loads(data[20:20+size])
+    for anim in gltf["animations"]:
+        entry = paths[anim["name"]]
+        takes = entry.get("stages", [entry])
+        times = [take["timing"] for take in takes]
+        seconds = sum((t["endTick"]-t["startTick"])/(t["fps"]*t["ticksPerFrame"]) for t in times)
+        accessors = [gltf["accessors"][s["input"]] for s in anim["samplers"]]
+        actual = max(a["max"][0] for a in accessors) - min(a["min"][0] for a in accessors)
+        if abs(actual-seconds) > 0.0001:
+            raise ValueError(f"{hero}/{skin}/{anim['name']}: exported {actual}s, expected {seconds}s")
+        anim.setdefault("extras", {})["sourceTiming"] = {"seconds":seconds, "takes":times}
+    tmp.write_bytes(write_glb_json(data,gltf))
     if not outfit:
         tmp.write_bytes(fighter_materials(tmp.read_bytes()))
         activate(hero, tmp)
@@ -294,8 +321,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("groups", nargs="*")
     parser.add_argument("--outfits", action="store_true")
+    parser.add_argument("--plan", action="store_true", help="Resolve Max sources for every published outfit")
     args = parser.parse_args()
-    if args.outfits:
+    if args.plan and args.groups:
+        parser.error("--plan resolves the complete outfit catalog")
+    if args.outfits or args.plan:
+        plan = {"motion": set(), "bodies": set()} if args.plan else None
         approved = {
             (o["group"], o["skin"])
             for o in read_json(ROOT / "src/content/raid/published-outfits.json")
@@ -307,7 +338,9 @@ if __name__ == "__main__":
             group, skin = outfit["group"], outfit["skin"]
             if (group, skin) in approved and (not args.groups or group in args.groups):
                 item = bodies[outfit["model"]]
-                assemble(WORK / "player-release/Blender" / (item["group"] + ".blend"), outfit, item)
+                assemble(WORK / "player-release/Blender" / (item["group"] + ".blend"), outfit, item, plan)
+        if plan is not None:
+            save_json(WORK / "max-motion-plan.json", {k: sorted(v) for k,v in plan.items()})
     else:
         for group in args.groups:
             assemble(WORK / "player-release" / "Blender" / (group + ".blend"))

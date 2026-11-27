@@ -265,7 +265,6 @@ export function createRaidActor(
     const active = raidActiveAction(actions, r.slot, now);
     const modeClip = (alternate: string, normal: string) =>
       r.heroView.shieldMode && motion?.has(alternate) ? alternate : normal;
-    const facing = raidFacing(r, active);
     const pose = playback.update(actions, r.slot, now, (cue) => {
       let clip: string =
         cue.skill === 'basic' ? modeClip('shieldBasic', 'basic') : clips[cue.skill];
@@ -280,6 +279,7 @@ export function createRaidActor(
           : cue.tick;
       return { clip, duration: motion?.duration(clip) ?? 0, start };
     });
+    const facing = raidFacing(r, pose?.cue ?? active);
     if (r.leap) {
       motion?.once(clips[r.leap.skill], (r.leap.elapsed + subtick) / RAID_HZ, dt);
     } else if (r.dash) {

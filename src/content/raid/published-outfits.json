@@ -129,13 +129,13 @@
     "group": "bird",
     "skin": "default",
     "model": "./assets/fighters/bird-default.glb",
-    "clips": ["run"]
+    "clips": ["run", "walk"]
   },
   {
     "group": "bird",
     "skin": "bigbird#default",
     "model": "./assets/fighters/bird-bigbird-default.glb",
-    "clips": ["run"]
+    "clips": ["run", "walk"]
   },
   {
     "group": "demon",

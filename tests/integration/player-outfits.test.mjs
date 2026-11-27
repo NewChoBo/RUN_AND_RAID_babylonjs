@@ -27,6 +27,20 @@ test('each published Player outfit embeds the advertised clips and renders its b
       outfit.clips,
       outfit.model,
     );
+    if (outfit.clips.includes('run')) {
+      for (const clip of doc.animations) {
+        const { seconds, takes } = clip.extras.sourceTiming;
+        const duration = takes.reduce(
+          (sum, t) => sum + (t.endTick - t.startTick) / (t.ticksPerFrame * t.fps),
+          0,
+        );
+        const inputs = clip.samplers.map((s) => doc.accessors[s.input]);
+        const actual =
+          Math.max(...inputs.map((a) => a.max[0])) - Math.min(...inputs.map((a) => a.min[0]));
+        assert.ok(duration > 0 && Math.abs(seconds - duration) < 1e-6, path);
+        assert.ok(Math.abs(actual - duration) < 1e-4, path + '/' + clip.name);
+      }
+    }
     for (const material of doc.materials ?? []) {
       assert.equal(material.alphaMode ?? 'OPAQUE', 'OPAQUE', outfit.model);
     }

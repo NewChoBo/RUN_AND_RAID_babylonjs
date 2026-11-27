@@ -1,12 +1,22 @@
-import { raidActionTicks } from '../../../game/raid/raid-facing.ts';
 import { RAID_HZ } from '../../../game/raid/raid-rules.ts';
 import type { RaidAction } from '../../../game/raid/raid-view.ts';
 
-/** Keep the current take beyond the network action history. New casts can interrupt recovery. */
+type Take = { cue: RaidAction; clip: string; start: number; end: number };
+
+/** Skills may interrupt. Auto attacks finish their take and buffer at most one follow-up. */
 export class RaidActionPlayback {
   private lastId = 0;
   private lastTick = -1;
-  private current?: { cue: RaidAction; clip: string; start: number; end: number };
+  private current?: Take;
+  private pending?: Take;
+
+  private advance(tick: number) {
+    if (this.pending && tick >= this.pending.start) {
+      this.current = this.pending;
+      this.pending = undefined;
+    }
+    if (this.current && tick >= this.current.end) this.current = undefined;
+  }
 
   update(
     actions: readonly RaidAction[],
@@ -17,23 +27,24 @@ export class RaidActionPlayback {
     if (now < this.lastTick) {
       this.lastId = 0;
       this.current = undefined;
+      this.pending = undefined;
     }
     this.lastTick = now;
     for (const cue of actions) {
       if (cue.slot !== slot || cue.id <= this.lastId || cue.tick > now) continue;
       this.lastId = cue.id;
-      const previous = this.current;
-      if (
-        cue.skill === 'basic' &&
-        previous &&
-        previous.cue.skill !== 'basic' &&
-        cue.tick < Math.min(previous.end, previous.cue.tick + raidActionTicks(previous.cue))
-      )
-        continue;
+      this.advance(cue.tick);
+      if (cue.skill === 'basic' && this.current && this.current.cue.skill !== 'basic') continue;
       const { clip, duration, start } = resolve(cue);
+      if (cue.skill === 'basic' && this.current) {
+        const next = this.current.end;
+        this.pending = { cue, clip, start: next, end: next + duration * RAID_HZ };
+        continue;
+      }
+      this.pending = undefined;
       this.current = { cue, clip, start, end: start + duration * RAID_HZ };
     }
-    if (this.current && now >= this.current.end) this.current = undefined;
+    this.advance(now);
     return this.current;
   }
 }

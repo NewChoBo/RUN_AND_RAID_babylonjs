@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+import gzip
 import hashlib
 import io
 import json
@@ -66,12 +67,28 @@ def package_fbx(groups, work, timeline):
     write_changed(work / "fbx-index.csv", buf.getvalue().encode("utf-8-sig"))
 
 
+def max_timeline(records):
+    buffer = io.StringIO(newline="")
+    out = csv.writer(buffer)
+    out.writerow(["source", "fps", "ticksPerFrame", "startTick", "endTick", "startFrame", "endFrame",
+                  "seconds", "previewSpeed", "realTime", "loop", "frameTags", "noteKeys"])
+    for path, record in sorted(records.items()):
+        t = record["timing"]
+        ticks, fps = t["ticksPerFrame"], t["fps"]
+        first, last = t["startTick"], t["endTick"]
+        out.writerow([path, fps, ticks, first, last, first / ticks, last / ticks,
+                      (last-first)/(ticks*fps), (0.25, 0.5, 1, 2, 4)[t["playbackSpeed"]-1],
+                      t["realTime"], t["loop"], json.dumps(t["tags"],ensure_ascii=False),
+                      json.dumps(t["notes"],ensure_ascii=False)])
+    return buffer.getvalue().encode("utf-8-sig")
+
+
 def write_drive_checksums(work, groups):
     files = [work / kind / (group + ext)
              for kind, ext in [("FBX", ".zip"), ("Blender", ".blend"), ("GLB", ".zip")]
              for group in sorted(groups)]
     sums = []
-    for file in [*files, work / "fbx-index.csv"]:
+    for file in [*files, work / "fbx-index.csv", *work.glob("max-timing.csv")]:
         with file.open("rb") as stream:
             sha = hashlib.file_digest(stream, "sha256").hexdigest()
         sums.append(f"{sha}  {file.relative_to(work).as_posix()}\n")
@@ -151,9 +168,10 @@ def main(timeline=None, selected=()):
                 entries.append(
                     dict(file=relative, sha256=sha, **read_json(path.with_suffix(".json")))
                 )
-            if group.casefold() == "longshot":
-                reference = WORK / "longshot-grip.json"
-                bundle.write(reference, "Reference/longshot-grip.json")
+            reference = work / "Reference" / (group.lower() + ".json.gz")
+            bundle.write(reference, "Reference/" + reference.name)
+            with gzip.open(reference, "rt", encoding="utf8") as stream:
+                bundle.writestr("Reference/max-timing.csv", max_timeline(json.load(stream)))
             bundle.writestr("index.json", json.dumps(entries, ensure_ascii=False, indent=2))
         with zipfile.ZipFile(tmp) as bundle:
             if bundle.testzip():
@@ -168,6 +186,13 @@ def main(timeline=None, selected=()):
     write_changed(
         hashes, "".join(f"{checksums[p]}  {p}\n" for p in sorted(checksums)).encode("utf8")
     )
+    references = [work / "Reference" / (group.lower() + ".json.gz") for group in groups]
+    if all(path.exists() for path in references):
+        all_clocks = {}
+        for path in references:
+            with gzip.open(path, "rt", encoding="utf8") as stream:
+                all_clocks.update(json.load(stream))
+        write_changed(work / "max-timing.csv", max_timeline(all_clocks))
     if timeline or (work / "fbx-index.csv").exists():
         write_drive_checksums(work, groups)
     print("Packaged", len(selected), "groups and", len(by_key), "game outfits")

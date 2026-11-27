@@ -6,13 +6,17 @@ Google Drive의 **Run and Raid - Player Assets**에서 `Blender/<그룹>.blend`�
 
 게임과 Drive에서 같은 외형은 같은 파일명을 쓴다. 예를 들어 해머 근위대 외형은 `hammer-royalguard.glb`, 해머 기본 달리기는 `hammer-default-run.glb`와 `hammer-default-run.fbx`, 기본 편집 장면은 `hammer-default-scene.glb`다. 구버전·변형 장면은 원본의 하위 폴더 이름까지 덧붙인다. 각 FBX의 원본 MAX 경로와 프레임 범위는 `fbx-index.csv`에서 찾을 수 있다. FBX에 연결된 원본 TGA는 재연결에 쓰이는 이름을 유지한다.
 
-31개 그룹의 장면 GLB 876개 중 851개에는 메시가 있고, 25개는 본·헬퍼 장면이다. 별도 제작된 걷기가 없는 경기 모델은 달리기를 느리게 사용한다. 칼리의 중독은 다음 평타를 강화하므로 전용 원본이 없는 이 슬롯에 평타 동작을 연결했다. 피부·의상 디퓨즈의 알파는 마스크로 보존하고 경기용 본체는 불투명하게 렌더링한다. 일부 제작용 장면은 원본 ZIP에 없는 텍스처를 참조한다. 편집 파일의 장면 속성과 그룹별 GLB 색인에 해당 참조를 기록했다.
+31개 그룹의 장면 GLB 876개 중 851개에는 메시가 있고, 25개는 본·헬퍼 장면이다. 별도 제작된 걷기가 없는 경기 모델은 대응하는 달리기·비행·대기 장면의 원래 길이를 사용한다. 칼리의 중독은 다음 평타를 강화하므로 전용 원본이 없는 이 슬롯에 평타 동작을 연결했다. 피부·의상 디퓨즈의 알파는 마스크로 보존하고 경기용 본체는 불투명하게 렌더링한다. 일부 제작용 장면은 원본 ZIP에 없는 텍스처를 참조한다. 편집 파일의 장면 속성과 그룹별 GLB 색인에 해당 참조를 기록했다.
 
 원본 ZIP을 준비한 작업 환경에서 전체 라이브러리를 다시 만들 때는 Drive의 FBX 압축을 `asset-sources/baked-fbx/`에 푼다. 편집 작업본의 출력은 `.asset-work/player-release/Blender/`다. 이미 Drive에서 받은 작업본이 있으면 `glb` 단계부터 실행한다.
 
 ```powershell
 uv run --no-project --python 3.13 --with bpy==5.3.0 --with pillow==11.1.0 python tools/assets/player_archive.py blend --timeline "C:/art/fbx-index.csv"
 uv run --no-project --python 3.13 --with bpy==5.3.0 --with pillow==11.1.0 python tools/assets/player_archive.py glb
+uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/assemble_player.py --plan
+$env:RUN_RAID_PROJECT = (Resolve-Path .).Path
+& "D:/Work/3DSMAX/3ds Max 2027/3dsmaxbatch.exe" (Resolve-Path tools/assets/max_motion_reference.py).Path
+uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/prepare_motion_reference.py
 uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/assemble_player.py --outfits
 python tools/assets/package_players.py --fbx-index "C:/art/fbx-index.csv"
 uv run --no-project --python 3.13 --with pillow==11.1.0 python tools/assets/verify.py
@@ -97,13 +101,18 @@ await previewStaticHero('hammer', 'hammer/hammer#default.max');
 
 이 미리보기 도구는 개별 장면을 경기 카메라에서 점검할 때 사용한다. 상점과 경기에서는 외형별 게임용 GLB를 읽는다. 해머 봇 경기에서 본체와 무기, 달리기, 타격 시 자세를 확인했다.
 
-## 롱샷의 활과 화살 재베이크
+## 장비 위치와 재생 시간 복원
 
-`.asset-work/player-release/Blender/longShot.blend`에는 FBX에서 가져온 원본별 장면이 있다. `Bowbone`과 `ArrowBn`은 FBX 단계에서 손과 어긋나므로 게임용 동작은 3ds Max의 평가 결과를 사용한다. `RUN_RAID_PROJECT`를 체크아웃 절대경로로 지정한 후 3ds Max Batch에서 `tools/assets/longshot_reference.py`를 실행한다. 원본은 `asset-sources/player/longShot/Animation`에서 읽으며 `.asset-work/longshot-grip.json`에 12개 테이크의 프레임별 좌표를 저장한다. 비공개 Drive의 `GLB/longShot.zip` 안에 있는 `Reference/longshot-grip.json`을 같은 경로에 복원할 수도 있다.
+Max Batch는 원본 장면별 FPS, 프레임당 틱, 시작·끝 틱, 미리보기 속도·실시간·반복 설정, 프레임 태그와 노트 키를 읽는다. 경기용 모션은 매 프레임 각 Skin 본의 정점 위치도 읽는다. 재생 시간은 `(끝 틱 − 시작 틱) / (프레임당 틱 × FPS)`로 구한다. Max 미리보기 속도는 편집기 설정으로 따로 보관한다. [Autodesk 시간 설정](https://help.autodesk.com/cloudhelp/2026/ENU/MAXScript-Help/files/MAXScript-Tools-and-Interaction/Interacting-with-the-3ds-Max/Time-Control/GUID-0E38D992-E687-4A0D-80BB-875F0BAD021E.html)
+
+`prepare_motion_reference.py`는 몸의 대응 정점으로 각 장면의 Max·FBX 단위와 방향을 맞춘다. 원본 위치와 다른 단단한 장비는 여러 정점이 함께 설명하는 회전·이동을 구해 장면의 프레임별 보정값을 기록한다. 외형별 바인드 포즈에 보정을 적용해 출력한 뒤, GLB를 다시 열어 시작·중간·끝의 손과 장비 정점 및 트랙 길이를 재검사한다. 이 비교는 주자를 따라가는 좌표계에서 수행한다. 해머의 망치, 롱샷의 활·화살처럼 독립적으로 움직이는 장비에는 각각의 원본 궤적을 적용한다.
+
+비공개 Drive의 `GLB/<그룹>.zip` 안에 있는 `Reference/<그룹 소문자>.json.gz`에는 시간·장면·보정 자료가 있다. 압축을 풀어 `.asset-work/player-release/Reference/`에 두면 Max 추출을 반복하지 않고 해당 외형을 다시 베이크할 수 있다. `Reference/max-timing.csv`는 그룹 시간표이고, Drive 루트의 `max-timing.csv`는 전체 시간표다. GLB의 각 애니메이션에도 `extras.sourceTiming`으로 원본 시간값이 들어 있다. 원본에 태그가 없으면 빈 목록으로 기록한다.
 
 ```powershell
-uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/assemble_player.py --outfits longshot
-python tools/assets/package_players.py --groups longshot
+uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/assemble_player.py --outfits hammer longshot
+python tools/assets/package_players.py --groups hammer longshot
+uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/verify_player_motion.py hammer longshot --out .asset-work/grip-check.json
 ```
 
-기본·히트맨·로열가드·시프길드의 움직임은 각 스킨의 바인드 포즈와 원본 왼손 검지 좌표를 기준으로 보정한다. 활과 화살은 독립적으로 움직인다. Blender에서 포즈나 타이밍을 편집할 때는 `Outfits/longshot-<스킨>.glb`를 가져온 뒤 NLA의 개별 액션을 선택한다. 원본 장면과 게임용 베이크 결과를 비교할 때는 평타의 같은 프레임을 사용한다.
+정점 대조에는 원본 장면을 읽어 만든 `.asset-work/max-motion/`이 필요하다. 일괄 열기에서 실패한 장면은 해당 폴더의 `*.error`에 원본 경로가 남는다. 해당 경로를 `RUN_RAID_REFERENCE_FILE`에 넣고 같은 Max Batch 명령에 `-sceneFile <원본 절대경로>`를 추가해 새 프로세스에서 복구할 수 있다. 필터를 사용한 뒤에는 환경 변수를 해제한다.

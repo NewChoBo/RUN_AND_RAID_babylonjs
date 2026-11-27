@@ -20,6 +20,11 @@ def fighter_materials(data):
             changed = True
     if not changed:
         return data
+    return write_glb_json(data, model)
+
+
+def write_glb_json(data, model):
+    json_size = struct.unpack_from("<I", data, 12)[0]
     chunk = json.dumps(model, ensure_ascii=False, separators=(",", ":")).encode("utf8")
     chunk += b" " * (-len(chunk) % 4)
     rest = data[20 + json_size:]
