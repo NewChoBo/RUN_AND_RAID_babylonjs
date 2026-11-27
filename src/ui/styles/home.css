@@ -188,29 +188,15 @@ p {
 .banner strong {
   color: #86da30;
 }
-.upgrade {
-  min-height: 0;
-  height: 85%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2.8cqw;
-  font: bold calc(5.6 * var(--unit))/1 Georgia;
-}
-.upgrade svg {
-  width: auto;
-  max-width: 16%;
-  min-width: 0;
-  flex: none;
-  height: 100%;
-  aspect-ratio: 1;
-  background: linear-gradient(135deg, #141210, #332c25);
-  border: 0.45cqw ridge #91877a;
-  border-radius: 0.35cqw;
-}
-.upgrade svg:last-child {
-  border-color: #7c9f27;
-  background: linear-gradient(135deg, #172610, #464d25);
+.banner-link {
+  justify-self: center;
+  padding: 0.4em 1.2em;
+  border: 1px solid #b7a382;
+  background: linear-gradient(#50483c, #28231f);
+  color: #fff2da;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: calc(2.3 * var(--unit));
 }
 .board {
   display: grid;
@@ -284,10 +270,10 @@ article {
   color: white;
   background: #599153;
 }
-#items [data-kind='공지사항'] {
+#items [data-kind='조작'] {
   background: #328a8b;
 }
-#items [data-kind='이벤트'] {
+#items [data-kind='주자'] {
   background: #a54538;
 }
 .article-body {

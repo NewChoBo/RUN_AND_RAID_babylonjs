@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
@@ -39,17 +39,6 @@
       <symbol id="chat" viewBox="0 0 24 24">
         <path d="M2 2h17v13H9l-5 5v-5H2zm18 5h3v13h-3v3l-4-3H9v-3h11z" />
       </symbol>
-      <symbol id="blade" viewBox="0 0 48 48">
-        <path
-          fill="#42271a"
-          stroke="#382512"
-          stroke-width="2"
-          d="M3 2 14 7 35 30l5-1 3 4-6 2 6 7-4 3-7-8-3 5-4-3 3-6L9 14z"
-        />
-        <path fill="#ffdf81" d="m5 4 8 5 20 23-3 1L10 14z" />
-        <path fill="#fff5cf" d="m5 4 25 29 2-2z" />
-        <path fill="#db9321" d="m26 39 4-9 9-1 2 2-8 3-5 7zm8-3 3-1 6 7-3 2z" />
-      </symbol>
     </svg>
     <main class="lobby" aria-label="런앤레이드 로비">
       <header>
@@ -84,18 +73,16 @@
       </header>
       <section class="banner">
         <img class="banner-art" alt="" src="./assets/raid/lobby/welcome.webp" />
-        <h1>신규 유저 분들을 응원합니다!</h1>
+        <h1>원작 주자로 달려 보세요!</h1>
         <p>
-          5월 30일부터 가입한 신규 유저분들에게는 <em>3000</em>골드와<br />기존의 일반 아이템12종을
-          <strong>마법 아이템</strong>으로 업그레이드해 지급해 드립니다!
+          봇 연습에서 <em>원작 외형 106종</em>을 고를 수 있습니다.<br />점프 높이와 마차 추격 속도도
+          원작 영상에 맞춰 조정했습니다.
         </p>
-        <div class="upgrade" aria-hidden="true">
-          <svg><use href="#blade" /></svg><span>➞</span><svg><use href="#blade" /></svg>
-        </div>
+        <a class="banner-link" href="./game.html">봇 연습 준비 화면으로 ›</a>
       </section>
       <section class="board">
         <div class="list">
-          <h2>새소식</h2>
+          <h2>개발일지</h2>
           <div class="columns">구분 <span>제목</span></div>
           <div id="items"></div>
         </div>
