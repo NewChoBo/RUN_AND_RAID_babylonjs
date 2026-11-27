@@ -36,3 +36,9 @@
 Pages 배포 소스를 GitHub Actions로 전환했다. [검증 커밋 74d4f0d의 배포 실행](https://github.com/NewChoBo/RUN_AND_RAID_babylonjs/actions/runs/45963932071)에서 검사, 테스트 97개, 빌드와 에셋 해시 검사를 통과했다. 공개 브라우저에서 제이드로 봇 경기에 진입했고 남은 시간 2분 25초에 양 팀 마차 피해 15%와 23%를 확인했다. Photon은 Actions 변수 등록 후 재배포와 독립 세션 2개 검증이 남아 있다.
 
 영웅별로 개발진 제공 원작 외형·무기·모션을 우선하고 준비 전에는 기존 범용 모델을 사용한다. 해머의 원작 정적 본체는 로컬 경기 카메라에서 확인했다. 원작 모션 검증에는 스킨과 키프레임을 보존한 FBX가 필요하다. 다른 영웅에도 [로컬 외형 점검과 경기 등록 절차](PLAYER-ASSETS.md)를 적용한다.
+
+## Photon 임시 공용 앱 및 전용 앱 교체
+
+2026-11-27부터 기존 oblivion-archive 웹판과 같은 Photon Realtime 앱을 임시 사용한다. 공개판은 저장소 Actions 변수 `VITE_PHOTON_APP_ID`, 로컬판은 Git에서 제외한 `.env.local`에서 읽는다. 기존 웹판과 리전 `asia` 및 앱 버전 `run-and-raid-1`도 같아 같은 매칭 풀을 사용한다.
+
+**남은 작업** — 전용 Realtime 앱을 만든 뒤 이 프로젝트의 Actions 변수와 로컬 값을 새 App ID로 교체한다. Pages 워크플로를 다시 실행하고 독립 브라우저 두 개에서 코드 방 참가, 경기 시작, 이동과 스킬 동기화를 재검증한다.
