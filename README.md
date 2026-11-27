@@ -21,6 +21,14 @@ npm test
 npm run build
 ```
 
+## UI 수정
+
+로비 홈, 상점, 경기 대기실, 원작 에셋 화면의 마크업은 `src/ui/templates/`에 있습니다. 공통 상단 메뉴는 `toolbar.html`, 메뉴 아이콘은 `toolbar-icons.html`에서 수정합니다. 화면 동작은 `src/app/`, 스타일은 `src/ui/styles/`, 화면 전환은 `src/routes.ts`에서 관리합니다.
+
+`index.html`에는 시작 화면, 게임 캔버스, 공통 대화상자와 각 템플릿의 위치가 있습니다. 예를 들어 `<!-- ui: shop -->` 위치에 Vite가 `shop.html`을 넣습니다. 개발 서버와 배포 빌드 모두 완성된 HTML을 브라우저에 전달하며, 템플릿 안의 이미지 경로는 `index.html` 기준으로 작성합니다.
+
+## 게임 구현과 에셋
+
 경기 구현은 [기존 웹판의 3fcadc2](https://github.com/NewChoBo/oblivion-archive/tree/3fcadc2)에서 이식했습니다. 게임 규칙은 `src/game/raid`, 영웅별 콘텐츠는 `src/content/raid`, Babylon.js 렌더링은 `src/platform/babylon/raid`에 있습니다. 기본 플레이 모델과 파티클 출처는 [에셋 출처](docs/ASSETS.md)에 기록했습니다.
 
 개발진 제공 Player.zip의 전체 변환과 원작 모션 준비 절차는 [Player 에셋 준비](docs/PLAYER-ASSETS.md)에 있습니다.

@@ -1,0 +1,24 @@
+<section id="library" aria-label="원작 에셋" hidden>
+  <header>
+    <a href="#/ready">← 경기장</a>
+    <h1>원작 에셋</h1>
+    <span id="count"></span>
+  </header>
+  <div class="library-layout">
+    <aside>
+      <label>캐릭터·폴더<select id="group"></select></label
+      ><label>파일 검색<input id="filter" type="search" placeholder="예: skill4start" /></label
+      ><label>원본 파일<select id="entries" size="14"></select></label>
+    </aside>
+    <section>
+      <h2 id="name">에셋 불러오는 중</h2>
+      <p id="status" role="status"></p>
+      <div id="stage">
+        <canvas id="model" aria-label="드래그해 모델 회전, 휠 또는 두 손가락으로 확대"></canvas
+        ><img id="picture" hidden alt="원본 에셋 미리보기" />
+      </div>
+      <p id="info"></p>
+      <a id="download" hidden download>변환 파일 열기</a>
+    </section>
+  </div>
+</section>

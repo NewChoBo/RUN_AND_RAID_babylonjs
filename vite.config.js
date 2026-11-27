@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
+import { lobbyHtml } from './tools/lobby-html.js';
+
 export default defineConfig({
   base: './',
+  plugins: [lobbyHtml],
   server: {
     host: '127.0.0.1',
     port: 5198,
