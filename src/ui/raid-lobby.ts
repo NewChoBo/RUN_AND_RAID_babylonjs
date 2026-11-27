@@ -505,7 +505,9 @@ export function createRaidLobby(
           const invite = document.createElement('span');
           invite.className = 'draft-room-code';
           invite.dataset.copyable = '';
+          invite.tabIndex = 0;
           invite.textContent = roomCode;
+          invite.onfocus = () => window.getSelection()?.selectAllChildren(invite);
           const [before = '', after = ''] = roomStatus.split(roomCode);
           status.replaceChildren(before, invite, after);
         } else status.textContent = roomStatus;

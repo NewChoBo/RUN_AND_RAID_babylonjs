@@ -226,6 +226,13 @@
 .team-versus output {
   color: #fff0c7;
 }
+.draft-room-code {
+  display: inline-block;
+  cursor: text;
+}
+.draft-room-code:focus-visible {
+  outline: 1px solid currentColor;
+}
 .team-versus time,
 .picker-clock time {
   color: #ff6959;
@@ -337,6 +344,9 @@
   min-height: 32px;
 }
 @media (pointer: coarse) {
+  .team-versus .draft-room-info:has(.draft-room-code) {
+    row-gap: 10px;
+  }
   .battle-outfit select {
     min-height: 44px;
   }
