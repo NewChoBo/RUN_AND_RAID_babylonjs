@@ -144,6 +144,9 @@
 .team-seats .red-seat img {
   left: 0;
 }
+.team-seats .tentative-art {
+  opacity: 0.5;
+}
 .team-seats span {
   position: absolute;
   top: 3px;
@@ -164,7 +167,7 @@
     0 1px 3px black,
     1px 1px 3px black;
 }
-.team-seats .locked-runner {
+.team-seats .seat-runner-name {
   position: absolute;
   inset: 2px 5px auto auto;
   max-width: 49%;
@@ -173,7 +176,7 @@
   text-overflow: ellipsis;
   font-size: clamp(10px, 2.8dvh, 16px);
 }
-.team-seats .red-seat .locked-runner {
+.team-seats .red-seat .seat-runner-name {
   inset-inline: 5px auto;
 }
 .team-seats .seat-pick {

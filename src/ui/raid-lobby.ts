@@ -61,6 +61,7 @@ export function createRaidLobby(
     leave(): void;
     pick(hero: RaidHero | null, outfit?: string): void;
     prefer(hero: RaidHero, outfit?: string): void;
+    resetPracticeOutfit(): void;
     selected(): RaidHero;
   },
 ) {
@@ -92,6 +93,24 @@ export function createRaidLobby(
   status.setAttribute('aria-live', 'polite');
   const teams = document.createElement('ul');
   teams.className = 'team-seats';
+  const seatViews = Array.from({ length: 4 }, (_, i) => {
+    const item = document.createElement('li');
+    item.className = i % 2 ? 'red-seat' : 'blue-seat';
+    const pick = document.createElement('small');
+    pick.className = 'seat-pick';
+    pick.textContent = uiText('pickSeat', { n: pickNumber(i) });
+    const team = uiText(i % 2 ? 'redTeam' : 'blueTeam') + ' ' + (Math.floor(i / 2) + 1);
+    const name = document.createElement('span');
+    const runner = document.createElement('strong');
+    const image = document.createElement('img');
+    image.alt = '';
+    const state = document.createElement('div');
+    const ready = document.createElement('b');
+    ready.textContent = uiText('seatReady');
+    item.append(pick, name, runner, state);
+    teams.append(item);
+    return { item, team, name, runner, image, state, ready };
+  });
   const versus = document.createElement('div');
   versus.className = 'team-versus';
   versus.innerHTML = '<div><strong><b></b> <b></b></strong><span></span><time></time></div>';
@@ -104,7 +123,11 @@ export function createRaidLobby(
   picker.setAttribute('aria-label', uiText('chooseCharacter'));
   const confirm = document.createElement('button');
   confirm.textContent = uiText('ok');
-  confirm.onclick = () => picker.close();
+  confirm.onclick = () => {
+    const own = seats.find((seat) => seat.actor === self);
+    if (own && !own.hero && own.preferred !== preview) actions.prefer(preview, battleModel.value());
+    picker.close();
+  };
   const draft = document.createElement('div');
   draft.className = 'raid-draft';
   const title = document.createElement('h3');
@@ -148,7 +171,11 @@ export function createRaidLobby(
   const moreTitle = document.createElement('summary');
   moreTitle.textContent = uiText('championDetails');
   more.append(moreTitle, range, detail, skills, guide);
-  const battleModel = createBattleOutfitPicker(() => actions.prefer(preview, battleModel.value()));
+  function changePreference() {
+    actions.resetPracticeOutfit();
+    actions.prefer(preview, battleModel.value());
+  }
+  const battleModel = createBattleOutfitPicker(changePreference);
   caption.append(heroName, loadout.settings, battleModel.field, more);
   profile.append(portrait, caption);
   const notice = document.createElement('p');
@@ -195,7 +222,7 @@ export function createRaidLobby(
     card.onclick = () => {
       preview = hero;
       paint();
-      actions.prefer(hero, battleModel.value());
+      changePreference();
     };
     cards.append(card);
     return { hero, card, taken, badge } as const;
@@ -214,6 +241,27 @@ export function createRaidLobby(
           ? uiText('soloReady')
           : t(soloRoom ? 'pickSolo' : 'pickPlayers');
     if (mine) preview = mine;
+    for (const [i, { item, team, name, runner, image, state, ready }] of seatViews.entries()) {
+      const seat = seats[i];
+      const ownSeat = seat?.actor === self;
+      const hero = seat?.hero ?? (ownSeat ? preview : seat?.preferred);
+      const current = !!seat && (clock ? clock.actor === seat.actor : !seat.hero);
+      const text = current ? t('picking') : seat ? uiText('seatWaiting') : t('bot');
+      item.classList.toggle('own-seat', ownSeat);
+      if (current) item.setAttribute('aria-current', 'step');
+      else item.removeAttribute('aria-current');
+      name.textContent = ownSeat ? team + ' · ' + t('you') : team;
+      runner.textContent = hero ? t(hero) : text;
+      runner.classList.toggle('seat-runner-name', !!hero);
+      if (hero) {
+        setDraftArt(image, hero, true);
+        image.classList.toggle('tentative-art', !seat?.hero);
+        if (!image.parentNode) item.prepend(image);
+      } else image.remove();
+      if (seat?.hero) {
+        if (state.firstChild !== ready) state.replaceChildren(ready);
+      } else state.textContent = hero ? text : '';
+    }
     for (const { hero, card, taken, badge } of choices) {
       const occupied = seats.some((s) => s.hero === hero && s.actor !== self);
       card.disabled = occupied || (!!mine && hero !== mine);
@@ -363,7 +411,6 @@ export function createRaidLobby(
             ? uiText('privateRoom')
             : uiText('enterCode');
     if (stage !== 'draft') start.hidden = true;
-    teams.replaceChildren();
     draft.hidden = versus.hidden = stage !== 'draft';
     if (stage !== 'draft') {
       window.clearTimeout(clockTimer);
@@ -450,45 +497,6 @@ export function createRaidLobby(
           const [before = '', after = ''] = roomStatus.split(roomCode);
           status.replaceChildren(before, invite, after);
         } else status.textContent = roomStatus;
-      }
-      for (let i = 0; i < 4; i++) {
-        const item = document.createElement('li');
-        const seat = seats[i];
-        item.className = i % 2 ? 'red-seat' : 'blue-seat';
-        if (seat?.actor === self) item.classList.add('own-seat');
-        const current = !!seat && (clock ? clock.actor === seat.actor : !seat.hero);
-        if (current) item.setAttribute('aria-current', 'step');
-        const pick = document.createElement('small');
-        pick.className = 'seat-pick';
-        pick.textContent = uiText('pickSeat', { n: pickNumber(i) });
-        const name = document.createElement('span');
-        name.textContent =
-          uiText(i % 2 ? 'redTeam' : 'blueTeam') +
-          ' ' +
-          (Math.floor(i / 2) + 1) +
-          (seat?.actor === self ? ' · ' + t('you') : '');
-        const runner = document.createElement('strong');
-        runner.textContent = seat?.hero
-          ? t(seat.hero)
-          : current
-            ? t('picking')
-            : seat
-              ? uiText('seatWaiting')
-              : t('bot');
-        if (seat?.hero) {
-          runner.className = 'locked-runner';
-          const img = document.createElement('img');
-          img.alt = '';
-          setDraftArt(img, seat.hero, true);
-          item.append(img);
-        }
-        item.append(pick, name, runner);
-        if (seat?.hero) {
-          const ready = document.createElement('b');
-          ready.textContent = uiText('seatReady');
-          item.append(ready);
-        }
-        teams.append(item);
       }
       start.textContent = t(soloRoom ? 'startSoloRoom' : 'startRound');
       start.disabled = soloRoom ? !seats[0]?.hero : !isRaidRoster(seats);

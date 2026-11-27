@@ -350,10 +350,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
         } else room?.pick(hero, outfit);
       },
       selected: () => chosenHero,
-      prefer(hero, outfit) {
-        hud.resetOutfit();
-        room?.prefer(hero, outfit);
-      },
+      resetPracticeOutfit: hud.resetOutfit,
+      prefer: (hero, outfit) => room?.prefer(hero, outfit),
       chat(text) {
         if (offline) lobby.chat(1, text);
         else room?.chat(text);
