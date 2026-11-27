@@ -1,6 +1,6 @@
 /* The original character-select screen puts the two teams across a central score strip. */
 .lobby[data-screen='shop'] {
-  grid-template-rows: min(15.7%, 76px) minmax(0, 1fr);
+  grid-template-rows: var(--toolbar-height) minmax(0, 1fr);
 }
 #shop-gallery {
   display: grid;

@@ -17,7 +17,8 @@ body {
   width: 100%;
   container-type: size;
   display: grid;
-  grid-template-rows: min(15.7%, 76px) min(46%, 290px) minmax(0, 1fr);
+  --toolbar-height: clamp(52px, 15.7%, 76px);
+  grid-template-rows: var(--toolbar-height) min(46%, 290px) minmax(0, 1fr);
   --unit: min(1cqw, 1.6cqh, 8.5px);
   background: #221f1b;
 }
@@ -40,21 +41,30 @@ a:focus-visible {
 .lobby-toolbar {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
-  grid-template-columns: 42fr 20fr 16fr 8fr 8fr 4fr;
+  grid-template-columns: minmax(0, 1fr) min(18%, 230px) minmax(0, 1fr);
   align-items: stretch;
-  gap: 0.45cqw;
+  column-gap: clamp(3px, 0.6cqw, 8px);
   padding: 1.4cqh 0 0.45cqh;
   background: linear-gradient(#100f11, #292827);
   font-size: calc(2.05 * var(--unit));
   min-height: 0;
 }
-.lobby-toolbar nav {
+.lobby-toolbar nav,
+.toolbar-utilities {
   display: grid;
+  width: min(100%, 492px);
+  min-width: 0;
   min-height: 0;
   grid-template-rows: minmax(0, 1fr);
+}
+.lobby-toolbar nav {
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.3cqw;
-  margin-right: 1cqw;
+  gap: min(0.3cqw, 3px);
+}
+.toolbar-utilities {
+  justify-self: end;
+  grid-template-columns: min(43%, 180px) repeat(2, minmax(0, 1fr)) minmax(0, 0.5fr);
+  gap: min(0.45cqw, 4px);
 }
 .lobby-toolbar button,
 .play,
@@ -380,7 +390,7 @@ html[data-mobile] body > #launch-splash:not(.launch-error) {
 
 @media (min-width: 1000px) {
   .lobby {
-    grid-template-rows: min(15.7%, 76px) minmax(0, 1fr) fit-content(min(40%, 250px));
+    grid-template-rows: var(--toolbar-height) minmax(0, 1fr) fit-content(min(40%, 250px));
   }
   .banner {
     background: linear-gradient(#363d37, #192e2e 65%, #17201d);
@@ -392,20 +402,7 @@ html[data-mobile] body > #launch-splash:not(.launch-error) {
     mask-image: linear-gradient(transparent, black 7%, black 92%, transparent);
   }
   .lobby-toolbar {
-    grid-template-columns:
-      auto minmax(150px, 1fr) minmax(120px, 180px) minmax(60px, 80px) minmax(60px, 80px)
-      40px;
     padding: 4px 0;
-    gap: 4px;
-  }
-  .lobby-toolbar nav {
-    grid-template-columns: repeat(5, clamp(72px, 6vw, 96px));
-    gap: 3px;
-    margin-right: 4px;
-  }
-  .play {
-    justify-self: center;
-    width: min(100%, 230px);
   }
   .wallet {
     padding: 4px;

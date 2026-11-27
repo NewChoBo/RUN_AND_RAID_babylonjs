@@ -5,7 +5,7 @@
 }
 .lobby[data-screen='ready']:not(:has(#match-menu[open])),
 .lobby[data-screen='assets'] {
-  grid-template-rows: min(15.7%, 76px) minmax(0, 1fr);
+  grid-template-rows: var(--toolbar-height) minmax(0, 1fr);
 }
 .lobby:not([data-screen='home']):not(:has(#match-menu[open])) > :is(.banner, .board) {
   display: none;
