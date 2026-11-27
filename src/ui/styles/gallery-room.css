@@ -1,0 +1,279 @@
+/* The original character-select screen puts the two teams across a central score strip. */
+.lobby[data-screen='shop'] {
+  grid-template-rows: min(15.7%, 76px) minmax(0, 1fr);
+}
+#shop-gallery {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  background: #242322;
+  color: #fff1d8;
+}
+#shop-gallery header,
+#shop-gallery figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.35em 0.8em;
+  background: linear-gradient(#4b453d, #292622);
+}
+#shop-gallery h1 {
+  font-size: clamp(1rem, 2vw, 1.4rem);
+}
+#shop-gallery button,
+.runner-picker button {
+  background: linear-gradient(#fff3dc, #ad9c84);
+  color: #29251f;
+  border: 1px solid #746554;
+}
+#shop-gallery button[aria-pressed='true'] {
+  background: linear-gradient(#718b24, #465b14);
+  color: white;
+}
+.gallery-body {
+  display: grid;
+  grid-template-columns: clamp(120px, 24%, 320px) minmax(0, 1fr);
+  min-height: 0;
+}
+.gallery-body aside {
+  padding: clamp(5px, 1vw, 16px);
+  overflow: auto;
+  border-right: 2px ridge #837761;
+  background: #342f2b;
+}
+.gallery-body label,
+.gallery-body select {
+  display: block;
+  width: 100%;
+}
+.gallery-body label + label {
+  margin-top: 0.7rem;
+}
+.gallery-body select {
+  background: #241f1c;
+  color: #fff0d5;
+  border: 1px solid #837761;
+  font: inherit;
+}
+.gallery-body figure {
+  margin: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  min-width: 0;
+}
+.gallery-stage {
+  min-height: 0;
+  position: relative;
+  background: radial-gradient(ellipse at center, #44413c, #181818);
+}
+.gallery-stage img,
+.gallery-stage canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  touch-action: none;
+}
+#shop-gallery figcaption {
+  flex-wrap: wrap;
+  font-size: clamp(0.72rem, 1.6vw, 1rem);
+}
+#overlay:has(.drafting) .title-copy,
+#overlay:has(.drafting) .room-heading {
+  display: none;
+}
+#overlay:has(.drafting) .room-layout {
+  display: block;
+  padding: clamp(3px, 0.7vw, 10px);
+  height: 100%;
+  box-sizing: border-box;
+}
+#overlay:has(.drafting) :is(#menu-actions, .raid-setup) {
+  height: 100%;
+}
+#overlay .raid-lobby.drafting {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(76px, 16%) minmax(0, 1fr);
+  grid-template-rows: minmax(125px, 1fr) auto auto;
+  align-content: stretch;
+  gap: 4px;
+  padding: 5px;
+  margin: 0;
+  background: #252424;
+}
+#overlay .drafting > h2 {
+  display: none;
+}
+#overlay .drafting > .team-seats {
+  grid-area: 1/1/2/4;
+  display: grid;
+  grid-template: repeat(2, minmax(0, 1fr)) / minmax(0, 1fr) minmax(76px, 16%) minmax(0, 1fr);
+  gap: clamp(6px, 2vh, 20px) 4px;
+  margin: 0;
+}
+#overlay .team-seats li {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 2px ridge #a79e89;
+  border-radius: 5px;
+  text-shadow:
+    0 1px 4px #111,
+    1px 1px 2px #111;
+  color: white;
+}
+.team-seats .blue-seat {
+  grid-column: 1;
+  background: linear-gradient(90deg, #1889e6 20%, #10395b 20%, #303539);
+}
+.team-seats .red-seat {
+  grid-column: 3;
+  background: linear-gradient(270deg, #ef5d50 20%, #623432 20%, #373536);
+}
+#overlay .team-seats .own-seat {
+  border-color: #74ed37;
+}
+.team-seats img {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 80%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  z-index: -1;
+}
+.team-seats .red-seat img {
+  left: 0;
+}
+.team-seats span {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font-size: clamp(10px, 1.5vw, 17px);
+  font-weight: bold;
+}
+.team-seats .red-seat span {
+  right: 5px;
+  left: auto;
+}
+.team-seats strong {
+  font-size: clamp(1rem, 3vw, 2.5rem);
+}
+.team-seats b {
+  font-size: clamp(0.75rem, 1.6vw, 1.2rem);
+}
+#overlay .drafting > .team-versus {
+  grid-area: 1/2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4em;
+  margin: 0;
+  color: #efeadf;
+  text-align: center;
+  font-weight: 800;
+}
+.team-versus strong {
+  font-size: clamp(0.85rem, 2.5vw, 2rem);
+}
+.team-versus b:first-child {
+  color: #41acff;
+}
+.team-versus b:last-child {
+  color: #ff6d5e;
+}
+#overlay .team-versus output {
+  font-size: clamp(1.2rem, 3vw, 2.4rem);
+  color: #fff0c7;
+}
+#overlay .drafting > output {
+  grid-area: 2/1/3/4;
+  padding: 0.25em 0.6em;
+  margin: 0;
+  background: #1b1918;
+  color: #eadfc7;
+}
+#overlay .drafting > .raid-draft {
+  grid-area: 3/1/4/3;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+}
+#overlay .drafting > .raid-draft > button:first-child {
+  background: linear-gradient(#89a607, #496700);
+  color: white;
+}
+#overlay .drafting > .raid-draft p {
+  font-size: clamp(0.65rem, 1.3vw, 0.9rem);
+}
+#overlay .drafting > div:last-of-type {
+  grid-area: 3/3;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 0;
+}
+#overlay .runner-picker {
+  width: min(900px, 93vw);
+  max-height: 87dvh;
+  padding: 6px;
+  overflow: auto;
+  color: #f3ead5;
+  background: #262422;
+  border: 3px ridge #ada28c;
+}
+.runner-picker::backdrop {
+  background: #000b;
+}
+#overlay .runner-picker[open] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+#overlay .runner-picker h3 {
+  margin: 0;
+  padding: 0.25em 0.4em;
+  background: #403a34;
+}
+#overlay .runner-picker .raid-pick-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding: 3px;
+  gap: 3px;
+}
+#overlay .runner-picker .raid-pick-profile {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  padding: 0;
+}
+#overlay .runner-picker .raid-pick-profile img {
+  height: clamp(72px, 32vh, 270px);
+  max-height: none;
+  object-fit: contain;
+}
+#overlay .runner-picker > button {
+  grid-column: 2;
+  color: white;
+  background: linear-gradient(#f64222, #ab1204);
+}
+@media (max-height: 480px) {
+  #overlay .runner-picker .raid-pick-grid button {
+    font-size: 0.7rem;
+  }
+  #overlay .runner-picker .raid-pick-profile p {
+    font-size: 0.7rem;
+  }
+  .gallery-body select {
+    font-size: 0.85rem;
+  }
+}

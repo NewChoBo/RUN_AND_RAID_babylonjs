@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="./src/ui/styles/shell.css" />
     <link rel="stylesheet" href="./src/ui/styles/home.css" />
     <link rel="stylesheet" href="./src/ui/styles/ready.css" />
+    <link rel="stylesheet" href="./src/ui/styles/gallery-room.css" />
   </head>
   <body>
     <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -48,7 +49,7 @@
           <button class="current" aria-current="page" data-home>
             <svg><use href="#home" /></svg>로비
           </button>
-          <button data-wip>
+          <button data-shop>
             <svg><use href="#shop" /></svg>상점</button
           ><button data-wip>
             <svg><use href="#gear" /></svg>장비</button
@@ -99,6 +100,33 @@
             <p id="body" aria-live="polite"></p>
           </div>
         </article>
+      </section>
+      <section id="shop-gallery" aria-label="상점 감상실" hidden>
+        <header>
+          <h1>상점</h1>
+          <div aria-label="감상 종류">
+            <button type="button" data-mode="art" aria-pressed="true">일러스트</button
+            ><button type="button" data-mode="model" aria-pressed="false">캐릭터 모델</button>
+          </div>
+        </header>
+        <div class="gallery-body">
+          <aside>
+            <label>캐릭터<select id="gallery-hero"></select></label
+            ><label>작품 · 외형<select id="gallery-item" size="6"></select></label>
+          </aside>
+          <figure>
+            <div class="gallery-stage">
+              <img id="gallery-art" alt="" referrerpolicy="no-referrer" /><canvas
+                id="gallery-model"
+                aria-label="회전 및 확대 가능한 캐릭터 모델"
+                hidden
+              ></canvas>
+            </div>
+            <figcaption>
+              <strong id="gallery-name"></strong><span id="gallery-status" role="status"></span>
+            </figcaption>
+          </figure>
+        </div>
       </section>
       <section id="overlay" aria-labelledby="title-name" hidden>
         <div class="room-heading">

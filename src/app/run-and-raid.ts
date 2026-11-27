@@ -201,6 +201,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     launch();
   }
   function launch() {
+    lobby.closePicker();
     pressed.clear();
     padSide = 0;
     padBrake = 0;

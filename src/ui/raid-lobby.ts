@@ -1,4 +1,5 @@
 import { raidText as t } from '../content/locales/run-and-raid.ts';
+import { characterArt } from '../content/raid/gallery.ts';
 import { isRaidRoster, type DraftSeat } from '../game/raid/raid-draft.ts';
 import { HERO_IDS, HEROES, type RaidHero } from '../game/raid/raid-match.ts';
 import type { RaidEntry, RoomError } from '../platform/photon/raid-room.ts';
@@ -27,6 +28,17 @@ export function createRaidLobby(
   const status = document.createElement('output');
   status.setAttribute('aria-live', 'polite');
   const teams = document.createElement('ul');
+  teams.className = 'team-seats';
+  const versus = document.createElement('div');
+  versus.className = 'team-versus';
+  versus.innerHTML =
+    '<strong><b>BLUE</b> <b>RED</b></strong><span>준비 완료</span><output></output>';
+  const picker = document.createElement('dialog');
+  picker.className = 'runner-picker';
+  picker.setAttribute('aria-label', '캐릭터 선택');
+  const confirm = document.createElement('button');
+  confirm.textContent = '확인';
+  confirm.onclick = () => picker.close();
   const draft = document.createElement('div');
   draft.className = 'raid-draft';
   const title = document.createElement('h3');
@@ -37,6 +49,11 @@ export function createRaidLobby(
   profile.className = 'raid-pick-profile';
   const portrait = document.createElement('img');
   portrait.alt = '';
+  portrait.referrerPolicy = 'no-referrer';
+  portrait.onerror = () => {
+    const fallback = './assets/raid/portraits/' + preview + '.webp';
+    if (portrait.getAttribute('src') !== fallback) portrait.src = fallback;
+  };
   portrait.width = portrait.height = 240;
   const caption = document.createElement('figcaption');
   const heroName = document.createElement('strong');
@@ -83,7 +100,7 @@ export function createRaidLobby(
       taken.hidden = !occupied;
       card.setAttribute('aria-pressed', String(hero === preview));
     }
-    const imageUrl = './assets/raid/portraits/' + preview + '.webp';
+    const imageUrl = characterArt(preview);
     if (portrait.getAttribute('src') !== imageUrl) portrait.src = imageUrl;
     heroName.textContent = t(preview);
     range.textContent = t('reach', { range: HEROES[preview].reach });
@@ -92,6 +109,7 @@ export function createRaidLobby(
       .map((s) => t(`${preview}${s}`))
       .join(' · ');
     lock.textContent = t(mine ? 'unlockPick' : 'lockPick');
+    if (!mine) lock.textContent += ' · ' + t(preview);
     lock.disabled = !mine && seats.some((s) => s.hero === preview);
     notice.textContent = t(
       lock.disabled
@@ -106,9 +124,14 @@ export function createRaidLobby(
     );
   }
   lock.onclick = () => actions.pick(seats.find((s) => s.actor === self)?.hero ? null : preview);
-  draft.append(title, cards, lock, notice);
-  document.querySelector('#overlay .title-copy')!.append(profile);
-  group.append(heading, status, teams, draft, controls);
+  const choose = document.createElement('button');
+  choose.textContent = '캐릭터 선택';
+  choose.onclick = () => picker.showModal();
+  const selection = document.createElement('section');
+  selection.append(title, cards);
+  picker.append(selection, profile, confirm);
+  draft.append(choose, lock, notice);
+  group.append(heading, status, teams, versus, draft, controls, picker);
   function button(label: string, click: () => void) {
     const b = document.createElement('button');
     b.type = 'button';
@@ -145,12 +168,17 @@ export function createRaidLobby(
     leave.hidden = !room;
     if (stage !== 'draft') start.hidden = true;
     teams.replaceChildren();
-    draft.hidden = profile.hidden = stage !== 'draft';
+    draft.hidden = versus.hidden = stage !== 'draft';
+    if (stage !== 'draft' && picker.open) picker.close();
+    group.classList.toggle('drafting', stage === 'draft');
     parent.classList.toggle('in-room', room);
     join.disabled = code.value.length !== 6;
   }
   show('entry');
   return {
+    closePicker() {
+      if (picker.open) picker.close();
+    },
     pending() {
       preview = actions.selected();
       show('connecting');
@@ -169,14 +197,38 @@ export function createRaidLobby(
       status.textContent = roomCode
         ? t('roomStatus', { code: roomCode, count: seats.length })
         : t('quickRoomStatus', { count: seats.length });
-      for (const side of [0, 1]) {
+      versus.querySelector('output')!.textContent =
+        seats.filter((s) => s.hero).length + ' / ' + seats.length;
+      for (let i = 0; i < 4; i++) {
         const item = document.createElement('li');
-        const names = [seats[side], seats[side + 2]].map((s) =>
-          s
-            ? (s.hero ? t(s.hero) : t('picking')) + (s.actor === self ? ' (' + t('you') + ')' : '')
-            : t('bot'),
-        );
-        item.textContent = t(side === 0 ? 'teamA' : 'teamB') + ' · ' + names.join(' / ');
+        const seat = seats[i];
+        item.className = i % 2 ? 'red-seat' : 'blue-seat';
+        if (seat?.actor === self) item.classList.add('own-seat');
+        const name = document.createElement('span');
+        name.textContent =
+          (i % 2 ? 'RED' : 'BLUE') +
+          ' ' +
+          (Math.floor(i / 2) + 1) +
+          (seat?.actor === self ? ' · ' + t('you') : '');
+        const runner = document.createElement('strong');
+        runner.textContent = seat?.hero ? t(seat.hero) : seat ? t('picking') : t('bot');
+        if (seat?.hero) {
+          const img = document.createElement('img');
+          img.alt = '';
+          img.referrerPolicy = 'no-referrer';
+          img.src = characterArt(seat.hero);
+          img.onerror = () => {
+            img.onerror = null;
+            img.src = './assets/raid/portraits/' + seat.hero + '.webp';
+          };
+          item.append(img);
+        }
+        item.append(name, runner);
+        if (seat?.hero) {
+          const ready = document.createElement('b');
+          ready.textContent = '준비완료';
+          item.append(ready);
+        }
         teams.append(item);
       }
       start.hidden = !isHost;
