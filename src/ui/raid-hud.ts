@@ -1,4 +1,5 @@
 import { uiText } from '../content/locales/ui.ts';
+import { heroKit } from '../game/raid/heroes/hero-id.ts';
 import { raidOutfits } from '../content/raid/outfits.ts';
 import { openSettings } from './settings.ts';
 import { characterLabel, characterName } from '../content/raid/gallery.ts';
@@ -382,7 +383,9 @@ export function createRaidHud(
         type.textContent = typeLabel;
       }
       const recastMoon = runner.dash?.skill === i && instant && !!rule.recastDuringDash;
-      name.textContent = recastMoon ? t('moonFinish') : t(`${runner.hero}${skillNames[i]!}`);
+      name.textContent = recastMoon
+        ? t('moonFinish')
+        : t(`${heroKit(runner.hero)}${skillNames[i]!}`);
       if (runner.heroView.shieldMode)
         name.textContent = t(
           (['magnusCharge', 'magnusTaunt', 'magnusCry', 'magnusBattle'] as const)[i]!,
@@ -483,6 +486,10 @@ export function createRaidHud(
     outfitButton,
     closeOutfits: () => outfitPicker?.close(),
     outfit: () => outfit,
+    resetOutfit() {
+      outfit = undefined;
+      outfitPicker?.setValue('');
+    },
     reset() {
       outfitPicker?.close();
       ping.close();

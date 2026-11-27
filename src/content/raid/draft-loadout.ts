@@ -1,9 +1,9 @@
 import entries from './draft-catalog.json' with { type: 'json' };
 import { illustrations } from './gallery.ts';
-import type { DraftProfile } from './draft-profiles.ts';
+import type { RaidHero } from '../../game/raid/heroes/hero-id.ts';
 
 export type CatalogHero = keyof typeof entries;
-export function hasDraftCatalog(hero: DraftProfile): hero is CatalogHero {
+export function hasDraftCatalog(hero: RaidHero): hero is CatalogHero {
   return Object.hasOwn(entries, hero);
 }
 export const draftCatalog = entries;

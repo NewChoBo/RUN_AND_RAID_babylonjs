@@ -14,6 +14,7 @@ import {
   type RaidTarget,
 } from '../game/raid/raid-match.ts';
 import { practiceRoster } from '../game/raid/raid-draft.ts';
+import { battleOutfit } from '../content/raid/battle-outfits.ts';
 import type { RaidCommandName } from '../game/raid/raid-feature.ts';
 import { RaidSimulation } from '../game/raid/raid-simulation.ts';
 import type { openRaidCourse } from '../platform/babylon/raid/raid-course.ts';
@@ -36,6 +37,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   let chosenHero: RaidHero = 'hammer';
   let offline = false;
   let offlinePick: RaidHero | null = null;
+  let soloOutfit: string | undefined;
+  let matchOutfits: (string | undefined)[] = [];
   canvas.setAttribute('aria-label', raidText('canvas'));
   let match: RaidMatch, solo: RaidSimulation;
   let slot = 0;
@@ -200,6 +203,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   }
   function launchSolo() {
     slot = 0;
+    matchOutfits = [hud.outfit() ?? battleOutfit(chosenHero, soloOutfit)?.model];
     match = new RaidMatch(practiceRoster(chosenHero), course.viewAspect);
     solo = new RaidSimulation(match, new Set([slot]));
     launch();
@@ -319,7 +323,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     { ...RAID_SKILL_SIZE, value: preferences.raidSkillSize },
   );
   function drawOffline() {
-    lobby.room('', [{ actor: 1, hero: offlinePick }], 1, true, null, true);
+    lobby.room('', [{ actor: 1, hero: offlinePick, outfit: soloOutfit }], 1, true, null, true);
   }
   const lobby = createRaidLobby(
     document.querySelector<HTMLElement>('#menu-actions')!,
@@ -329,6 +333,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       practice() {
         offline = true;
         offlinePick = null;
+        soloOutfit = undefined;
         drawOffline();
       },
       start() {
@@ -337,14 +342,18 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
           void begin();
         } else room?.start();
       },
-      pick(hero) {
+      pick(hero, outfit) {
         if (offline) {
           offlinePick = hero;
+          soloOutfit = outfit;
           drawOffline();
-        } else room?.pick(hero);
+        } else room?.pick(hero, outfit);
       },
       selected: () => chosenHero,
-      prefer: (hero) => room?.prefer(hero),
+      prefer(hero, outfit) {
+        hud.resetOutfit();
+        room?.prefer(hero, outfit);
+      },
       chat(text) {
         if (offline) lobby.chat(1, text);
         else room?.chat(text);
@@ -363,6 +372,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     aiming = null;
     pressed.clear();
     hud.reset();
+    hud.resetOutfit();
     course?.stopRendering(renderFrame);
     course?.showAim(null);
     offline = false;
@@ -389,13 +399,17 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
           if (seats.length > 1) hud.closeOutfits();
           lobby.room(code, seats, self, host, clock);
         },
-        solo(hero) {
+        solo(hero, outfit) {
           room = undefined;
           chosenHero = hero;
+          soloOutfit = outfit;
           launchSolo();
         },
         start(seats, self, host) {
           round = new RaidRound(seats);
+          matchOutfits = [];
+          for (const seat of seats)
+            matchOutfits[round.slot(seat.actor)!] = battleOutfit(seat.hero, seat.outfit)?.model;
           slot = round.slot(self)!;
           match = round.match;
           onlineStart = performance.now() + 3000;
@@ -563,7 +577,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     if (!playableViewport.matches) pause();
   });
   function renderCourse(dt: number, subtick: number) {
-    course.render(match, dt, subtick, slot, round ? undefined : hud.outfit());
+    course.render(match, dt, subtick, slot, matchOutfits);
     hud.drawCombatNumbers(
       match.healthChanges,
       match.tick + subtick,

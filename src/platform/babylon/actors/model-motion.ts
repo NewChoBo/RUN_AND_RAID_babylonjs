@@ -22,7 +22,7 @@ export class ModelMotion {
   private playing?: Clip;
   private blendTime = 0;
 
-  constructor(groups: readonly AnimationGroup[], names: readonly string[]) {
+  constructor(groups: readonly AnimationGroup[], names: readonly string[], locomotion = 'run') {
     for (const name of names) {
       const group = groups.find((candidate) => candidate.name === name);
       if (!group?.targetedAnimations.length || group.to <= group.from)
@@ -44,6 +44,8 @@ export class ModelMotion {
       const fps = tracks[0]!.animation.framePerSecond;
       this.clips.set(name, { group, tracks, seconds: (group.to - group.from) / fps });
     }
+    const loop = this.clips.get(locomotion);
+    if (locomotion !== 'run' && loop) this.clips.set('run', loop);
   }
 
   has(name: string) {

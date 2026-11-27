@@ -13,18 +13,14 @@ import {
   type DraftSeat,
 } from '../game/raid/raid-draft.ts';
 import { HEROES, type RaidHero, type Skill } from '../game/raid/raid-match.ts';
-import { ORIGINAL_HERO_IDS } from '../game/raid/heroes/hero-id.ts';
-import {
-  adaptedSkills,
-  pendingProfile,
-  pendingProfiles,
-  type DraftProfile,
-} from '../content/raid/draft-profiles.ts';
+import { HERO_IDS, heroKit, PRACTICE_HERO_IDS } from '../game/raid/heroes/hero-id.ts';
+import { adaptedSkills } from '../content/raid/draft-profiles.ts';
+import { createBattleOutfitPicker } from './raid-battle-outfit.ts';
 import type { RaidEntry, RoomError } from '../platform/photon/raid-room.ts';
 
 function setDraftArt(
   image: HTMLImageElement,
-  hero: DraftProfile,
+  hero: RaidHero,
   thumbnail = false,
   source = characterArt(hero),
 ) {
@@ -63,8 +59,8 @@ export function createRaidLobby(
     practice(): void;
     chat(text: string): void;
     leave(): void;
-    pick(hero: RaidHero | null): void;
-    prefer(hero: RaidHero): void;
+    pick(hero: RaidHero | null, outfit?: string): void;
+    prefer(hero: RaidHero, outfit?: string): void;
     selected(): RaidHero;
   },
 ) {
@@ -131,6 +127,10 @@ export function createRaidLobby(
   const detail = document.createElement('p');
   const skills = document.createElement('p');
   skills.className = 'raid-pick-skills';
+  const kitPanel = document.createElement('section');
+  kitPanel.className = 'draft-kit';
+  const kitTitle = document.createElement('strong');
+  kitPanel.append(kitTitle);
   const guide = document.createElement('details');
   guide.className = 'raid-original-guide';
   const guideTitle = document.createElement('summary');
@@ -148,14 +148,15 @@ export function createRaidLobby(
   const moreTitle = document.createElement('summary');
   moreTitle.textContent = uiText('championDetails');
   more.append(moreTitle, range, detail, skills, guide);
-  caption.append(heroName, loadout.settings, more);
+  const battleModel = createBattleOutfitPicker(() => actions.prefer(preview, battleModel.value()));
+  caption.append(heroName, loadout.settings, battleModel.field, more);
   profile.append(portrait, caption);
   const notice = document.createElement('p');
   notice.className = 'draft-notice';
   notice.setAttribute('aria-live', 'polite');
   const lock = document.createElement('button');
   lock.type = 'button';
-  let preview: DraftProfile = actions.selected();
+  let preview: RaidHero = actions.selected();
   let seats: DraftSeat[] = [];
   let self = 0;
   let soloRoom = false;
@@ -171,7 +172,7 @@ export function createRaidLobby(
     roomTime.textContent = pickerTime.textContent = String(seconds);
     if (ms > 0) clockTimer = window.setTimeout(paintClock, Math.ceil(ms - (seconds - 1) * 1000));
   }
-  const choices = [...ORIGINAL_HERO_IDS, ...pendingProfiles].map((hero) => {
+  const choices = HERO_IDS.map((hero) => {
     const card = document.createElement('button');
     card.type = 'button';
     const image = document.createElement('img');
@@ -183,19 +184,25 @@ export function createRaidLobby(
     setDraftArt(image, hero, false, face);
     card.title = t(hero);
     const taken = document.createElement('small');
-    taken.textContent = t(pendingProfile(hero) ? 'notImplemented' : 'pickTaken');
-    card.classList.toggle('pending-profile', pendingProfile(hero));
+    const badge =
+      heroKit(hero) !== hero
+        ? 'borrowedKit'
+        : PRACTICE_HERO_IDS.some((id) => id === hero)
+          ? 'practiceRunner'
+          : undefined;
+    card.classList.toggle('kit-card', !!badge);
     card.append(image, taken);
     card.onclick = () => {
       preview = hero;
-      if (!pendingProfile(hero)) actions.prefer(hero);
       paint();
+      actions.prefer(hero, battleModel.value());
     };
     cards.append(card);
-    return { hero, card, taken };
+    return { hero, card, taken, badge } as const;
   });
   function paint() {
-    const mine = seats.find((s) => s.actor === self)?.hero;
+    const own = seats.find((s) => s.actor === self);
+    const mine = own?.hero;
     const active = clock?.actor;
     const n = pickNumber(seats.findIndex((seat) => seat.actor === active));
     notice.classList.toggle('own-turn', active === self);
@@ -207,36 +214,47 @@ export function createRaidLobby(
           ? uiText('soloReady')
           : t(soloRoom ? 'pickSolo' : 'pickPlayers');
     if (mine) preview = mine;
-    for (const { hero, card, taken } of choices) {
+    for (const { hero, card, taken, badge } of choices) {
       const occupied = seats.some((s) => s.hero === hero && s.actor !== self);
       card.disabled = occupied || (!!mine && hero !== mine);
-      taken.hidden = !occupied && !pendingProfile(hero);
+      taken.hidden = !occupied && !badge;
+      taken.textContent = occupied ? t('pickTaken') : badge ? t(badge) : '';
       card.setAttribute('aria-label', taken.hidden ? t(hero) : t(hero) + ' · ' + taken.textContent);
       card.setAttribute('aria-pressed', String(hero === preview));
     }
+    battleModel.show(preview, !!mine, own?.outfit);
+    const kit = heroKit(preview);
     loadout.show(preview);
-    if (!hasDraftCatalog(preview)) setDraftArt(portrait, preview);
-    if (guide.dataset.hero !== preview) more.open = pendingProfile(preview);
+    const catalogued = hasDraftCatalog(preview);
+    if (!catalogued) setDraftArt(portrait, preview);
+    if (guide.dataset.hero !== preview) more.open = kit !== preview;
     heroName.textContent = t(preview);
     if (guide.dataset.hero !== preview) {
       guide.dataset.hero = preview;
       guide.open = false;
-      const hero = pendingProfile(preview) ? undefined : preview;
-      const original = hero && officialGuides[hero];
+      const hero = preview;
+      const original = officialGuides[hero];
       guide.hidden = !original;
-      skills.replaceChildren();
-      if (hero) {
-        (['Pulse', 'Bolt', 'Field', 'Fury'] as const).forEach((suffix, i) => {
-          const text = t(`${hero}${suffix}`) + (adaptedSkills[hero]?.includes(i) ? '*' : '');
-          skills.append(skillLabel(hero, battleIconIndex(hero, i as Skill), text));
-        });
-        if (adaptedSkills[hero]?.length) {
-          const note = document.createElement('small');
-          note.textContent = '* ' + t('adaptedSkill');
-          skills.append(note);
-        }
+      portrait.classList.toggle('archive-portrait', !catalogued);
+      kitPanel.hidden = catalogued;
+      if (catalogued) more.insertBefore(skills, guide);
+      else {
+        kitTitle.textContent =
+          kit !== hero ? t('borrowedKit') + ' · ' + t(kit) : t('practiceRunner') + ' · ' + t(hero);
+        kitPanel.append(skills);
       }
-      if (hero && original) {
+      skills.replaceChildren();
+      (['Pulse', 'Bolt', 'Field', 'Fury'] as const).forEach((suffix, i) => {
+        const text =
+          t(`${kit}${suffix}`) + (kit === hero && adaptedSkills[hero]?.includes(i) ? '*' : '');
+        skills.append(skillLabel(kit, battleIconIndex(kit, i as Skill), text));
+      });
+      if (kit === hero && adaptedSkills[hero]?.length) {
+        const note = document.createElement('small');
+        note.textContent = '* ' + t('adaptedSkill');
+        skills.append(note);
+      }
+      if (original) {
         originalSkills.replaceChildren(
           skillLabel(hero, 0, t('originalPassive', { name: original.passive })),
         );
@@ -258,29 +276,24 @@ export function createRaidLobby(
         source.href = 'https://cafe.naver.com/runandraid/' + original.article;
       }
     }
-    if (pendingProfile(preview)) {
-      range.textContent = t('notImplemented') + ' · ' + preview;
-      detail.textContent = t('pendingProfileHelp');
-      lock.textContent = t('notImplemented');
-      lock.disabled = true;
-      return;
-    }
     range.textContent = t('reach', { range: HEROES[preview].reach });
-    detail.textContent = t(`${preview}Info`);
+    detail.textContent =
+      kit === preview
+        ? t(`${kit}Info`)
+        : t('borrowedKitFrom', { name: t(kit) }) + ' ' + t(`${kit}Info`);
     lock.textContent = uiText(mine ? 'cancelReady' : 'readyUp');
     if (!mine) lock.textContent += ' · ' + t(preview);
     lock.disabled =
       !mine && ((!!clock && active !== self) || seats.some((s) => s.hero === preview));
   }
   lock.onclick = () => {
-    if (!pendingProfile(preview))
-      actions.pick(seats.find((s) => s.actor === self)?.hero ? null : preview);
+    actions.pick(seats.find((s) => s.actor === self)?.hero ? null : preview, battleModel.value());
   };
   const choose = document.createElement('button');
   choose.textContent = uiText('chooseCharacter');
   choose.onclick = () => picker.showModal();
   const selection = document.createElement('section');
-  selection.append(title, cards, loadout.skills);
+  selection.append(title, cards, loadout.skills, kitPanel);
   const pickerTools = document.createElement('footer');
   pickerTools.append(chat.open, outfitButton, confirm);
   picker.append(selection, profile, pickerTools);

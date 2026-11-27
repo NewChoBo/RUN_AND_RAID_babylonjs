@@ -16,9 +16,9 @@ export const raidText = defineMessages(
     orc: 'Orc',
     shaman: 'Shaman',
     silurian: 'Silurian',
-    notImplemented: 'Not implemented',
-    pendingProfileHelp:
-      'The original model is available. Its role as a playable champion is unconfirmed.',
+    borrowedKit: 'Temporary skills',
+    borrowedKitFrom: 'Uses {name}’s combat skills. Original role and skills are unconfirmed.',
+    practiceRunner: 'Practice runner',
     adaptedSkill: 'Adapted for this game',
     originalGuide: 'Original skills (Korean)',
     originalPassive: 'Passive · {name}',

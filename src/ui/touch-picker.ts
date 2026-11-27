@@ -49,6 +49,10 @@ export function touchPicker(
   });
   let choices: TouchChoice[] = [];
   let value = '';
+  function setValue(next: string) {
+    value = next;
+    trigger.textContent = title + ' · ' + (choices.find((c) => c.value === next)?.label ?? '');
+  }
   function display(group?: string) {
     for (const b of groups.querySelectorAll('button'))
       b.setAttribute('aria-pressed', String(b.textContent === group));
@@ -82,10 +86,10 @@ export function touchPicker(
     )?.scrollIntoView({ block: 'nearest' });
   };
   return {
+    setValue,
     set(options: TouchChoice[], current: string) {
       choices = options;
-      value = current;
-      trigger.textContent = title + ' · ' + (choices.find((c) => c.value === current)?.label ?? '');
+      setValue(current);
     },
     close() {
       if (dialog.open) dialog.close();

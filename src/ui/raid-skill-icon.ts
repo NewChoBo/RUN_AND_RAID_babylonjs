@@ -1,5 +1,5 @@
 import icons from '../content/raid/skill-icons.json' with { type: 'json' };
-import type { RaidHero } from '../game/raid/heroes/hero-id.ts';
+import { heroKit, type RaidHero } from '../game/raid/heroes/hero-id.ts';
 import type { Skill } from '../game/raid/raid-match.ts';
 
 const sources: Partial<Record<RaidHero, readonly string[]>> = icons;
@@ -12,12 +12,14 @@ const adaptedSlots: Partial<Record<RaidHero, readonly [number, number, number, n
 };
 
 export function battleIconIndex(hero: RaidHero, slot: Skill, shieldMode = false) {
+  hero = heroKit(hero);
   // The fourth button names the mode the player will enter.
   if (hero === 'magnus') return slot === 3 ? (shieldMode ? 4 : 8) : slot + (shieldMode ? 5 : 1);
   return adaptedSlots[hero]?.[slot] ?? slot + 1;
 }
 
 export function setSkillIcon(image: HTMLImageElement, hero: RaidHero, index: number) {
+  hero = heroKit(hero);
   const source = sources[hero]?.[index];
   if (image.dataset.source === (source ?? '')) return;
   image.hidden = true;

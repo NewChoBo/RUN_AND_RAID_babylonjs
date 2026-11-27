@@ -131,6 +131,8 @@ const english = {
   seatReady: 'Ready',
   practiceOutfit: 'Practice outfit',
   runnerOutfit: 'Runner’s default outfit',
+  battleModel: 'Match appearance',
+  baseModels: 'Shared body models',
   arenaLoading: 'Loading arena…',
   arenaError: 'Could not open the arena. Please try again.',
   assets: 'Original assets',

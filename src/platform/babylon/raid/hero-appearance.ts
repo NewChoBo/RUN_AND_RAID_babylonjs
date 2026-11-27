@@ -1,4 +1,4 @@
-import type { RaidHero } from '../../../game/raid/heroes/hero-id.ts';
+import type { HeroKit } from '../../../game/raid/heroes/hero-id.ts';
 import type { Skill } from '../../../game/raid/raid-view.ts';
 
 /** Scale of runner models and body markings relative to the course. Attack footprints use world metres. */
@@ -21,7 +21,7 @@ export interface HeroAppearance {
   projectile?: Partial<Record<Skill, 'horizontal' | 'upright' | 'cross' | 'arrow'>>;
 }
 // Model attachments and particle styles belong to the renderer. Combat never reads this table.
-export const appearance: Record<RaidHero, HeroAppearance> = {
+export const appearance: Record<HeroKit, HeroAppearance> = {
   flare: { cape: '#ff7544', sprite: 'scorch_01', particles: 'vortex' },
   hof: { cape: '#e9bf63', sprite: 'scorch_01', particles: 'heavy' },
   froze: { cape: '#69d8fb', sprite: 'twirl_01', particles: 'spiral' },

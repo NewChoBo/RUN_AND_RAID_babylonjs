@@ -33,6 +33,33 @@
   color: white;
   background: #16120ec9;
 }
+#overlay .runner-picker .raid-pick-profile > img.archive-portrait {
+  object-fit: contain;
+  object-position: center;
+  background-color: #202733;
+}
+#overlay .runner-picker .kit-card small {
+  inset: auto 0 0;
+  white-space: nowrap;
+  font-size: clamp(9px, 2.2dvh, 12px);
+}
+.draft-kit {
+  padding: 3px 4px;
+  background: #38332d;
+  font-size: clamp(10px, 2.4dvh, 14px);
+}
+#overlay .draft-kit .raid-pick-skills {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+  margin: 2px 0 0;
+  gap: 2px;
+}
+.draft-kit .raid-pick-skill {
+  flex-direction: column;
+  text-align: center;
+  line-height: 1.1;
+}
 .draft-ranks header {
   display: flex;
   align-items: center;

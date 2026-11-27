@@ -1,6 +1,6 @@
 import { uiText as t, type UiMessage } from '../content/locales/ui.ts';
 import { getLocale } from '../content/locales/locale.ts';
-import type { DraftProfile } from '../content/raid/draft-profiles.ts';
+import type { RaidHero } from '../game/raid/heroes/hero-id.ts';
 import {
   draftCatalog,
   draftPreset,
@@ -223,7 +223,7 @@ export function createDraftLoadout(previewArt: (hero: CatalogHero, url: string) 
   return {
     skills,
     settings,
-    show(hero: DraftProfile) {
+    show(hero: RaidHero) {
       const active = hasDraftCatalog(hero);
       skills.hidden = settings.hidden = !active;
       if (!active) {

@@ -1,3 +1,4 @@
+import { heroKit } from '../../../game/raid/heroes/hero-id.ts';
 import { appearance, RAID_MODEL_SCALE, RAID_RUNNER_SCALE } from './hero-appearance.ts';
 import { heroModelSource } from './hero-model-source.ts';
 import { equipRaidGear } from './raid-equipment.ts';
@@ -35,9 +36,8 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
   });
   try {
     if (scene.isDisposed) throw new Error('Raid scene disposed');
-    const motion = source.still
-      ? undefined
-      : new ModelMotion(
+    const motion = source.loop
+      ? new ModelMotion(
           model.animationGroups,
           source.clips ?? [
             ...new Set([
@@ -50,7 +50,9 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
               ...model.animationGroups.map((g) => g.name),
             ]),
           ],
-        );
+          source.loop,
+        )
+      : undefined;
     model.addAllToScene();
     const root = model.meshes[0]!;
     let bodyHeight: number | undefined;
@@ -66,7 +68,8 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
       const meshCount = scene.meshes.length;
       const materialCount = scene.materials.length;
       const cape = model.meshes.find((m) => m.name.endsWith('_Cape') || m.name.endsWith('_Cloak'));
-      if (cape) cape.material = raidMaterial(scene, hero + ' mantle', appearance[hero].cape, 0.12);
+      if (cape)
+        cape.material = raidMaterial(scene, hero + ' mantle', appearance[heroKit(hero)].cape, 0.12);
       equipRaidGear(scene, hero, model.transformNodes, cape ?? rig);
       model.meshes.push(...scene.meshes.slice(meshCount));
       model.materials.push(...scene.materials.slice(materialCount));
@@ -86,7 +89,7 @@ export function createRaidActor(
   red: StandardMaterial,
   shadowMat: StandardMaterial,
 ) {
-  const art = appearance[hero];
+  const art = appearance[heroKit(hero)];
   const root = new TransformNode(hero + ' runner', scene);
   const body = new TransformNode(hero + ' body', scene);
   body.parent = root;
@@ -162,7 +165,7 @@ export function createRaidActor(
   if (spinTrail) {
     spinTrail.parent = root;
     spinTrail.position.y = 0.25;
-    spinTrail.material = raidMaterial(scene, hero + ' sweep light', raidColors[hero], 0.8);
+    spinTrail.material = raidMaterial(scene, hero + ' sweep light', raidColors[heroKit(hero)], 0.8);
     spinTrail.isPickable = false;
     spinTrail.setEnabled(false);
   }
@@ -263,6 +266,9 @@ export function createRaidActor(
       return;
     }
     const active = raidActiveAction(actions, r.slot, now);
+    // Partial rigs reuse their own attack or locomotion take at its authored speed.
+    const actionClip = (name: string) =>
+      motion?.has(name) ? name : motion?.has('basic') ? 'basic' : 'run';
     const modeClip = (alternate: string, normal: string) =>
       r.heroView.shieldMode && motion?.has(alternate) ? alternate : normal;
     const pose = playback.update(actions, r.slot, now, (cue) => {
@@ -277,16 +283,17 @@ export function createRaidActor(
         art.landingChop && cue.skill === 1 && cue.phase === 'ground'
           ? cue.tick - RAID_LEAP_TICKS
           : cue.tick;
+      clip = actionClip(clip);
       return { clip, duration: motion?.duration(clip) ?? 0, start };
     });
     const facing = raidFacing(r, pose?.cue ?? active);
     if (r.leap) {
-      motion?.once(clips[r.leap.skill], (r.leap.elapsed + subtick) / RAID_HZ, dt);
+      motion?.once(actionClip(clips[r.leap.skill]), (r.leap.elapsed + subtick) / RAID_HZ, dt);
     } else if (r.dash) {
       const clip = r.heroView.shieldMode
         ? modeClip('shieldCharge', clips[r.dash.skill])
         : clips[r.dash.skill];
-      motion?.once(clip, (r.dash.elapsed + subtick) / RAID_HZ, dt);
+      motion?.once(actionClip(clip), (r.dash.elapsed + subtick) / RAID_HZ, dt);
     } else if (r.heroView.rootedTicks && r.heroView.rootDuration) {
       motion?.once(
         motion.has('fullMoonEnd') ? 'fullMoonEnd' : 'field',

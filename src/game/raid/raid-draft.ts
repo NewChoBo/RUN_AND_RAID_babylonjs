@@ -1,10 +1,11 @@
-import { HERO_IDS, ORIGINAL_HERO_IDS, type RaidHero } from './heroes/hero-id.ts';
+import { HERO_IDS, type RaidHero } from './heroes/hero-id.ts';
+import { battleOutfit } from '../../content/raid/battle-outfits.ts';
 
 export function practiceRoster(hero: RaidHero): RaidHero[] {
-  const start = ORIGINAL_HERO_IDS.findIndex((id) => id === hero) + 1;
+  const start = HERO_IDS.findIndex((id) => id === hero) + 1;
   const bots = Array.from(
     { length: 3 },
-    (_, offset) => ORIGINAL_HERO_IDS[(start + offset) % ORIGINAL_HERO_IDS.length]!,
+    (_, offset) => HERO_IDS[(start + offset) % HERO_IDS.length]!,
   );
   return [hero, ...bots];
 }
@@ -13,6 +14,7 @@ export interface DraftSeat {
   actor: number;
   hero: RaidHero | null;
   preferred?: RaidHero;
+  outfit?: string;
 }
 export interface RaidSeat extends DraftSeat {
   hero: RaidHero;
@@ -42,9 +44,9 @@ export function nextDraftClock(seats: DraftSeat[], previous: DraftClock | null, 
 }
 
 export function timeoutPick(seats: DraftSeat[], actor: number) {
-  const preferred = seats.find((s) => s.actor === actor)?.preferred;
-  if (preferred && applyPick(seats, actor, preferred)) return;
-  const hero = ORIGINAL_HERO_IDS.find((id) => !seats.some((s) => s.hero === id));
+  const seat = seats.find((s) => s.actor === actor);
+  if (seat?.preferred && applyPick(seats, actor, seat.preferred, seat.outfit)) return;
+  const hero = HERO_IDS.find((id) => !seats.some((s) => s.hero === id));
   applyPick(seats, actor, hero);
 }
 
@@ -53,9 +55,10 @@ export function applyTurnPick(
   clock: DraftClock | null,
   actor: number,
   hero: unknown,
+  outfit?: string,
 ) {
   if (hero !== null && clock && clock.actor !== actor) return false;
-  return applyPick(seats, actor, hero);
+  return applyPick(seats, actor, hero, outfit);
 }
 
 export function draftMessage(value: unknown): string {
@@ -73,16 +76,19 @@ export function draftTeammates(seats: readonly DraftSeat[], actor: number) {
 export function isHero(value: unknown): value is RaidHero {
   return HERO_IDS.some((hero) => hero === value);
 }
-export function isDraftPick(value: unknown): value is (typeof ORIGINAL_HERO_IDS)[number] {
-  return ORIGINAL_HERO_IDS.some((hero) => hero === value);
-}
 export function isDraft(value: unknown): value is DraftSeat[] {
   if (!Array.isArray(value) || value.length < 1 || value.length > 4) return false;
   const claimed = new Set<RaidHero>();
   return value.every((seat, i) => {
     if (!seat || !Number.isSafeInteger(seat.actor) || seat.actor <= (i ? value[i - 1].actor : 0))
       return false;
-    if (seat.preferred !== undefined && !isDraftPick(seat.preferred)) return false;
+    if (seat.preferred !== undefined && !isHero(seat.preferred)) return false;
+    if (
+      seat.outfit !== undefined &&
+      (!isHero(seat.hero ?? seat.preferred) ||
+        !battleOutfit(seat.hero ?? seat.preferred, seat.outfit))
+    )
+      return false;
     if (seat.hero === null) return true;
     if (!isHero(seat.hero) || claimed.has(seat.hero)) return false;
     claimed.add(seat.hero);
@@ -123,14 +129,38 @@ export function draftMembers(
     .map((actor) => ({ actor, hero: null, ...previous.find((s) => s.actor === actor) }));
 }
 /** The room master checks the turn before accepting a claim. */
-export function applyPick(seats: DraftSeat[], actor: number, hero: unknown): boolean {
+export function applyPick(
+  seats: DraftSeat[],
+  actor: number,
+  hero: unknown,
+  outfit?: string,
+): boolean {
   const seat = seats.find((s) => s.actor === actor);
   if (
     !seat ||
     (hero !== null &&
-      (!isDraftPick(hero) || seat.hero !== null || seats.some((s) => s.hero === hero)))
+      (!isHero(hero) ||
+        seat.hero !== null ||
+        seats.some((s) => s.hero === hero) ||
+        (outfit !== undefined && !battleOutfit(hero, outfit))))
   )
     return false;
+  if (hero === null && seat.hero) seat.preferred = seat.hero;
   seat.hero = hero;
+  if (hero !== null) {
+    if (outfit === undefined) delete seat.outfit;
+    else {
+      seat.outfit = outfit;
+      seat.preferred = hero;
+    }
+  }
   return true;
+}
+
+export function readDraftChoice(value: unknown) {
+  if (!value || typeof value !== 'object' || !('hero' in value) || !isHero(value.hero)) return null;
+  const outfit = 'outfit' in value ? value.outfit : undefined;
+  if (outfit !== undefined && (typeof outfit !== 'string' || !battleOutfit(value.hero, outfit)))
+    return null;
+  return { hero: value.hero, outfit };
 }

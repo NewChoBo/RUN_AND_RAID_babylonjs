@@ -29,6 +29,12 @@ test('a take samples its authored time and clamps at its last key', (t) => {
   assert.equal(node.position.x, 3);
   motion.once('basic', 3, 1);
   assert.equal(node.position.x, 12);
+  // Some archive models retain a single source take without designated gait names.
+  group.name = 'Animation';
+  const archive = new ModelMotion([group], ['Animation'], 'Animation');
+  assert.equal(archive.duration('run'), 2);
+  archive.loop('walk', 2.5, 1);
+  assert.equal(node.position.x, 3);
 });
 
 test('a take survives action-history expiry and a new cast can interrupt recovery', () => {

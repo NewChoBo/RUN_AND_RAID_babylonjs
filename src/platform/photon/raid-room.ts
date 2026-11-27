@@ -1,6 +1,6 @@
 import Photon from 'photon-realtime';
 import {
-  isDraftPick,
+  readDraftChoice,
   nextDraftClock,
   readDraftSnapshot,
   timeoutPick,
@@ -20,7 +20,7 @@ const Client = Photon.LoadBalancing.LoadBalancingClient;
 // The npm distribution defaults to its Node ws adapter. Browsers use native WSS.
 Photon.PhotonPeer.setWebSocketImpl(WebSocket);
 // Replaying approved inputs requires every peer to use the same combat rules.
-const version = 'run-and-raid-9';
+const version = 'run-and-raid-10';
 const event = {
   start: 10,
   intent: 11,
@@ -37,7 +37,7 @@ interface Callbacks {
   chat(actor: number, text: string): void;
   lobby(seats: DraftSeat[], self: number, host: boolean, clock: DraftClock | null): void;
   start(seats: RaidSeat[], self: number, host: boolean): void;
-  solo(hero: RaidHero): void;
+  solo(hero: RaidHero, outfit?: string): void;
   intent(sender: number, data: unknown): void;
   frames(data: unknown): void;
   closed(reason: RoomError): void;
@@ -196,8 +196,13 @@ export class RaidRoom {
       this.#clock = nextDraftClock(this.#draft, this.#clock, now);
     }
     const seat = this.#draft.find((s) => s.actor === sender);
-    if (seat && code === event.prefer && !seat.hero && isDraftPick(data)) seat.preferred = data;
-    if (seat && code === event.pick) applyTurnPick(this.#draft, this.#clock, seat.actor, data);
+    const choice = readDraftChoice(data);
+    if (seat && code === event.prefer && !seat.hero && choice) {
+      seat.preferred = choice.hero;
+      seat.outfit = choice.outfit;
+    }
+    if (seat && code === event.pick && (data === null || choice))
+      applyTurnPick(this.#draft, this.#clock, seat.actor, choice?.hero ?? null, choice?.outfit);
     this.#clock = nextDraftClock(this.#draft, this.#clock, now);
     const remaining = this.#clock ? Math.max(0, this.#clock.endsAt - now) : null;
     if (remaining !== null)
@@ -208,17 +213,18 @@ export class RaidRoom {
     );
     this.#callbacks.lobby(this.#draft, this.self, true, this.#clock);
   }
-  #choose(code: number, hero: RaidHero | null) {
+  #choose(code: number, hero: RaidHero | null, outfit?: string) {
     if (!this.#joined || this.#roster.length || this.#closed) return;
     const master = this.#client.myRoomMasterActorNr();
-    if (this.self === master) this.#lobby(code, this.self, hero);
-    else this.#client.raiseEvent(code, JSON.stringify(hero), { targetActors: [master] });
+    const choice = hero === null ? null : { hero, outfit };
+    if (this.self === master) this.#lobby(code, this.self, choice);
+    else this.#client.raiseEvent(code, JSON.stringify(choice), { targetActors: [master] });
   }
-  pick(hero: RaidHero | null) {
-    this.#choose(event.pick, hero);
+  pick(hero: RaidHero | null, outfit?: string) {
+    this.#choose(event.pick, hero, outfit);
   }
-  prefer(hero: RaidHero) {
-    this.#choose(event.prefer, hero);
+  prefer(hero: RaidHero, outfit?: string) {
+    this.#choose(event.prefer, hero, outfit);
   }
   chat(value: string) {
     const text = draftMessage(value);
@@ -241,7 +247,7 @@ export class RaidRoom {
     if (this.#entry !== 'quick' && seats.length === 1 && only?.actor === this.self && only.hero) {
       this.#client.myRoom().setIsOpen(false);
       this.close();
-      this.#callbacks.solo(only.hero);
+      this.#callbacks.solo(only.hero, only.outfit);
       return;
     }
     if (!isRaidRoster(seats)) return;

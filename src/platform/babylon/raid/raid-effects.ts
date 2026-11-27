@@ -1,3 +1,4 @@
+import { heroKit, KIT_IDS } from '../../../game/raid/heroes/hero-id.ts';
 import { appearance } from './hero-appearance.ts';
 import { raidProjectileProfile, raidSkill } from '../../../game/raid/heroes/hero-catalog.ts';
 import { createRaidArrowRain } from './raid-arrow-rain.ts';
@@ -14,7 +15,6 @@ import {
   type Scene,
 } from '@babylonjs/core';
 import {
-  HERO_IDS,
   raidAimKind,
   raidGroundPointAfter,
   raidRunnerPositionAfter,
@@ -37,7 +37,7 @@ const tau = Math.PI * 2;
 /** Effects sample match ticks, so pausing, catching up and starting a rematch have no independent timers. */
 export function createRaidEffects(scene: Scene) {
   const materials = new Map<RaidHero, { sigil: StandardMaterial; light: StandardMaterial }>();
-  for (const hero of HERO_IDS) {
+  for (const hero of KIT_IDS) {
     const color = Color3.FromHexString(raidColors[hero]);
     const light = new StandardMaterial(hero + ' impact light', scene);
     light.disableLighting = true;
@@ -93,7 +93,7 @@ export function createRaidEffects(scene: Scene) {
     hide();
     function draw(cue: RaidAction, age: number, view: RaidView, subtick: number) {
       const { hero, skill } = cue;
-      const art = appearance[hero];
+      const art = appearance[heroKit(hero)];
       if (cue.lines?.length && !lightning) {
         const lines = cue.lines.map(({ from, to }) => {
           const dx = to.x - from.x,
@@ -129,8 +129,8 @@ export function createRaidEffects(scene: Scene) {
           ? raidGroundPointAfter(cue.to, age)
           : cue.to;
       const t = age / lifetime(cue);
-      const { sigil, light } = materials.get(hero)!;
-      if (hero === 'hof' && skill === 0) {
+      const { sigil, light } = materials.get(heroKit(hero))!;
+      if (heroKit(hero) === 'hof' && skill === 0) {
         if (!turret) {
           turret = MeshBuilder.CreateCylinder(
             'Hof frost turret',
@@ -260,13 +260,13 @@ export function createRaidEffects(scene: Scene) {
         crossBlades[i]?.setEnabled(false);
         continue;
       }
-      const form = appearance[p.hero].projectile?.[p.skill];
+      const form = appearance[heroKit(p.hero)].projectile?.[p.skill];
       const advance = Math.min(p.remaining, p.metersPerTick * subtick);
       if (form === 'arrow') {
         arrowSource ??= createRaidArrow(scene);
         const arrow = (arrows[i] ??= arrowSource.clone('raid flying arrow'));
         arrow.setEnabled(true);
-        arrow.material = materials.get(p.hero)!.light;
+        arrow.material = materials.get(heroKit(p.hero))!.light;
         arrow.position.set(p.x + p.dx * advance, 0.95, p.z + p.dz * advance);
         arrow.rotation.set(-Math.PI / 2, Math.atan2(p.dx, p.dz), 0);
         arrow.scaling.setAll(p.skill === 3 ? 1.6 : 1);
@@ -288,7 +288,7 @@ export function createRaidEffects(scene: Scene) {
       bolt.scaling.set(0.14, 0.14, p.skill === 3 ? 1.25 : 0.78);
       if (crescent || form === 'cross') bolt.scaling.set(2.35, 0.1, 0.38);
       if (form === 'upright') bolt.scaling.set(0.16, 1.85, 0.46);
-      bolt.material = materials.get(p.hero)!.light;
+      bolt.material = materials.get(heroKit(p.hero))!.light;
       if (form === 'cross') {
         const upright = (crossBlades[i] ??= MeshBuilder.CreateSphere(
           'cross slash upright',
@@ -308,12 +308,13 @@ export function createRaidEffects(scene: Scene) {
         now - cue.tick < lifetime(cue) &&
         !(
           cue.skill !== 'basic' &&
-          appearance[cue.hero].spinClip === (['pulse', 'bolt', 'field', 'fury'] as const)[cue.skill]
+          appearance[heroKit(cue.hero)].spinClip ===
+            (['pulse', 'bolt', 'field', 'fury'] as const)[cue.skill]
         ) &&
         !(
           cue.phase === 'dash' &&
-          appearance[cue.hero].dashClip &&
-          !appearance[cue.hero].dashTrail
+          appearance[heroKit(cue.hero)].dashClip &&
+          !appearance[heroKit(cue.hero)].dashTrail
         ) &&
         (cue.skill === 'basic' || !raidProjectileProfile(cue.hero, cue.skill)),
     );

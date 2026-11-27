@@ -1,3 +1,4 @@
+import { heroKit } from '../../../game/raid/heroes/hero-id.ts';
 import { MeshBuilder, type Scene, type TransformNode } from '@babylonjs/core';
 import type { RaidHero } from '../../../game/raid/heroes/hero-id.ts';
 import { raidMaterial, raidColors } from './raid-material.ts';
@@ -9,7 +10,7 @@ function equipHand(
   socket: TransformNode,
 ) {
   const iron = raidMaterial(scene, hero + ' weapon steel', '#4d566a');
-  const trim = raidMaterial(scene, hero + ' weapon inlay', raidColors[hero], 0.5);
+  const trim = raidMaterial(scene, hero + ' weapon inlay', raidColors[heroKit(hero)], 0.5);
   const haft = MeshBuilder.CreateCylinder(
     hero + ' haft',
     { height: 1.54, diameter: 0.11, tessellation: 8 },
@@ -60,7 +61,7 @@ export function equipRaidGear(
   nodes: readonly TransformNode[],
   back: TransformNode,
 ) {
-  const gear = appearance[hero].equipment;
+  const gear = appearance[heroKit(hero)].equipment;
   if (gear === 'rapier' || gear === 'saber') {
     const rapier = gear === 'rapier';
     const socket = nodes.find((n) => n.name === 'handslot.r')!;
@@ -129,7 +130,7 @@ export function equipRaidGear(
         : MeshBuilder.CreatePolyhedron('rime crystal', { type: 1, size: 0.29 }, scene);
     weapon.parent = socket;
     weapon.position.y = 0.52;
-    weapon.material = raidMaterial(scene, hero + ' relic', raidColors[hero], 0.4);
+    weapon.material = raidMaterial(scene, hero + ' relic', raidColors[heroKit(hero)], 0.4);
     if (gear === 'shieldBlade') {
       const buckler = MeshBuilder.CreateCylinder(
         'tomb shield',

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { battleOutfits, battleOutfit } from '../../src/content/raid/battle-outfits.ts';
+import { HERO_IDS } from '../../src/game/raid/heroes/hero-id.ts';
 import { RaidSimulation } from '../../src/game/raid/raid-simulation.ts';
 import { RaidMatch } from '../../src/game/raid/raid-match.ts';
 import { RaidRound } from '../../src/game/raid/raid-round.ts';
@@ -11,6 +13,7 @@ import {
   pickNumber,
   pickTimeMs,
   readDraftSnapshot,
+  readDraftChoice,
   readyTimeMs,
   timeoutPick,
   draftMembers,
@@ -185,7 +188,7 @@ test('draft chat accepts bounded plain text and discards invalid messages', () =
 test('the first lock wins, unlocking and leaving free a hero, and a join needs a fresh pick', () => {
   const seats = draftMembers([], [5, 2]);
   assert.equal(isRaidRoster(seats), false);
-  assert.equal(applyPick(seats, 5, 'rend'), false);
+  assert.equal(applyPick(seats, 5, 'base'), false);
   assert.ok(applyPick(seats, 5, 'drizz'));
   assert.equal(applyPick(seats, 2, 'drizz'), false);
   assert.equal(applyPick(seats, 8, 'froze'), false);
@@ -224,6 +227,31 @@ test('online turns follow the numbered seats; other players can preview but cann
   assert.equal(nextDraftClock(seats, clock, 2500), clock);
   assert.ok(applyTurnPick(seats, clock, 7, null));
   assert.equal(nextDraftClock(seats, clock, 3000).actor, 7);
+});
+
+test('all published appearances can enter a match and a timed-out pick keeps only its own valid outfit', () => {
+  for (const item of battleOutfits) {
+    const hero = item.group === 'base' ? 'bird' : item.group;
+    assert.ok(HERO_IDS.includes(hero));
+    assert.equal(battleOutfit(hero, item.id)?.model, item.model);
+    assert.deepEqual(readDraftChoice({ hero, outfit: item.id }), { hero, outfit: item.id });
+    const seats = [
+      { actor: 1, hero: null, preferred: hero, outfit: item.id },
+      { actor: 2, hero: 'rend' },
+    ];
+    timeoutPick(seats, 1);
+    assert.ok(isRaidRoster(seats));
+    assert.equal(seats[0].outfit, item.id);
+  }
+  const seats = [
+    { actor: 1, hero: 'bird' },
+    { actor: 2, hero: null, preferred: 'bird', outfit: 'bird/bigbird#default' },
+  ];
+  timeoutPick(seats, 2);
+  assert.ok(isRaidRoster(seats));
+  assert.equal(seats[1].outfit, undefined);
+  for (const outfit of ['hammer/doomguard', 'https://example.com/test.glb', 42])
+    assert.equal(readDraftChoice({ hero: 'bird', outfit }), null);
 });
 test('timeouts use the preview if free and preserve the active turn across joins and host changes', () => {
   let seats = draftMembers([], [5, 8, 15]);

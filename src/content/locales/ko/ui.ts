@@ -128,6 +128,8 @@ export const korean = {
   seatReady: '준비완료',
   practiceOutfit: '연습 외형',
   runnerOutfit: '주자 기본 외형',
+  battleModel: '경기 외형',
+  baseModels: '공용 체형',
   arenaLoading: '경기장 불러오는 중…',
   arenaError: '경기장을 열지 못했습니다. 다시 시도해 주세요.',
   assets: '원작 에셋',
