@@ -1,6 +1,7 @@
 import { uiText } from '../content/locales/ui.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { characterArt } from '../content/raid/gallery.ts';
+import { officialGuides } from '../content/raid/official-guides.ts';
 import { isRaidRoster, type DraftSeat } from '../game/raid/raid-draft.ts';
 import { HEROES, type RaidHero } from '../game/raid/raid-match.ts';
 import { ORIGINAL_HERO_IDS } from '../game/raid/heroes/hero-id.ts';
@@ -104,7 +105,18 @@ export function createRaidLobby(
   const detail = document.createElement('p');
   const skills = document.createElement('p');
   skills.className = 'raid-pick-skills';
-  caption.append(heroName, range, detail, skills);
+  const guide = document.createElement('details');
+  guide.className = 'raid-original-guide';
+  const guideTitle = document.createElement('summary');
+  guideTitle.textContent = t('originalGuide');
+  const originalSkills = document.createElement('div');
+  originalSkills.lang = 'ko';
+  const source = document.createElement('a');
+  source.textContent = t('originalCafe');
+  source.target = '_blank';
+  source.rel = 'noopener noreferrer';
+  guide.append(guideTitle, originalSkills, source);
+  caption.append(heroName, range, detail, skills, guide);
   profile.append(portrait, caption);
   const notice = document.createElement('p');
   notice.setAttribute('aria-live', 'polite');
@@ -146,6 +158,26 @@ export function createRaidLobby(
     }
     setDraftArt(portrait, preview);
     heroName.textContent = t(preview);
+    if (guide.dataset.hero !== preview) {
+      guide.dataset.hero = preview;
+      guide.open = false;
+      const original = pendingProfile(preview) ? undefined : officialGuides[preview];
+      guide.hidden = !original;
+      if (original) {
+        const passive = document.createElement('p');
+        passive.textContent = t('originalPassive', { name: original.passive });
+        const slots = document.createElement('p');
+        slots.textContent = original.skills.join(' → ');
+        originalSkills.replaceChildren(passive, slots);
+        if (original.shieldMode) {
+          slots.prepend(t('magnusBattle') + ' · ');
+          const shield = document.createElement('p');
+          shield.textContent = t('magnusFury') + ' · ' + original.shieldMode.join(' → ');
+          originalSkills.append(shield);
+        }
+        source.href = 'https://cafe.naver.com/runandraid/' + original.article;
+      }
+    }
     if (pendingProfile(preview)) {
       range.textContent = t('notImplemented') + ' · ' + preview;
       detail.textContent = t('pendingProfileHelp');

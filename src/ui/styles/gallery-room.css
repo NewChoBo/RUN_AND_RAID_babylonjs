@@ -273,6 +273,17 @@
   color: white;
   background: linear-gradient(#f64222, #ab1204);
 }
+.raid-original-guide {
+  margin-top: 0.4em;
+  font-size: 0.85rem;
+}
+.raid-original-guide summary {
+  cursor: pointer;
+  padding: 0.45em 0;
+}
+.raid-original-guide a {
+  color: #ffe3a1;
+}
 @media (max-height: 480px) {
   #overlay .runner-picker .raid-pick-grid button {
     font-size: 0.7rem;
