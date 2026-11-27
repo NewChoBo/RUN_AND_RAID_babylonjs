@@ -705,6 +705,20 @@ test('each runner opens fire as the wagon crosses the radius of their basic atta
     assert.equal(match.damage[0] - before, HEROES[hero].power, hero);
   }
 });
+test('held steering reaches both widened lateral limits and releases inward immediately', () => {
+  const { match, send } = battle();
+  const runner = match.runners[0];
+  for (const side of [-1, 1]) {
+    assert.ok(send(0, 'move', { side, brake: 0.4 }));
+    advance(match, 3 * RAID_HZ);
+    assert.equal(runner.x, side * 6.6);
+    assert.equal(raidRunnerPositionAfter(runner, 0.5).x, runner.x);
+    assert.ok(send(0, 'move', { side: -side, brake: 0.4 }));
+    match.step();
+    assert.ok(Math.abs(runner.x) < 6.6);
+  }
+});
+
 test('stick travel scales lateral and forward distance, and release restores full running speed', () => {
   const { match, send } = battle();
   const runner = match.runners[0];

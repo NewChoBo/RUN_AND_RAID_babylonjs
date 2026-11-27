@@ -1,3 +1,4 @@
+import { RAID_RUN_LIMIT_X } from './raid-rules.ts';
 import { RAID_COUNTERS, inRaidCounter } from './raid-boss.ts';
 import { limitRaidPlacement, raidGroundPointAfter } from './runner-motion.ts';
 import { canUseRaidSkill, raidProjectileProfile, raidSkill } from './heroes/hero-catalog.ts';
@@ -67,7 +68,8 @@ export function driveRaidBots(
       const offset = RAID_COUNTERS.mortar.radius + 0.7;
       const left = counter.x - offset,
         right = counter.x + offset;
-      goalX = left < -5 || (right <= 5 && r.x > counter.x) ? right : left;
+      goalX =
+        left < -RAID_RUN_LIMIT_X || (right <= RAID_RUN_LIMIT_X && r.x > counter.x) ? right : left;
     }
     send(r.slot, 'move', {
       side: Math.abs(goalX - r.x) < 0.5 ? 0 : Math.sign(goalX - r.x),

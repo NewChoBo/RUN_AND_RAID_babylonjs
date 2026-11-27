@@ -27,6 +27,7 @@ import { createRaidAimGuide } from './raid-aim-guide.ts';
 import { pickRaidGroundAim } from './raid-ground-aim.ts';
 import { createCastleExterior } from '../citadel/castle-exterior.ts';
 import { loadInkApparition } from '../chapter/chapter-creatures.ts';
+import { RAID_ROAD_WIDTH } from '../../../game/raid/raid-rules.ts';
 import { RAID_COUNTERS } from '../../../game/raid/raid-boss.ts';
 import {
   RAID_BASIC_HALF_ANGLE,
@@ -124,23 +125,22 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   }
   // Keep two extra rear spans under the wider aiming camera, including after a backward leap.
   const roadLength = 144;
-  const roadWidth = 18;
   const pavingTilesPerMetre = 24 / 104;
   const ground = MeshBuilder.CreateGround(
     'raid causeway',
-    { width: roadWidth, height: roadLength },
+    { width: RAID_ROAD_WIDTH, height: roadLength },
     scene,
   );
   const road = raidMaterial(scene, 'paved causeway', '#bec0c6');
   const paving = new Texture('./assets/citadel/flagstone.jpg', scene);
-  paving.uScale = (3 / 14) * roadWidth;
+  paving.uScale = (3 / 14) * RAID_ROAD_WIDTH;
   paving.vScale = roadLength * pavingTilesPerMetre;
   road.diffuseTexture = paving;
   ground.material = road;
   // Instance each architectural piece. Only one segment's transform per span changes per frame.
   const span = new TransformNode('first bridge span', scene);
   for (const side of [-1, 1]) {
-    const wallX = side * (roadWidth / 2 - 0.1);
+    const wallX = side * (RAID_ROAD_WIDTH / 2 - 0.1);
     box('coping', span, wallX, 0.38, 0, 0.55, 0.76, 8, stone);
     for (const z of [-3, 1]) box('merlon', span, wallX, 0.95, z, 0.58, 0.5, 1.8, stone);
     box('lamp pedestal', span, wallX, 1.5, 3, 0.72, 2.15, 0.75, stone);

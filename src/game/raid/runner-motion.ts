@@ -1,5 +1,5 @@
 import type { RaidRunner, RaidPoint } from './raid-view.ts';
-import { RAID_HZ, RAID_LEAP_TICKS, WAGON } from './raid-rules.ts';
+import { RAID_HZ, RAID_LEAP_TICKS, RAID_RUN_LIMIT_X, WAGON } from './raid-rules.ts';
 /** Distance in metres travelled by the wagon over this many match ticks (including sub-ticks). */
 export const raidRoadTravel = (ticks: number) => (ticks * 6) / RAID_HZ;
 /** A stationary patch of road, expressed in the wagon's frame at cast time and again after age ticks. */
@@ -87,7 +87,7 @@ export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint
   // Keep steering intent through a stagger so held controls resume on recovery.
   const seconds = r.respawn || r.staggered ? 0 : (ticks / RAID_HZ) * (r.slowed ? 0.55 : 1);
   return {
-    x: runAxis(r.x, r.side * 4.8 * seconds, -5, 5, 4.8 * seconds),
+    x: runAxis(r.x, r.side * 4.8 * seconds, -RAID_RUN_LIMIT_X, RAID_RUN_LIMIT_X, 4.8 * seconds),
     z: runAxis(
       r.z,
       r.respawn || r.staggered ? 0 : forwardTravel(r, ticks) * (r.slowed ? 0.55 : 1),
