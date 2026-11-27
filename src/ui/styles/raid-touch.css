@@ -365,6 +365,36 @@ body.raid-mode .title-copy h1 {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+.raid-skill-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  pointer-events: none;
+}
+.raid-skills button:has(> .raid-skill-art:not([hidden])) :is(.raid-skill-name, .raid-skill-meta) {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 92%;
+  color: white;
+  text-shadow:
+    0 1px 2px black,
+    0 0 3px black;
+  background: #080d15b8;
+  border-radius: 3px;
+}
+.raid-skills button:has(> .raid-skill-art:not([hidden])) .raid-skill-name {
+  bottom: 10%;
+}
+.raid-skills button:has(> .raid-skill-art:not([hidden])) .raid-skill-meta {
+  top: 10%;
+}
+.raid-skills button:has(> .raid-skill-art:not([hidden])) i {
+  display: none;
+}
 .raid-skills button::before {
   content: '';
   position: absolute;

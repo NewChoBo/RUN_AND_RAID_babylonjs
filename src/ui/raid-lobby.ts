@@ -2,8 +2,9 @@ import { uiText } from '../content/locales/ui.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { characterArt } from '../content/raid/gallery.ts';
 import { officialGuides } from '../content/raid/official-guides.ts';
+import { battleIconIndex, skillLabel } from './raid-skill-icon.ts';
 import { isRaidRoster, type DraftSeat } from '../game/raid/raid-draft.ts';
-import { HEROES, type RaidHero } from '../game/raid/raid-match.ts';
+import { HEROES, type RaidHero, type Skill } from '../game/raid/raid-match.ts';
 import { ORIGINAL_HERO_IDS } from '../game/raid/heroes/hero-id.ts';
 import {
   adaptedSkills,
@@ -161,19 +162,39 @@ export function createRaidLobby(
     if (guide.dataset.hero !== preview) {
       guide.dataset.hero = preview;
       guide.open = false;
-      const original = pendingProfile(preview) ? undefined : officialGuides[preview];
+      const hero = pendingProfile(preview) ? undefined : preview;
+      const original = hero && officialGuides[hero];
       guide.hidden = !original;
-      if (original) {
-        const passive = document.createElement('p');
-        passive.textContent = t('originalPassive', { name: original.passive });
-        const slots = document.createElement('p');
-        slots.textContent = original.skills.join(' → ');
-        originalSkills.replaceChildren(passive, slots);
+      skills.replaceChildren();
+      if (hero) {
+        (['Pulse', 'Bolt', 'Field', 'Fury'] as const).forEach((suffix, i) => {
+          const text = t(`${hero}${suffix}`) + (adaptedSkills[hero]?.includes(i) ? '*' : '');
+          skills.append(skillLabel(hero, battleIconIndex(hero, i as Skill), text));
+        });
+        if (adaptedSkills[hero]?.length) {
+          const note = document.createElement('small');
+          note.textContent = '* ' + t('adaptedSkill');
+          skills.append(note);
+        }
+      }
+      if (hero && original) {
+        originalSkills.replaceChildren(
+          skillLabel(hero, 0, t('originalPassive', { name: original.passive })),
+        );
+        const guideRow = (names: readonly string[], start: number, mode?: string) => {
+          const row = document.createElement('p');
+          row.className = 'raid-pick-skills';
+          if (mode) {
+            const heading = document.createElement('strong');
+            heading.textContent = mode;
+            row.append(heading);
+          }
+          names.forEach((name, index) => row.append(skillLabel(hero, start + index, name)));
+          originalSkills.append(row);
+        };
+        guideRow(original.skills, 1, original.shieldMode && t('magnusBattle'));
         if (original.shieldMode) {
-          slots.prepend(t('magnusBattle') + ' · ');
-          const shield = document.createElement('p');
-          shield.textContent = t('magnusFury') + ' · ' + original.shieldMode.join(' → ');
-          originalSkills.append(shield);
+          guideRow(original.shieldMode, 5, t('magnusFury'));
         }
         source.href = 'https://cafe.naver.com/runandraid/' + original.article;
       }
@@ -181,20 +202,13 @@ export function createRaidLobby(
     if (pendingProfile(preview)) {
       range.textContent = t('notImplemented') + ' · ' + preview;
       detail.textContent = t('pendingProfileHelp');
-      skills.textContent = '';
       lock.textContent = t('notImplemented');
       lock.disabled = true;
       notice.textContent = t('pendingProfileHelp');
       return;
     }
-    const hero = preview;
     range.textContent = t('reach', { range: HEROES[preview].reach });
     detail.textContent = t(`${preview}Info`);
-    skills.textContent = (['Pulse', 'Bolt', 'Field', 'Fury'] as const)
-      .map((s, i) => t(`${hero}${s}`) + (adaptedSkills[hero]?.includes(i) ? '*' : ''))
-      .join(' · ');
-    if (adaptedSkills[hero]?.length)
-      skills.append(document.createElement('br'), '* ' + t('adaptedSkill'));
     lock.textContent = t(mine ? 'unlockPick' : 'lockPick');
     if (!mine) lock.textContent += ' · ' + t(preview);
     lock.disabled = !mine && seats.some((s) => s.hero === preview);

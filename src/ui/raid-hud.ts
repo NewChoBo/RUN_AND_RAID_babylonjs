@@ -19,6 +19,7 @@ import {
 } from '../game/raid/raid-match.ts';
 import { createTouchPad } from './touch-pad.ts';
 import { createRaidCombatNumbers } from './raid-combat-numbers.ts';
+import { battleIconIndex, setSkillIcon } from './raid-skill-icon.ts';
 import {
   RaidAimPad,
   aimFeedback,
@@ -208,6 +209,9 @@ export function createRaidHud(
     const b = button(rack, '');
     b.dataset.skill = key;
     b.setAttribute('aria-keyshortcuts', String(i + 1));
+    const art = element('img', b);
+    art.className = 'raid-skill-art';
+    art.hidden = true;
     const meta = element('span', b);
     meta.className = 'raid-skill-meta';
     meta.setAttribute('aria-hidden', 'true');
@@ -253,7 +257,7 @@ export function createRaidHud(
     b.onclick = (e) => {
       if (e.detail === 0 && !gesture) actions.skill(slot);
     };
-    return { b, charge, name, glyph, type };
+    return { b, art, charge, name, glyph, type };
   });
   const panel = element('section', document.body);
   panel.className = 'raid-panel';
@@ -359,7 +363,12 @@ export function createRaidHud(
           ? 'wagon'
           : view.runners[runner.target]!.hero;
     lock.textContent = t('target') + ' · ' + t(target);
-    buttons.forEach(({ b, charge, name, glyph, type }, i) => {
+    buttons.forEach(({ b, art, charge, name, glyph, type }, i) => {
+      setSkillIcon(
+        art,
+        runner.hero,
+        battleIconIndex(runner.hero, i as Skill, runner.heroView.shieldMode),
+      );
       const rule = raidSkill(runner.hero, i as Skill);
       const instant = rule.kind === 'pulse';
       const typeLabel = t(instant ? 'typeInstant' : 'typeAimed');

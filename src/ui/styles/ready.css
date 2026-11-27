@@ -79,7 +79,7 @@ body.raid-mode #game {
   padding: clamp(6px, 1vw, 14px);
 }
 #solo-profile img,
-#overlay .raid-pick-profile img {
+#overlay .raid-pick-profile > img {
   display: block;
   object-fit: contain;
   width: 100%;

@@ -90,7 +90,7 @@
   .raid-pick-profile figcaption > p {
     font-size: 0.76rem;
   }
-  .raid-pick-profile img {
+  .raid-pick-profile > img {
     max-height: 22vh;
   }
   #overlay .menu-folio:has(.raid-draft:not([hidden])) {
@@ -387,7 +387,7 @@ body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
   z-index: -1;
   background: linear-gradient(
     to top,
-    #b54b6b var(--rage-fill, 0%),
+    #b54b6b88 var(--rage-fill, 0%),
     transparent var(--rage-fill, 0%)
   );
 }

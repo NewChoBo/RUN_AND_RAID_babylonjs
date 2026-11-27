@@ -263,7 +263,7 @@
   margin: 0;
   padding: 0;
 }
-#overlay .runner-picker .raid-pick-profile img {
+#overlay .runner-picker .raid-pick-profile > img {
   height: clamp(72px, 32vh, 270px);
   max-height: none;
   object-fit: contain;
@@ -283,6 +283,25 @@
 }
 .raid-original-guide a {
   color: #ffe3a1;
+}
+.runner-picker .raid-pick-skills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.runner-picker .raid-pick-skills :is(small, strong) {
+  flex-basis: 100%;
+}
+.raid-pick-skill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.raid-pick-skill img {
+  width: 24px;
+  height: 24px;
+  flex: none;
 }
 @media (max-height: 480px) {
   #overlay .runner-picker .raid-pick-grid button {
