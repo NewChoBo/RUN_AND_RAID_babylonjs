@@ -18,7 +18,7 @@ if (
     })
     .catch(() => {
       frame?.gameReady();
-      splash.hidden = false;
+      splash.classList.add('launch-error');
       splash.querySelector('p')!.textContent = '게임 화면을 불러오지 못했습니다.';
       const retry = document.createElement('button');
       retry.textContent = '다시 불러오기';

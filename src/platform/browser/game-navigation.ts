@@ -29,7 +29,6 @@ export function mountLandscapeFrame(
   frame.allowFullscreen = true;
   frame.src = location.href;
   host.append(frame, splash);
-  splash.hidden = false;
   document.body.replaceChildren(host);
   window.addEventListener('hashchange', () => {
     const child = frame.contentWindow;

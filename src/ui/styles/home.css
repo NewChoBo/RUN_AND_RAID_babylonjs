@@ -338,11 +338,30 @@ a:focus-visible {
 }
 #launch-splash {
   isolation: isolate;
+  z-index: 2;
   display: grid;
   place-content: center;
   text-align: center;
   background: #29251f;
   text-shadow: 0 2px 6px #171412;
+}
+body > #launch-splash:not(.launch-error) {
+  display: none;
+}
+@media (any-pointer: coarse), (max-width: 600px) and (orientation: portrait) {
+  body > #launch-splash:not(.launch-error) {
+    display: grid;
+  }
+}
+@media (orientation: portrait) and (any-pointer: coarse),
+  (orientation: portrait) and (max-width: 600px) {
+  body > #launch-splash:not(.launch-error) {
+    width: 100dvh;
+    height: 100dvw;
+    left: 100%;
+    transform-origin: top left;
+    transform: rotate(90deg);
+  }
 }
 #launch-splash img {
   position: absolute;
