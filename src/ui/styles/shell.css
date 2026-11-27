@@ -18,6 +18,16 @@ body {
   margin: 0;
   overflow: hidden;
 }
+body,
+dialog {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
 button,
 input,
 select {

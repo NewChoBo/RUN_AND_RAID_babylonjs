@@ -437,11 +437,20 @@ export function createRaidLobby(
       show('draft');
       paint();
       paintClock();
-      status.textContent = offline
+      const roomStatus = offline
         ? uiText('offlinePractice')
         : roomCode
           ? t('roomStatus', { code: roomCode, count: seats.length })
           : t('quickRoomStatus', { count: seats.length });
+      if (status.textContent !== roomStatus) {
+        if (roomCode && !offline) {
+          const invite = document.createElement('span');
+          invite.className = 'draft-room-code';
+          invite.textContent = roomCode;
+          const [before = '', after = ''] = roomStatus.split(roomCode);
+          status.replaceChildren(before, invite, after);
+        } else status.textContent = roomStatus;
+      }
       for (let i = 0; i < 4; i++) {
         const item = document.createElement('li');
         const seat = seats[i];
