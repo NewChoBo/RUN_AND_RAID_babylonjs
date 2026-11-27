@@ -151,6 +151,9 @@ def main(timeline=None, selected=()):
                 entries.append(
                     dict(file=relative, sha256=sha, **read_json(path.with_suffix(".json")))
                 )
+            if group.casefold() == "longshot":
+                reference = WORK / "longshot-grip.json"
+                bundle.write(reference, "Reference/longshot-grip.json")
             bundle.writestr("index.json", json.dumps(entries, ensure_ascii=False, indent=2))
         with zipfile.ZipFile(tmp) as bundle:
             if bundle.testzip():

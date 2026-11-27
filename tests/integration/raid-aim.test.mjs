@@ -31,16 +31,16 @@ test('ground aim keeps legal tiles and projects distant or sky input onto a cast
   const bounds = { left: 20, top: 30, width: 800, height: 400 };
   const viewport = new Viewport(bounds.left, bounds.top, bounds.width, bounds.height);
   for (const [skill, range] of [
-    [0, 10],
+    [1, 10],
     [2, 15],
   ]) {
     for (const offset of [[-3, -2], [-7, 2], [0, 6], [20, 24], [-24, -2], null]) {
-      const match = new RaidMatch(skill === 0 ? 'hammer' : 'rend');
+      const match = new RaidMatch(skill === 1 ? 'hammer' : 'rend');
       match.move(0, 0.5, 0.4);
       for (let tick = 0; tick < 12; tick++) match.step();
       const caster = match.runners[0];
       caster.z = 7;
-      const kind = skill === 0 ? 'leap' : 'field';
+      const kind = skill === 1 ? 'leap' : 'field';
       const { eye, look } = raidCameraPose(caster);
       camera.position.set(eye.x, eye.y, eye.z);
       camera.setTarget(new Vector3(look.x, look.y, look.z));
@@ -140,7 +140,7 @@ test('the ground guide starts at the caster, stops at reach and shows a field at
     lanes.map((lane) => lane.isEnabled()),
     [true, false, false],
   );
-  const leap = match.previewSkill(0, 0, { x: 3, z: 2 });
+  const leap = match.previewSkill(0, 1, { x: 3, z: 2 });
   const arc = scene.getMeshByName('leap trajectory');
   draw(leap);
   assert.ok(arc.isEnabled() && footprint.isEnabled() && !arrow.isEnabled());

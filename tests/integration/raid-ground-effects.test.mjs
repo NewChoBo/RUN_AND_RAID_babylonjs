@@ -14,8 +14,8 @@ test('Longshot renders seven arrowheads along their shots and rains arrows acros
     match = new RaidMatch('longshot');
   const point = { x: 2, z: 3 };
   assert.ok(match.cast(0, 0, { dx: 1, dz: 0 }));
-  assert.ok(match.cast(0, 2, point));
-  const radius = match.skillRange(0, 2).radius;
+  assert.ok(match.cast(0, 1, point));
+  const radius = match.skillRange(0, 1).radius;
   draw(match, 0);
   const shots = scene.meshes.filter((m) => m.name === 'raid flying arrow' && m.isEnabled());
   assert.equal(shots.length, 7);
@@ -158,12 +158,13 @@ test('persistent ground rings and sigils stay on the same road tile between tick
   t.after(() => engine.dispose());
   const scene = new Scene(engine);
   const renderEffects = createRaidEffects(scene);
-  const match = new RaidMatch();
+  const match = new RaidMatch(['hammer', 'abyss', 'longshot', 'freesia']);
   while (match.tick < 38) match.step();
   const aim = { x: 0.8, z: 7 };
   const roadZ = aim.z + raidRoadTravel(match.tick);
   const casters = match.runners.filter((runner) => runner.hero !== 'hammer');
-  for (const caster of casters) assert.ok(match.cast(caster.slot, 2, aim));
+  for (const caster of casters)
+    assert.ok(match.cast(caster.slot, caster.hero === 'longshot' ? 1 : 2, aim));
   for (const now of [38, 38.5, 38.5, 40, 53, 68]) {
     while (match.tick < Math.floor(now)) match.step();
     renderEffects(match, now - match.tick);

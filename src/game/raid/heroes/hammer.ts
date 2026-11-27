@@ -10,7 +10,7 @@ const landing = {
   kind: 'area',
   on: 'land',
   area: { kind: 'circle', radius: leapImpactRadius },
-  hit: { powerScale: 2, control: [slow(30)] },
+  hit: { powerScale: 2, displacement: 'launch' },
 } as const satisfies AreaAttack;
 const whirlwind = {
   kind: 'area',
@@ -24,6 +24,7 @@ const hammerEvents: HeroEvents = {
   },
 };
 export const hammer = defineHero(stats, () => hammerEvents, [
+  sweep({ powerScale: 3, control: [slow(36)] }),
   {
     kind: 'leap',
     range: RAID_SKILL_RANGE.leap,
@@ -37,7 +38,6 @@ export const hammer = defineHero(stats, () => hammerEvents, [
       };
     },
   },
-  sweep({ powerScale: 3, control: [slow(36), stagger(12)] }),
   spin(60, whirlwind),
   bolt(
     { powerScale: 7, control: [stagger(15)] },

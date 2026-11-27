@@ -85,12 +85,13 @@ export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint
     );
   }
   // Keep steering intent through a stagger so held controls resume on recovery.
-  const seconds = r.respawn || r.staggered ? 0 : (ticks / RAID_HZ) * (r.slowed ? 0.55 : 1);
+  const speed = (r.slowed ? 0.55 : r.lightningSlow ? 0.8 : 1) * (r.hasteTicks ? 1.2 : 1);
+  const seconds = r.respawn || r.staggered ? 0 : (ticks / RAID_HZ) * speed;
   return {
     x: runAxis(r.x, r.side * 4.8 * seconds, -RAID_RUN_LIMIT_X, RAID_RUN_LIMIT_X, 4.8 * seconds),
     z: runAxis(
       r.z,
-      r.respawn || r.staggered ? 0 : forwardTravel(r, ticks) * (r.slowed ? 0.55 : 1),
+      r.respawn || r.staggered ? 0 : forwardTravel(r, ticks) * speed,
       RAID_REAR_Z,
       RAID_FRONT_Z,
       -BRAKE_SPEED * seconds,

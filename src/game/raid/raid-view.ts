@@ -47,6 +47,8 @@ export interface RaidAim {
 }
 export type Team = 0 | 1;
 export interface RaidAction {
+  readonly comboStep?: number;
+  readonly lines?: readonly { from: RaidPoint; to: RaidPoint }[];
   readonly id: number;
   readonly tick: number;
   readonly slot: number;
@@ -63,7 +65,7 @@ export interface RaidAction {
 
 export interface Runner extends RaidPoint, RaidControl {
   readonly spinTicks: number;
-  spin: { skill: Skill; remaining: number; interval: number } | null;
+  spin: { skill: Skill; remaining: number; duration: number; interval: number } | null;
   dash: RaidDash | null;
   readonly heroView: HeroView;
   slot: number;
@@ -91,7 +93,8 @@ export interface Runner extends RaidPoint, RaidControl {
   shield: number;
   barrier: { amount: number; until: number } | null;
   taunt: { from: number; until: number } | null;
-  marked: number;
+  hasteTicks: number;
+  lightningSlow: number;
   kills: number;
   wagonDamage: number;
   deaths: number;

@@ -1,4 +1,4 @@
-import type { HeroCombat } from '../heroes/hero-definition.ts';
+import type { CombatRead, HeroCombat } from '../heroes/hero-definition.ts';
 import type { RaidPoint, RaidRunner, RaidTarget, Skill } from '../raid-view.ts';
 import type { RaidDirection } from '../raid-projectiles.ts';
 import type {
@@ -20,6 +20,7 @@ export interface SkillDefinition<K extends string, A extends SkillAttack> {
   readonly requiresJump?: true;
   readonly noRageCost?: true;
   readonly available?: (runner: RaidRunner) => boolean;
+  readonly origin?: (read: CombatRead) => RaidPoint;
 }
 interface RangedSkill<K extends string, A extends SkillAttack> extends SkillDefinition<K, A> {
   readonly range: number;

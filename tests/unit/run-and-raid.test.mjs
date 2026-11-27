@@ -47,6 +47,10 @@ test('Rildin weaves four frontal slashes with basics and reopens the chain with 
     match.actions.filter((a) => a.slot === 0).map((a) => a.skill),
     ['basic', 0, 'basic', 0, 'basic', 0, 'basic', 0],
   );
+  assert.deepEqual(
+    match.actions.filter((a) => a.slot === 0 && a.skill === 0).map((a) => a.comboStep),
+    [1, 2, 3, 4],
+  );
   assert.equal(send(0, 'cast', { skill: 0 }), false);
   r.rage = 100;
   assert.ok(send(0, 'cast', { skill: 3 }));
@@ -248,7 +252,7 @@ for (const [hero, reach, ticks] of [
           }
           case 'hammer':
             assert.ok(
-              send(0, 'cast', { skill: 0, x: origin.x + dx * reach, z: origin.z + dz * reach }),
+              send(0, 'cast', { skill: 1, x: origin.x + dx * reach, z: origin.z + dz * reach }),
             );
             break;
         }
@@ -321,10 +325,10 @@ test('a leap aimed over the wagon lands on the last legal road tile and applies 
     Object.assign(r, { x, z: RAID_FRONT_Z - 1 });
     for (const runner of match.runners) runner.basic = 90;
     const request = { x, z: WAGON.z + 2 };
-    const preview = match.previewSkill(0, 0, request);
+    const preview = match.previewSkill(0, 1, request);
     assert.deepEqual(preview.point, { x, z: RAID_FRONT_Z });
     assert.equal(preview.status, 'ready');
-    assert.ok(send(0, 'cast', { skill: 0, ...request }));
+    assert.ok(send(0, 'cast', { skill: 1, ...request }));
     assert.deepEqual(r.leap.to, preview.point);
     for (let i = 0; i < RAID_LEAP_TICKS; i++) {
       assert.ok(raidRunnerPositionAfter(r, 0.5).z <= RAID_FRONT_Z);
@@ -399,7 +403,7 @@ test('a designated hit repeats independently of the basic lock and cannot transf
   assert.equal(caster.target, 'wagon');
 });
 
-test('an ally ward remembers its own recipient and a field cannot consume the remembered cast', () => {
+test('an ally ward remembers its own recipient and a chain cannot consume the remembered cast', () => {
   const { match, send } = battle('jade');
   const caster = match.runners[0];
   assert.equal(send(0, 'cast', { skill: 0, ally: 1 }), true);
@@ -453,15 +457,15 @@ test('aim feedback distinguishes an empty cast, a hit and an unreachable point b
 
 test('self pulses and ally wards preview the recipient and range used by the cast', () => {
   const { match } = battle('jade');
-  const grove = match.previewSkill(0, 2, match.runners[0]);
+  const grove = battle('freesia').match.previewSkill(0, 2, match.runners[0]);
   assert.deepEqual([grove.status, grove.count, grove.allies], ['ready', 1, 2]);
   const ward = match.previewSkill(0, 0, null, 1);
-  assert.deepEqual([ward.kind, ward.range, ward.status], ['ward', 8, 'ready']);
+  assert.deepEqual([ward.kind, ward.range, ward.status], ['ward', 15, 'ready']);
   assert.equal(match.previewSkill(0, 0, null, 2).status, 'needTarget');
   assert.equal(match.cast(0, 0), false);
   assert.equal(match.runners[0].cooldowns[0], 0);
   assert.ok(match.cast(0, 0, 1));
-  assert.ok(match.runners[1].shield);
+  assert.ok(match.runners[1].barrier);
   const abyss = match.runners.find((r) => r.hero === 'abyss');
   const pulse = match.previewSkill(abyss.slot, 0, WAGON);
   assert.deepEqual(
@@ -483,15 +487,15 @@ test('each team fields two runners and all four heroes are distinct', () => {
   }
 });
 test('each accepted cast records one cue, including an empty field or a full-health ward', () => {
-  const { match, send } = battle('jade');
-  assert.ok(send(0, 'cast', { skill: 0, ally: 1 }));
+  const { match, send } = battle('freesia');
+  assert.ok(send(0, 'cast', { skill: 1, ally: 1 }));
   assert.ok(send(0, 'cast', { skill: 2, x: -5, z: 4 }));
   assert.equal(send(0, 'cast', { skill: 2, x: -5, z: 4 }), false);
   assert.deepEqual(
     match.actions.map(({ id, hero, skill, to }) => [id, hero, skill, to]),
     [
-      [1, 'jade', 0, { x: -3.3, z: -2 }],
-      [2, 'jade', 2, { x: -5, z: 4 }],
+      [1, 'freesia', 1, { x: -3.3, z: -2 }],
+      [2, 'freesia', 2, { x: -5, z: 4 }],
     ],
   );
   advance(match, 40);
@@ -503,7 +507,7 @@ test('the wagon takes arrow rain on impact and at half a second, then moves beyo
   assert.ok(send(0, 'move', { side: 0, brake: 1 }));
   advance(match, 25);
   const before = match.damage[0];
-  assert.ok(send(0, 'cast', { skill: 2, ...WAGON }));
+  assert.ok(send(0, 'cast', { skill: 1, ...WAGON }));
   advance(match, 14);
   assert.equal(match.damage[0] - before, 24);
   match.step();
@@ -518,7 +522,7 @@ test('running into arrow rain or a dark vortex triggers a later pulse at the pla
     const { match, send } = battle(hero);
     const rival = match.runners[2];
     const hp = rival.hp;
-    assert.ok(send(0, 'cast', { skill: 2, x: rival.x, z: 10 }));
+    assert.ok(send(0, 'cast', { skill: hero === 'longshot' ? 1 : 2, x: rival.x, z: 10 }));
     // The caster brakes and changes lanes after release. The rival keeps running straight.
     assert.ok(send(0, 'move', { side: -1, walk: true }));
     advance(match, 29);
@@ -531,34 +535,15 @@ test('running into arrow rain or a dark vortex triggers a later pulse at the pla
 });
 test('each charged ultimate applies its hero effect to the selected formation', () => {
   // The blade heroes have separate combo, channel and teleport scenarios below.
-  for (const hero of ['hammer', 'abyss', 'longshot', 'jade', 'rend', 'bastion', 'rime']) {
+  for (const hero of ['hammer', 'abyss', 'longshot', 'rend', 'bastion', 'rime']) {
     const { match, send } = battle(hero);
-    const [caster, ally, flank, rear] = match.runners;
-    for (const r of match.runners) send(r.slot, 'move', { side: 0, brake: 0.4 });
-    if (hero === 'hammer') {
-      caster.z = 8;
-      assert.ok(send(0, 'cast', { skill: 1 }));
-      caster.z = 0;
-      assert.ok(send(flank.slot, 'cast', { skill: 1, target: 0 }));
-    } else {
-      assert.ok(
-        send(
-          0,
-          'cast',
-          hero === 'jade'
-            ? { skill: 1, dx: WAGON.x - caster.x, dz: WAGON.z - caster.z }
-            : { skill: 1, target: 'wagon' },
-        ),
-      );
-      assert.ok(send(0, 'cast', { skill: 2, ...WAGON }));
-    }
-    for (const rival of [flank, rear])
-      assert.ok(send(rival.slot, 'cast', { skill: 2, x: caster.x, z: caster.z }));
-    advance(match, 28);
-    assert.equal(caster.rage, 100);
-    // Sample the ultimate separately from a basic attack recharging rage on its impact tick.
-    if (caster.basic === 1) advance(match, 1);
-    if (hero === 'longshot') assert.ok(send(3, 'cast', { skill: 0, ally: 3 }));
+    const [caster, , flank, rear] = match.runners;
+    for (const r of match.runners) Object.assign(r, { basic: 90, brake: 0.4, appliedBrake: 0.4 });
+    caster.rage = 100;
+    caster.hp -= 40;
+    flank.x = rear.x + 1.5;
+    flank.z = rear.z;
+    if (hero === 'longshot') rear.shield = 75;
     const beforeCaster = caster.hp;
     const beforeRear = rear.hp,
       beforeFlank = flank.hp;
@@ -584,33 +569,36 @@ test('each charged ultimate applies its hero effect to the selected formation', 
         Math.min(HEROES.rend.hp, beforeCaster + Math.ceil((7 * HEROES.rend.power) / 3)),
       );
     if (hero === 'longshot') assert.ok(rear.shield);
-    if (hero === 'jade') assert.ok(caster.shield && ally.shield);
   }
 });
-test('marking bolt doubles the next basic shot against its marked runner once', () => {
-  const { match, send } = battle('longshot');
-  send(0, 'move', { side: 0, walk: true });
-  advance(match, 20);
-  const rival = match.runners[2];
-  assert.ok(send(0, 'cast', { skill: 1, target: rival.slot }));
+test('Longshot lands separate arrows up close, slows with W and rolls through a hit with E', () => {
+  const { match } = battle(['longshot', 'hammer', 'rend', 'jade']);
+  for (const r of match.runners) r.basic = 100;
+  const [caster, , rival] = match.runners;
+  rival.x = caster.x;
+  rival.z = caster.z + 0.1;
+  const hp = rival.hp;
+  assert.ok(match.cast(0, 0, { dx: 0, dz: 1 }));
   match.step();
-  assert.ok(rival.marked);
-  assert.equal(match.runners[0].target, 'wagon');
-  assert.ok(send(0, 'lock', rival.slot));
-  const before = rival.hp;
-  send(0, 'move', { side: 1, walk: false });
-  for (let i = 0; i < 30 && rival.marked; i++) match.step();
-  assert.equal(rival.marked, 0);
-  assert.equal(before - rival.hp, 2 * HEROES.longshot.power);
+  assert.equal(hp - rival.hp, 42);
+  assert.ok(match.cast(0, 1, { x: rival.x, z: rival.z }));
+  match.step();
+  assert.ok(rival.slowed > 0);
+  assert.ok(match.cast(0, 2, { dx: -1, dz: 0 }));
+  assert.ok(match.cast(2, 1, 0));
+  const before = caster.hp;
+  match.step();
+  assert.equal(caster.hp, before);
+  assert.ok(caster.dash);
 });
 test('a wounded ally heals inside the grove and receives no further healing after running past it', () => {
-  const { match, send } = battle('jade');
+  const { match, send } = battle('freesia');
   const ally = match.runners[1];
   assert.ok(send(0, 'move', { side: 0, brake: 1 }));
   assert.ok(send(2, 'cast', { skill: 1, target: 1 }));
   match.step();
   const before = ally.hp;
-  assert.ok(send(0, 'cast', { skill: 2, x: ally.x, z: ally.z + 2.5 }));
+  assert.ok(send(0, 'cast', { skill: 2, x: ally.x, z: ally.z + 0.3 }));
   advance(match, 15);
   assert.equal(ally.hp - before, 10);
   assert.equal(match.runners[0].rage, 10);
@@ -618,7 +606,7 @@ test('a wounded ally heals inside the grove and receives no further healing afte
   assert.equal(ally.hp - before, 10);
 });
 test('only connected runners can lock an opponent and spend a ready, in-range skill', () => {
-  const { match, send } = battle('jade');
+  const { match, send } = battle('rend');
   assert.equal(send(9, 'jump'), false);
   assert.equal(send(0, 'lock', 1), false);
   assert.equal(send(0, 'cast', { skill: 2, x: Infinity, z: 0 }), false);
@@ -672,9 +660,9 @@ test('leaps and backward dashes stop at the rear edge as the wagon moves', () =>
     if (hero === 'hammer') {
       // A lateral rim pick needs room for the wagon travel during the leap.
       const requested = { x: r.x + 10, z: rear };
-      const preview = match.previewSkill(0, 0, requested);
+      const preview = match.previewSkill(0, 1, requested);
       assert.equal(preview.status, 'ready');
-      assert.ok(match.cast(0, 0, preview.point));
+      assert.ok(match.cast(0, 1, preview.point));
     } else {
       r.z += 1;
       assert.ok(match.cast(0, 2, { dx: 0, dz: -1 }));
@@ -1000,7 +988,7 @@ test('each runner starts at ten seconds, adds five per knockout and caps at thir
   assert.equal(second.deaths, 1);
 });
 test('opposing hits unlock one ultimate and attacking the wagon spends the charge', () => {
-  const { match, send } = battle();
+  const { match, send } = battle(['hammer', 'abyss', 'rend', 'rime']);
   const player = match.runners[0];
   assert.equal(player.rage, 0);
   assert.equal(send(0, 'cast', { skill: 3, target: 'wagon' }), false);
@@ -1008,16 +996,7 @@ test('opposing hits unlock one ultimate and attacking the wagon spends the charg
   advance(match, 20);
   for (const rival of [2, 3]) {
     send(rival, 'lock', 0);
-    const enemy = match.runners[rival];
-    assert.ok(
-      send(
-        rival,
-        'cast',
-        enemy.hero === 'jade'
-          ? { skill: 1, dx: player.x - enemy.x, dz: player.z - enemy.z + 1.5 }
-          : { skill: 1, target: player.slot },
-      ),
-    );
+    assert.ok(send(rival, 'cast', { skill: 1, target: player.slot }));
     send(rival, 'cast', { skill: 2, x: player.x, z: player.z });
     advance(match, rival === 3 ? 21 : 1);
     if (rival === 2) {
@@ -1055,7 +1034,7 @@ test('damage to the wagon and damage from its hazard both charge the runner', ()
 test('a rear ground strike can charge Fury, which can spend that charge on the visible rear rival', () => {
   const { match, send } = battle(['rend', 'abyss', 'longshot', 'jade']);
   const [player, , flank, rear] = match.runners;
-  assert.ok(send(2, 'cast', { skill: 1, target: 0 }));
+  assert.ok(send(2, 'cast', { skill: 1, x: player.x, z: player.z }));
   assert.ok(send(0, 'cast', { skill: 1, target: flank.slot }));
   assert.ok(send(0, 'cast', { skill: 2, x: (flank.x + rear.x) / 2, z: -1 }));
   match.step();
@@ -1075,19 +1054,16 @@ test('a full-health shield gives no rage and a self-heal counts only the missing
   assert.equal(full.match.runners[0].rage, 0);
   assert.ok(full.send(2, 'cast', { skill: 1, target: 0 }));
   full.match.step();
-  for (const slot of [0, 2]) assert.equal(full.match.runners[slot].rage, 15);
+  for (const slot of [0, 2]) assert.equal(full.match.runners[slot].rage, 0);
 
-  const { match, send } = battle('jade');
-  const jade = match.runners[0];
-  assert.ok(send(3, 'lock', 0));
-  send(3, 'move', { side: -1, walk: false });
-  for (let i = 0; i < 30 && jade.hp === HEROES.jade.hp; i++) match.step();
-  const missing = HEROES.jade.hp - jade.hp;
-  assert.ok(missing > 0 && missing < 20);
-  const before = jade.rage;
+  const { match, send } = battle('theresa');
+  const caster = match.runners[0];
+  caster.hp -= 12;
+  const missing = HEROES.theresa.hp - caster.hp;
+  const before = caster.rage;
   assert.ok(send(0, 'cast', { skill: 0, ally: 0 }));
-  assert.equal(jade.hp, HEROES.jade.hp);
-  assert.equal(jade.rage - before, missing);
+  assert.equal(caster.hp, HEROES.theresa.hp);
+  assert.equal(caster.rage - before, missing);
 });
 test('Abyss can silence and slow a runner and Jade can shield a wounded partner', () => {
   const { match, send } = battle('jade');
@@ -1101,19 +1077,19 @@ test('Abyss can silence and slow a runner and Jade can shield a wounded partner'
   send(abyss.slot, 'cast', { skill: 2, x: ally.x, z: ally.z });
   match.step();
   assert.ok(ally.silenced && ally.slowed);
-  assert.equal(send(1, 'cast', { skill: 0, x: ally.x, z: ally.z }), false);
+  assert.equal(send(1, 'cast', { skill: 1, x: ally.x, z: ally.z }), false);
   const jade = match.runners[0];
   const before = { hp: ally.hp, allyRage: ally.rage, jadeRage: jade.rage };
   assert.ok(send(0, 'cast', { skill: 0, ally: 1 }));
-  assert.ok(ally.shield > 0);
-  assert.equal(ally.hp - before.hp, 20);
-  assert.equal(jade.rage, Math.min(100, before.jadeRage + 20));
+  assert.ok(ally.barrier?.amount > 0);
+  assert.equal(ally.hp, before.hp);
+  assert.equal(jade.rage, before.jadeRage);
   assert.equal(ally.rage, before.allyRage);
   advance(match, 25);
-  assert.equal(send(1, 'cast', { skill: 0, x: ally.x, z: ally.z }), true);
+  assert.equal(send(1, 'cast', { skill: 1, x: ally.x, z: ally.z }), true);
 });
 test('lead changes count settled overtakes across ties, excluding first scores and within-tick hits', () => {
-  const { match, send } = battle(['abyss', 'rime', 'bastion', 'jade']);
+  const { match, send } = battle(['abyss', 'rime', 'bastion', 'theresa']);
   function score(slot, skill) {
     assert.ok(send(slot, 'cast', skill === 2 ? { skill, ...WAGON } : { skill, target: 'wagon' }));
   }
@@ -1127,7 +1103,8 @@ test('lead changes count settled overtakes across ties, excluding first scores a
   settled([30, 30], 0);
   score(1, 1);
   settled([60, 30], 0);
-  score(3, 2);
+  Object.assign(match.runners[3], { x: 0, z: 8, basic: 90 });
+  score(3, 1);
   settled([60, 60], 0);
   score(2, 2);
   settled([60, 90], 1);
@@ -1139,8 +1116,8 @@ test('lead changes count settled overtakes across ties, excluding first scores a
 
 test('holding both teams back ends the full three minutes on wagon damage, including an exact tie', () => {
   for (const scored of [true, false]) {
-    // In this formation the crossbow starts in the rear, beyond reach of the wagon.
-    const { match, send } = battle('jade');
+    const { match, send } = battle(['abyss', 'hammer', 'rime', 'rend']);
+    for (const runner of match.runners) runner.z = -4;
     if (scored) assert.ok(send(0, 'cast', { skill: 2, ...WAGON }));
     for (let i = 0; i < ROUND_TICKS; i++) {
       for (const r of match.runners)
@@ -1153,7 +1130,7 @@ test('holding both teams back ends the full three minutes on wagon damage, inclu
   }
 });
 test('a bot-assisted round can destroy the wagon early and the result freezes the session', () => {
-  const { match, send } = battle();
+  const { match, send } = battle(['rend', 'abyss', 'rime', 'bastion']);
   for (let i = 0; i < ROUND_TICKS && !match.result; i++) {
     driveRaidBots(match, send);
     send(0, 'cast', { skill: 1, target: 'wagon' });
@@ -1171,7 +1148,7 @@ test('a bot-assisted round can destroy the wagon early and the result freezes th
 
 test('free-aim shots ignore the lock, accept empty space, and spend cooldown on a miss', () => {
   for (const [hero, skill] of [
-    ['jade', 1],
+    ['flare', 0],
     ['longshot', 0],
   ]) {
     const { match, send } = battle(hero);
@@ -1191,7 +1168,7 @@ test('free-aim shots ignore the lock, accept empty space, and spend cooldown on 
     assert.ok(send(0, 'cast', { skill, dx: -1, dz: 0 }));
     assert.equal(match.runners[0].target, 'wagon');
     assert.ok(match.runners[0].cooldowns[skill] > 0);
-    assert.equal(match.projectiles.length, hero === 'jade' ? 1 : 7);
+    assert.equal(match.projectiles.length, hero === 'flare' ? 1 : 7);
     const control = battle(hero).match;
     advance(control, 40);
     advance(match, 40);
@@ -1203,14 +1180,14 @@ test('free-aim shots ignore the lock, accept empty space, and spend cooldown on 
     );
   }
 });
-test('a runner can dodge a thorn in flight or run into a shot aimed ahead', () => {
+test('a runner can dodge a fireball in flight or run into a shot aimed ahead', () => {
   for (const lead of [0, 0.8]) {
-    const { match, send } = battle('jade');
+    const { match, send } = battle('flare');
     const [player, , rival] = match.runners;
     send(2, 'move', { side: 0, brake: 1 });
     advance(match, 9);
     const hp = rival.hp;
-    assert.ok(send(0, 'cast', { skill: 1, dx: rival.x - player.x, dz: rival.z - player.z - lead }));
+    assert.ok(send(0, 'cast', { skill: 0, dx: rival.x - player.x, dz: rival.z - player.z - lead }));
     match.step();
     assert.equal(rival.hp, hp);
     advance(match, 7);
@@ -1252,6 +1229,15 @@ test('each loadout contests wagon damage per active team member with one objecti
           const distance = Math.hypot(WAGON.x - r.x, WAGON.z - r.z);
           if (distance > raidBasicReach(r, match.tick)) priority.push(2);
           if (distance <= match.skillRange(0, 0).range) priority.push(0);
+        } else if (hero === 'longshot') {
+          priority.push(1, 0);
+        } else if (hero === 'jade') {
+          const carrier = match.runners[r.lastWard ?? r.slot];
+          const gap = Math.hypot(WAGON.x - carrier.x, WAGON.z - carrier.z);
+          if (gap > 8) priority.length = 0;
+          if (gap <= 6) priority.push(1);
+          if (gap <= 7) priority.push(2);
+          priority.push(0);
         } else priority.push(1, 2, 0);
         for (const skill of priority) {
           const kind = raidAimKind(hero, skill);
@@ -1287,12 +1273,12 @@ test('Hammer slams at his feet and each whirlwind pulse can reach a new opponent
   }
   hammer.x = hammer.z = first.x = first.z = second.z = 0;
   second.x = 4.5;
-  assert.equal(send(0, 'cast', { skill: 1, target: 2 }), false);
+  assert.equal(send(0, 'cast', { skill: 0, target: 2 }), false);
   assert.equal(send(0, 'cast', { skill: 2, ...WAGON }), false);
-  assert.ok(send(0, 'cast', { skill: 1 }));
+  assert.ok(send(0, 'cast', { skill: 0 }));
   match.step();
   assert.equal(first.hp, HEROES[first.hero].hp - HEROES.hammer.power * 3);
-  assert.ok(first.slowed && first.staggered);
+  assert.ok(first.slowed && !first.staggered);
   assert.equal(second.hp, HEROES[second.hero].hp);
   assert.ok(send(0, 'cast', { skill: 2 }));
   assert.ok(send(0, 'move', { side: 1, brake: 0.4 }));
@@ -1309,11 +1295,11 @@ test('Hammer slams at his feet and each whirlwind pulse can reach a new opponent
   assert.equal(second.hp, HEROES[second.hero].hp - 72);
 });
 
-test('Hammer leaps to the selected road tile, then damages and slows only rivals in the landing area', () => {
+test('Hammer leaps to the selected road tile, then damages and launches only rivals in the landing area', () => {
   const { match, send } = battle();
   const [hammer, ally, rival, evader] = match.runners;
   const point = { x: 2, z: 3 };
-  const aim = match.previewSkill(0, 0, point);
+  const aim = match.previewSkill(0, 1, point);
   assert.deepEqual(
     [aim.kind, aim.status, aim.range, aim.radius, aim.count],
     ['leap', 'ready', 10, 5, undefined],
@@ -1325,9 +1311,9 @@ test('Hammer leaps to the selected road tile, then damages and slows only rivals
     { x: Infinity, z: 0 },
     { x: hammer.x + 10.01, z: 0 },
   ])
-    assert.equal(send(0, 'cast', { skill: 0, ...payload }), false);
-  assert.equal(hammer.cooldowns[0], 0);
-  assert.ok(send(0, 'cast', { skill: 0, ...point }));
+    assert.equal(send(0, 'cast', { skill: 1, ...payload }), false);
+  assert.equal(hammer.cooldowns[1], 0);
+  assert.ok(send(0, 'cast', { skill: 1, ...point }));
   assert.ok(send(0, 'move', { side: -1, brake: 1 }));
   assert.equal(send(0, 'jump'), false);
   assert.equal(send(0, 'cast', { skill: 1, target: 2 }), false);
@@ -1349,20 +1335,20 @@ test('Hammer leaps to the selected road tile, then damages and slows only rivals
     [point.x, point.z - raidRoadTravel(RAID_LEAP_TICKS), 0, null],
   );
   assert.equal(rival.hp, hp - 24);
-  assert.equal(rival.slowed, 30);
-  assert.equal(evader.slowed, 0);
-  assert.equal(ally.slowed, 0);
-  assert.equal(match.actions.filter((c) => c.slot === 0 && c.skill === 0).length, 1);
+  assert.equal(rival.jumping, 22);
+  assert.equal(evader.jumping, 0);
+  assert.equal(ally.jumping, 0);
+  assert.equal(match.actions.filter((c) => c.slot === 0 && c.skill === 1).length, 1);
   match.step();
-  assert.equal(rival.slowed, 29);
-  assert.equal(match.actions.filter((c) => c.slot === 0 && c.skill === 0).length, 1);
+  assert.equal(rival.jumping, 21);
+  assert.equal(match.actions.filter((c) => c.slot === 0 && c.skill === 1).length, 1);
   assert.ok(hammer.x < point.x);
 });
 test('an empty leap lands outside the running lanes and returns smoothly, while a knockout cancels touchdown', () => {
   const { match, send } = battle();
   const [hammer] = match.runners;
   const end = { x: hammer.x - 10, z: hammer.z };
-  assert.ok(send(0, 'cast', { skill: 0, ...end }));
+  assert.ok(send(0, 'cast', { skill: 1, ...end }));
   advance(match, RAID_LEAP_TICKS);
   assert.equal(hammer.x, end.x);
   match.step();
@@ -1375,20 +1361,13 @@ test('an empty leap lands outside the running lanes and returns smoothly, while 
     control.runners.slice(2).map((r) => r.hp),
   );
 
-  const other = battle();
-  const [caster, , archer, jade] = other.match.runners;
-  for (const r of other.match.runners) other.send(r.slot, 'move', { side: 0, brake: 0.4 });
-  assert.ok(other.send(0, 'cast', { skill: 1 }));
-  assert.ok(other.send(1, 'cast', { skill: 2, x: archer.x, z: archer.z }));
-  for (const slot of [2, 3])
-    assert.ok(other.send(slot, 'cast', { skill: 2, x: caster.x, z: caster.z }));
+  const other = battle(['hammer', 'abyss', 'rend', 'rime']);
+  const [caster, , rival] = other.match.runners;
+  caster.hp = 5;
+  assert.ok(other.send(0, 'cast', { skill: 1, x: rival.x, z: rival.z }));
+  assert.ok(caster.leap);
   assert.ok(other.send(2, 'cast', { skill: 1, target: 0 }));
-  assert.ok(other.send(3, 'cast', { skill: 1, dx: caster.x - jade.x, dz: caster.z - jade.z }));
-  advance(other.match, 13);
-  assert.ok(caster.hp > 0 && caster.hp < 56);
-  assert.ok(other.send(0, 'cast', { skill: 0, x: archer.x, z: 3 }));
-  assert.ok(other.send(2, 'cast', { skill: 3, dx: -1, dz: 0 }));
   advance(other.match, RAID_LEAP_TICKS + 1);
   assert.ok(caster.respawn > 0 && !caster.leap);
-  assert.ok(!other.match.actions.some((c) => c.slot === 0 && c.skill === 0));
+  assert.ok(!other.match.actions.some((c) => c.slot === 0 && c.skill === 1));
 });

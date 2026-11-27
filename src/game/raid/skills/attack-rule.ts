@@ -47,6 +47,7 @@ export interface ProjectileProfile {
   readonly angles: readonly number[];
   /** Dense volleys display the envelope between the outermost flight angles. */
   readonly guide?: 'sector';
+  readonly hitPerArrow?: boolean;
   readonly pierces: boolean;
   readonly contact: ProjectileContact;
 }

@@ -1,3 +1,4 @@
+import { RAID_BASIC_HALF_ANGLE } from './raid-sight.ts';
 import { RAID_RUN_LIMIT_X } from './raid-rules.ts';
 import { RAID_COUNTERS, inRaidCounter } from './raid-boss.ts';
 import { limitRaidPlacement, raidGroundPointAfter } from './runner-motion.ts';
@@ -58,7 +59,10 @@ export function driveRaidBots(
           ? nearest
           : undefined;
     const partner = view.runners.find((other) => other.team === r.team && other.slot !== r.slot)!;
-    let goalX = target?.x ?? (r.team === 0 ? -1 : 1) * (r.slot % 2 ? 1.8 : 0.65);
+    // At the front limit the outer lane used to put the wagon outside the 45-degree basic arc.
+    const formationX = rank ? 1.8 : 0.65;
+    const insideArc = (WAGON.z - r.z) * Math.tan(RAID_BASIC_HALF_ANGLE) - 0.5;
+    let goalX = target?.x ?? (r.team === 0 ? -1 : 1) * Math.min(formationX, insideArc);
     const counter = view.hazard;
     if (
       counter?.kind === 'mortar' &&
@@ -110,19 +114,28 @@ export function driveRaidBots(
     );
     const landing = raidGroundPointAfter(leapAim, RAID_LEAP_TICKS);
     const landingGap = Math.hypot(point.x - landing.x, point.z - landing.z);
+    const leap = raidSkill(r.hero, 1);
     const canLeap =
-      openingSkill.kind === 'leap' &&
+      leap.kind === 'leap' &&
       !r.jumping &&
-      (landingGap <= view.skillRange(r.slot, 0).radius || landingGap < distance) &&
-      Math.hypot(leapAim.x - r.x, leapAim.z - r.z) <= openingSkill.range;
+      (landingGap <= view.skillRange(r.slot, 1).radius || landingGap < distance) &&
+      Math.hypot(leapAim.x - r.x, leapAim.z - r.z) <= leap.range;
     const pulseRange = raidProjectileProfile(r.hero, 0)?.reach ?? HEROES[r.hero].radius;
-    const usePulse =
-      opener === 'leap'
-        ? canLeap && distance > HEROES[r.hero].radius
-        : opener === 'ward'
-          ? needsHealing
-          : distance <= pulseRange;
-    const inSlamRange = opener !== 'leap' || distance <= HEROES[r.hero].radius;
+    const orb = r.lastWard === partner.slot && !partner.respawn ? partner : r;
+    const orbGap = Math.hypot(point.x - orb.x, point.z - orb.z);
+    const partnerGap = Math.hypot(point.x - partner.x, point.z - partner.z);
+    const passOrb =
+      r.hero === 'jade' && view.canShield(r.slot, partner.slot) && partnerGap + 2 < distance;
+    const repositionOrb =
+      r.hero === 'jade' && orbGap > 6 && (distance <= 6 || (passOrb && partnerGap <= 6));
+    const usePulse = opener === 'ward' ? needsHealing || repositionOrb : distance <= pulseRange;
+    const canRoll =
+      r.hero !== 'longshot' ||
+      (!!nearest &&
+        nearestDistance < 4 &&
+        (r.hp < HEROES[r.hero].hp * 0.55 || (!!counter && inRaidCounter(counter, r))));
+    const canDischarge = r.hero !== 'jade' || orbGap <= 6;
+    const inSlamRange = leap.kind !== 'leap' || distance <= HEROES[r.hero].radius;
     const wounded = [r, partner]
       .filter((ally) => ally.hp <= HEROES[ally.hero].hp - 15 && view.canShield(r.slot, ally.slot))
       .sort((a, b) => a.hp / HEROES[a.hero].hp - b.hp / HEROES[b.hero].hp)[0];
@@ -144,7 +157,8 @@ export function driveRaidBots(
       send(r.slot, 'cast', { skill: supportSkill, target: wounded.slot });
       continue;
     }
-    if (canUseRaidSkill(r, 3)) skill = 3;
+    if (canUseRaidSkill(r, 3) && (r.hero !== 'jade' || orbGap <= 8)) skill = 3;
+    else if (canLeap && canUseRaidSkill(r, 1) && distance > HEROES[r.hero].radius) skill = 1;
     else if (
       r.heroView.iceCrystals !== undefined &&
       r.heroView.iceCrystals < 4 &&
@@ -153,25 +167,34 @@ export function driveRaidBots(
     )
       skill = 1;
     else if (usePulse && canUseRaidSkill(r, 0)) skill = 0;
-    else if (inSlamRange && canUseRaidSkill(r, 1)) skill = 1;
+    else if (canDischarge && (leap.kind !== 'leap' || canLeap) && canUseRaidSkill(r, 1)) skill = 1;
     else if (
+      canRoll &&
       inSlamRange &&
       (canUseRaidSkill(r, 2) || (raidSkill(r.hero, 2).requiresJump && !r.cooldowns[2]))
     )
       skill = 2;
-    else if (opener === 'leap' && canLeap && !r.cooldowns[0]) skill = 0;
     else continue;
     if (raidSkill(r.hero, skill).requiresJump && !r.jumping) send(r.slot, 'jump');
     const kind = raidAimKind(r.hero, skill);
     if (kind === 'leap') send(r.slot, 'cast', { skill, ...leapAim });
     else if (kind === 'field') send(r.slot, 'cast', { skill, x: point.x, z: point.z });
+    else if (kind === 'direction' && r.hero === 'longshot' && skill === 2 && nearest)
+      send(r.slot, 'cast', {
+        skill,
+        dx: r.x - nearest.x || (r.team ? 1 : -1),
+        dz: r.z - nearest.z,
+      });
     else if (kind === 'direction')
       send(r.slot, 'cast', { skill, dx: point.x - r.x, dz: point.z - r.z });
     else if (kind === 'ward') {
       const healPartner =
         view.canShield(r.slot, partner.slot) &&
         partner.hp / HEROES[partner.hero].hp < r.hp / HEROES[r.hero].hp;
-      send(r.slot, 'cast', { skill, ally: healPartner ? partner.slot : r.slot });
+      send(r.slot, 'cast', {
+        skill,
+        ally: (repositionOrb ? passOrb : healPartner) ? partner.slot : r.slot,
+      });
     } else if (kind === 'pulse') send(r.slot, 'cast', { skill });
     else send(r.slot, 'cast', { skill, target: target?.slot ?? 'wagon' });
   }

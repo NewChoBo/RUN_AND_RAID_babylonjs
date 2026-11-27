@@ -6,6 +6,7 @@ export const scatter = {
   speed: 15,
   angles: Array.from({ length: 7 }, (_, i) => ((i - 3) * Math.PI) / 25),
   guide: 'sector',
+  hitPerArrow: true,
   pierces: false,
   contact: standardContact,
 } as const;

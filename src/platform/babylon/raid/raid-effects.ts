@@ -78,6 +78,7 @@ export function createRaidEffects(scene: Scene) {
     let sectorAngle: number | undefined;
     let rain: ReturnType<typeof createRaidArrowRain> | undefined;
     let blades: ReturnType<typeof createShadowBlades> | undefined;
+    let lightning: LinesMesh | undefined;
     const parts = [stamp, flare, ring, ...shards];
     function hide() {
       for (const part of parts) part.setEnabled(false);
@@ -85,12 +86,29 @@ export function createRaidEffects(scene: Scene) {
       turret?.setEnabled(false);
       rain?.hide();
       blades?.hide();
+      lightning?.dispose();
+      lightning = undefined;
     }
     for (const part of parts) part.isPickable = false;
     hide();
     function draw(cue: RaidAction, age: number, view: RaidView, subtick: number) {
       const { hero, skill } = cue;
       const art = appearance[hero];
+      if (cue.lines?.length && !lightning) {
+        const lines = cue.lines.map(({ from, to }) => {
+          const dx = to.x - from.x,
+            dz = to.z - from.z;
+          return [
+            new Vector3(from.x, 1.45, from.z),
+            new Vector3(from.x + dx * 0.34 + dz * 0.03, 1.68, from.z + dz * 0.34 - dx * 0.03),
+            new Vector3(from.x + dx * 0.66 - dz * 0.03, 1.33, from.z + dz * 0.66 + dx * 0.03),
+            new Vector3(to.x, 1.45, to.z),
+          ];
+        });
+        lightning = MeshBuilder.CreateLineSystem('Jade lightning', { lines }, scene);
+        lightning.color = new Color3(0.55, 0.9, 1);
+        lightning.isPickable = false;
+      }
       if (cue.phase === 'dash' && art.dashTrail === 'shadowBlades') {
         const runner = view.runners[cue.slot]!;
         blades ??= createShadowBlades(scene);

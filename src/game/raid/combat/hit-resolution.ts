@@ -148,7 +148,7 @@ export class RaidHitResolution {
         victim.silenced = 0;
         victim.slowed = 0;
         victim.staggered = victim.staggerGuard = 0;
-        victim.marked = 0;
+        victim.hasteTicks = victim.lightningSlow = 0;
         victim.respawn = raidRespawnTicks(victim.deaths);
         victim.jumping = 0;
         victim.barrier = null;

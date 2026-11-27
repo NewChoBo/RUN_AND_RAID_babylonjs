@@ -60,15 +60,15 @@ test('the shockwave reaches the front first, hits once per runner and passes ben
 });
 
 test('stagger holds steering and basic attacks, denies jumps and casts, then restores held movement and resists a second stagger', () => {
-  const match = new RaidMatch(['hammer', 'bastion', 'rime', 'jade']);
-  const [hammer, bastion, victim] = match.runners;
-  Object.assign(bastion, { x: 0, z: 0 });
+  const match = new RaidMatch(['bastion', 'theresa', 'rime', 'jade']);
+  const [bastion, theresa, victim] = match.runners;
+  Object.assign(theresa, { x: 0, z: 0 });
   for (const runner of match.runners) runner.basic = 100;
-  assert.ok(match.cast(hammer.slot, 1));
+  assert.ok(match.cast(bastion.slot, 0));
   match.step();
   const { x, z } = victim;
   assert.equal(victim.staggered, 12);
-  assert.equal(bastion.staggered, 0);
+  assert.equal(theresa.staggered, 0);
   assert.equal(match.jump(victim.slot), false);
   assert.equal(canUseRaidSkill(victim, 0), false);
   assert.equal(match.cast(victim.slot, 0), false);
@@ -81,7 +81,7 @@ test('stagger holds steering and basic attacks, denies jumps and casts, then res
   assert.equal(victim.basic, 0);
   assert.equal(victim.staggered, 0);
   assert.ok(match.jump(victim.slot));
-  assert.ok(match.cast(bastion.slot, 0));
+  assert.ok(match.cast(theresa.slot, 1, victim.slot));
   match.step();
   assert.equal(victim.staggered, 0);
   assert.ok(victim.hp < 98 && victim.x > x && victim.basic > 0);
@@ -108,10 +108,10 @@ test('frost slows opponents without blocking casts; a shorter frost hit preserve
 });
 
 test('four-player replay reproduces all three boss strikes and PvP stagger from accepted input', () => {
-  const seats = ['hammer', 'rime', 'jade', 'bastion'].map((hero, i) => ({ hero, actor: i + 1 }));
+  const seats = ['bastion', 'rime', 'jade', 'hammer'].map((hero, i) => ({ hero, actor: i + 1 }));
   const host = new RaidRound(seats),
     guest = new RaidRound(seats);
-  assert.ok(host.enqueue(1, { seq: 1, action: 'cast', payload: { skill: 1 } }));
+  assert.ok(host.enqueue(1, { seq: 1, action: 'cast', payload: { skill: 0 } }));
   const impacts = new Set();
   for (let i = 0; i < 404; i++) {
     const frames = host.advance(1);

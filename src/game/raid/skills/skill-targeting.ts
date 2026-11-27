@@ -28,11 +28,12 @@ export function resolveSkill(
   const area = attackArea(attack);
   const { range, radius } = measureSkill(rule, combat, skill);
   const target = kind === 'target' || kind === 'ward' ? id : undefined;
+  const origin = rule.origin?.(combat) ?? combat.self;
   const requested =
-    kind === 'pulse' ? combat.self : target === undefined ? ground : combat.targetPoint(target);
+    kind === 'pulse' ? origin : target === undefined ? ground : combat.targetPoint(target);
   const point =
     kind === 'leap' && requested ? limitRaidLeap(combat.self, requested, range) : requested;
-  const metres = point ? distance(combat.self, point) : null;
+  const metres = point ? distance(origin, point) : null;
   let status: RaidAim['status'] = 'ready';
   const direction =
     kind === 'direction' && point
@@ -44,7 +45,7 @@ export function resolveSkill(
   if (!available) status = 'unavailable';
   else if (kind === 'direction') {
     if (!direction) status = 'needDirection';
-  } else if (requested && distance(combat.self, requested) > range) status = 'outOfRange';
+  } else if (requested && distance(origin, requested) > range) status = 'outOfRange';
   else if ((kind === 'field' || kind === 'leap') && (metres === null || !Number.isFinite(metres)))
     status = 'invalidGround';
   else if (
@@ -77,7 +78,7 @@ export function resolveSkill(
   const preview: RaidAim = {
     kind,
     status,
-    origin: combat.self,
+    origin,
     point,
     range,
     radius,

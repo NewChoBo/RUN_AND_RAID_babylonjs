@@ -11,7 +11,9 @@ import {
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { raidColors, raidMaterial } from './raid-material.ts';
 import { ModelMotion } from '../actors/model-motion.ts';
-import { raidActionTicks, raidActiveAction, raidFacing } from '../../../game/raid/raid-facing.ts';
+import { raidActiveAction, raidFacing } from '../../../game/raid/raid-facing.ts';
+import { RAID_JUMP_TICKS } from '../../../game/raid/runner-motion.ts';
+import { RaidActionPlayback } from './raid-action-playback.ts';
 import {
   HEROES,
   RAID_HZ,
@@ -37,7 +39,17 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
       ? undefined
       : new ModelMotion(
           model.animationGroups,
-          source.clips ?? ['run', 'walk', 'jump', 'fall', 'basic', ...clips],
+          source.clips ?? [
+            ...new Set([
+              'run',
+              'walk',
+              'jump',
+              'fall',
+              'basic',
+              ...clips,
+              ...model.animationGroups.map((g) => g.name),
+            ]),
+          ],
         );
     model.addAllToScene();
     const root = model.meshes[0]!;
@@ -91,6 +103,7 @@ export function createRaidActor(
   hit.parent = body;
   hit.position.y = 0.93;
   let motion: ModelMotion | undefined;
+  let playback = new RaidActionPlayback();
   let greatsword: TransformNode | undefined;
   let current: Awaited<ReturnType<typeof loadModel>> | undefined;
   let requested: string | undefined;
@@ -103,6 +116,7 @@ export function createRaidActor(
     current?.model.dispose();
     current = undefined;
     motion = undefined;
+    playback = new RaidActionPlayback();
     greatsword = undefined;
     hit.visibility = 1;
     bar.position.y = defaultBarHeight;
@@ -193,17 +207,9 @@ export function createRaidActor(
     orb.material = raidMaterial(scene, 'Holy Orb light', raidColors.alice, 0.95);
     orb.setEnabled(false);
   }
-  const mark = MeshBuilder.CreateTorus(
-    hero + ' tracking mark',
-    { diameter: 0.36, thickness: 0.05, tessellation: 4 },
-    scene,
-  );
-  mark.parent = bar;
-  mark.position.y = 0.24;
-  mark.rotation.x = Math.PI / 2;
-  mark.material = raidMaterial(scene, hero + ' tracking glint', raidColors.longshot, 0.8);
-  for (const part of [shadow, ring, life, bar, ward, mark]) part.isPickable = false;
+  for (const part of [shadow, ring, life, bar, ward]) part.isPickable = false;
   function hide() {
+    playback = new RaidActionPlayback();
     root.setEnabled(false);
     shadow.setEnabled(false);
     ring.setEnabled(false);
@@ -229,14 +235,13 @@ export function createRaidActor(
     }
     spinTrail?.setEnabled(r.spinTicks > 0 && !r.respawn);
     const fallAge = raidRespawnTicks(r.deaths) - r.respawn;
-    root.setEnabled(!r.respawn || fallAge < 18);
+    root.setEnabled(!r.respawn || fallAge < (motion?.duration('fall') || 0.6) * RAID_HZ);
     hit.setEnabled(!r.respawn);
     hit.material = life.material = ring.material = r.team === localTeam ? blue : red;
     ring.setEnabled(!r.respawn);
     shadow.setEnabled(root.isEnabled());
     if (!root.isEnabled()) return;
     bar.setEnabled(!r.respawn);
-    mark.setEnabled(r.marked > 0);
     ward.setEnabled(
       !r.respawn && (r.shield > 0 || !!r.barrier || (r.heroView.guardUntil ?? 0) > tick),
     );
@@ -250,7 +255,7 @@ export function createRaidActor(
     if (!current) return;
     if (greatsword) greatsword.scaling.setAll((r.heroView.empoweredUntil ?? 0) > tick ? 1.45 : 1);
     if (r.respawn) {
-      motion?.seek('fall', (fallAge + subtick) / 17, dt);
+      motion?.once('fall', (fallAge + subtick) / RAID_HZ, dt);
       return;
     }
     if (r.staggered && !r.leap && !r.jumping) {
@@ -260,38 +265,54 @@ export function createRaidActor(
     const active = raidActiveAction(actions, r.slot, now);
     const modeClip = (alternate: string, normal: string) =>
       r.heroView.shieldMode && motion?.has(alternate) ? alternate : normal;
-    let facing = raidFacing(r, active);
+    const facing = raidFacing(r, active);
+    const pose = playback.update(actions, r.slot, now, (cue) => {
+      let clip: string =
+        cue.skill === 'basic' ? modeClip('shieldBasic', 'basic') : clips[cue.skill];
+      if (cue.comboStep && cue.comboStep > 1 && motion?.has('slash' + cue.comboStep))
+        clip = 'slash' + cue.comboStep;
+      if (cue.phase === 'spin' && hero === 'kaiken' && motion?.has('fullMoonEnd'))
+        clip = 'fullMoonEnd';
+      if (cue.phase === 'dash' && hero === 'magnus') clip = modeClip('shieldCharge', 'pulse');
+      const start =
+        art.landingChop && cue.skill === 1 && cue.phase === 'ground'
+          ? cue.tick - RAID_LEAP_TICKS
+          : cue.tick;
+      return { clip, duration: motion?.duration(clip) ?? 0, start };
+    });
     if (r.leap) {
-      const { elapsed } = r.leap;
-      const progress = (elapsed + subtick) / RAID_LEAP_TICKS;
-      if (progress < 0.5) motion?.seek('jump', progress * 2, dt);
-      else motion?.seek('bolt', progress - 0.5, dt);
-    } else if (r.dash && r.heroView.shieldMode) {
-      motion?.seek(
-        modeClip('shieldCharge', 'pulse'),
-        (r.dash.elapsed + subtick) / r.dash.ticks,
-        dt,
-      );
-    } else if (art.dashClip && r.dash) {
-      motion?.seek(art.dashClip, (r.dash.elapsed + subtick) / r.dash.ticks, dt);
+      motion?.once(clips[r.leap.skill], (r.leap.elapsed + subtick) / RAID_HZ, dt);
+    } else if (r.dash) {
+      const clip = r.heroView.shieldMode
+        ? modeClip('shieldCharge', clips[r.dash.skill])
+        : clips[r.dash.skill];
+      motion?.once(clip, (r.dash.elapsed + subtick) / RAID_HZ, dt);
     } else if (r.heroView.rootedTicks && r.heroView.rootDuration) {
-      motion?.seek('fury', 1 - (r.heroView.rootedTicks - subtick) / r.heroView.rootDuration, dt);
-    } else if (r.spinTicks) {
-      motion?.seek(art.spinClip ?? 'fury', ((75 - r.spinTicks + subtick) % 15) / 15, dt);
-    } else if (active?.phase === 'ground' && active.skill === 0 && art.landingChop) {
-      // Finish the overhead chop from its contact pose, facing the landing direction.
-      facing = rig.rotation.y;
-      motion?.seek('bolt', 0.5 + (0.5 * (now - active.tick)) / raidActionTicks(active), dt);
-    } else if (active) {
-      motion?.seek(
-        active.skill === 'basic' ? modeClip('shieldBasic', 'basic') : clips[active.skill],
-        (now - active.tick) / raidActionTicks(active),
+      motion?.once(
+        motion.has('fullMoonEnd') ? 'fullMoonEnd' : 'field',
+        (r.heroView.rootDuration - r.heroView.rootedTicks + subtick) / RAID_HZ,
         dt,
       );
-    } else if (r.jumping) motion?.loop(modeClip('shieldJump', 'jump'), now / RAID_HZ, dt);
-    else
+    } else if (r.spin) {
       motion?.loop(
-        modeClip('shieldRun', r.slowed || r.brake >= 0.5 ? 'walk' : 'run'),
+        clips[r.spin.skill],
+        (r.spin.duration - r.spin.remaining + subtick) / RAID_HZ,
+        dt,
+      );
+    } else if (pose) {
+      motion?.once(pose.clip, (now - pose.start) / RAID_HZ, dt);
+    } else if (r.jumping)
+      motion?.once(
+        modeClip('shieldJump', 'jump'),
+        (RAID_JUMP_TICKS - r.jumping + subtick) / RAID_HZ,
+        dt,
+      );
+    else if (r.heroView.orbTicks && motion?.has('orbLoop')) {
+      const elapsed = (5 * RAID_HZ - r.heroView.orbTicks + subtick) / RAID_HZ;
+      motion.loop('orbLoop', Math.max(0, elapsed - motion.duration('fury')), dt);
+    } else
+      motion?.loop(
+        modeClip('shieldRun', r.slowed || r.lightningSlow || r.brake >= 0.5 ? 'walk' : 'run'),
         now / RAID_HZ + r.slot * 0.13,
         dt,
       );

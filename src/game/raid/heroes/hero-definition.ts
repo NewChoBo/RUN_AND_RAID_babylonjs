@@ -30,13 +30,20 @@ export interface CombatRead {
   tick(): number;
   readonly stats: HeroStats;
   position(target: RaidTarget): RaidRunner | RaidPoint | undefined;
+  ally(slot: number): RaidRunner | undefined;
   enemies(center: RaidPoint, radius: number): RaidTarget[];
   height(runner: RaidRunner): number;
 }
 export interface HeroCombat extends CombatRead {
   readonly self: Runner;
   facing(target?: RaidTarget): number;
-  record(skill: Skill, point: RaidPoint, phase?: RaidAction['phase']): void;
+  record(
+    skill: Skill,
+    point: RaidPoint,
+    phase?: RaidAction['phase'],
+    detail?: Pick<RaidAction, 'lines' | 'comboStep'>,
+  ): void;
+  haste(slot: number, ticks: number): void;
   strike(target: RaidTarget, hit: HitRule, skill: Skill, designated?: boolean): void;
   placeField(skill: Skill, center: RaidPoint, radius: number, pulse: FieldPulse): void;
   dash(skill: Skill, to: RaidPoint, ticks: number, target?: RaidTarget): void;
@@ -48,9 +55,7 @@ export interface HeroCombat extends CombatRead {
   heal(ally: number, amount: number, mode?: 'lifesteal' | 'aura'): void;
   allies(center: RaidPoint, radius: number): number[];
   controlImmune(): boolean;
-  shield(ally: number, ticks: number, replace?: boolean): void;
   barrier(ally: number, amount: number, ticks: number): void;
-  shieldRecipients(): number[];
   canTarget(id: RaidTarget): boolean;
 }
 export interface Hit {

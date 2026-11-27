@@ -66,7 +66,7 @@ export const rildin = defineHero(
       kind: 'pulse',
       attack: chainAttack,
       apply(combat, _cast, state) {
-        combat.record(0, combat.self);
+        combat.record(0, combat.self, undefined, { comboStep: state.view.slashes + 1 });
         if (++state.view.slashes < chainSlash.limit) {
           combat.self.basic = 0;
           if (state.view.slashes === 1) state.slashUntil = combat.tick() + chainSlash.windowTicks;

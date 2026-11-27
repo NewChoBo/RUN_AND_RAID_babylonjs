@@ -121,7 +121,8 @@ const makeRunner = (hero: RaidHero, slot: number, view: () => HeroView): Runner 
   slowed: 0,
   staggered: 0,
   staggerGuard: 0,
-  marked: 0,
+  hasteTicks: 0,
+  lightningSlow: 0,
   kills: 0,
   wagonDamage: 0,
   deaths: 0,
@@ -300,6 +301,10 @@ export class RaidMatch implements RaidView {
       stats: HEROES[r.hero],
       tick: () => this.tick,
       position: (id) => this.#position(r, id),
+      ally: (id) => {
+        const ally = this.#runners[id];
+        return ally?.team === r.team && !ally.respawn ? ally : undefined;
+      },
       enemies: (p, radius) => this.#areaTargets(r, p, radius),
       allies: (p, radius) =>
         this.#runners
@@ -317,7 +322,10 @@ export class RaidMatch implements RaidView {
         target === 'wagon'
           ? 0
           : raidFacing(this.#runners[target]!, raidActiveAction(this.#actions, target, this.tick)),
-      record: (skill, p, phase) => this.#record(r, skill, p, phase),
+      record: (skill, p, phase, detail) => this.#record(r, skill, p, phase, detail),
+      haste: (id, ticks) => {
+        this.#runners[id]!.hasteTicks = ticks;
+      },
       strike: (id, hit, skill, designated) =>
         this.#strike(r, id, HEROES[r.hero].power * hit.powerScale, skill, designated, hit),
       placeField: (skill, point, radius, pulse) =>
@@ -343,12 +351,6 @@ export class RaidMatch implements RaidView {
       barrier: (id, amount, ticks) => {
         this.#runners[id]!.barrier = { amount, until: this.tick + ticks };
       },
-      shield: (id, ticks, replace) => {
-        const ally = this.#runners[id]!;
-        ally.shield = replace ? ticks : Math.max(ticks, ally.shield);
-      },
-      shieldRecipients: () =>
-        this.#runners.filter((ally) => this.canShield(r.slot, ally.slot)).map((ally) => ally.slot),
     };
   }
   skillRange(slot: number, skill: Skill) {
@@ -398,7 +400,13 @@ export class RaidMatch implements RaidView {
     this.#hits.enqueue({ from: r.slot, target, amount, skill, designated, rule });
     if (skill === undefined) this.#record(r, 'basic', point);
   }
-  #record(r: Runner, skill: RaidAction['skill'], point: RaidPoint, phase?: RaidAction['phase']) {
+  #record(
+    r: Runner,
+    skill: RaidAction['skill'],
+    point: RaidPoint,
+    phase?: RaidAction['phase'],
+    detail?: Pick<RaidAction, 'lines' | 'comboStep'>,
+  ) {
     const target = this.#runners.find((other) => other === point);
     const attack = skill === 'basic' ? undefined : raidSkill(r.hero, skill).attack;
     const area =
@@ -412,6 +420,7 @@ export class RaidMatch implements RaidView {
       hero: r.hero,
       skill,
       phase,
+      ...detail,
       from: { x: r.x, z: r.z },
       footprint: area
         ? {
@@ -516,7 +525,10 @@ export class RaidMatch implements RaidView {
         continue;
       }
       if (r.staggered) r.dash = null;
-      if (r.spinTicks) r.slowed = 0;
+      if (r.spinTicks) {
+        r.slowed = 0;
+        r.lightningSlow = 0;
+      }
       const next = raidRunnerPositionAfter(r, 1);
       r.appliedBrake = raidBrakeAfter(r, 1);
       r.x = next.x;
@@ -524,7 +536,8 @@ export class RaidMatch implements RaidView {
       if (r.leap) r.leap = { ...r.leap, elapsed: r.leap.elapsed + 1 };
       if (r.silenced) r.silenced--;
       if (r.slowed) r.slowed--;
-      if (r.marked) r.marked--;
+      if (r.hasteTicks) r.hasteTicks--;
+      if (r.lightningSlow) r.lightningSlow--;
       if (r.jumping) r.jumping--;
       if (r.shield) r.shield--;
       if (r.barrier && r.barrier.until <= this.tick) r.barrier = null;

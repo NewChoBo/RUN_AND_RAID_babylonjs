@@ -18,7 +18,7 @@ interface Projectile extends RaidPoint, RaidDirection {
   readonly metersPerTick: number;
   readonly attack: ProjectileAttack;
   remaining: number;
-  // All pellets from one cast share this set: their damage is per target, not per pellet.
+  // Piercing shots remember targets already passed. Most volleys share their hit set.
   readonly hit: Set<RaidTarget>;
 }
 export type RaidProjectile = Readonly<Omit<Projectile, 'hit'>>;
@@ -67,7 +67,7 @@ export class RaidProjectiles {
         remaining: profile.reach,
         metersPerTick: profile.speed / hz,
         attack,
-        hit,
+        hit: profile.hitPerArrow ? new Set<RaidTarget>() : hit,
       });
     }
   }

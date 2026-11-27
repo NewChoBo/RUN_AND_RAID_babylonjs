@@ -1,0 +1,48 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  Animation,
+  AnimationGroup,
+  NullEngine,
+  Scene,
+  TransformNode,
+  Vector3,
+} from '@babylonjs/core';
+import { ModelMotion } from '../../src/platform/babylon/actors/model-motion.ts';
+import { RaidActionPlayback } from '../../src/platform/babylon/raid/raid-action-playback.ts';
+
+test('a take samples its authored time and clamps at its last key', (t) => {
+  const engine = new NullEngine();
+  t.after(() => engine.dispose());
+  const scene = new Scene(engine),
+    node = new TransformNode('hand', scene);
+  const group = new AnimationGroup('basic', scene);
+  const animation = new Animation('move', 'position', 30, Animation.ANIMATIONTYPE_VECTOR3);
+  animation.setKeys([
+    { frame: 10, value: Vector3.Zero() },
+    { frame: 70, value: new Vector3(12, 0, 0) },
+  ]);
+  group.addTargetedAnimation(animation, node);
+  const motion = new ModelMotion([group], ['basic']);
+  assert.equal(motion.duration('basic'), 2);
+  motion.once('basic', 0.5, 1);
+  assert.equal(node.position.x, 3);
+  motion.once('basic', 3, 1);
+  assert.equal(node.position.x, 12);
+});
+
+test('a take survives action-history expiry and a new cast can interrupt recovery', () => {
+  const player = new RaidActionPlayback();
+  const resolve = (cue) => ({ clip: String(cue.skill), duration: 2, start: cue.tick });
+  const cast = { id: 1, slot: 0, tick: 0, skill: 2 };
+  const basic = { id: 2, slot: 0, tick: 5, skill: 'basic' };
+  assert.equal(player.update([cast, basic], 0, 5, resolve).cue.id, 1);
+  assert.equal(player.update([], 0, 45, resolve).cue.id, 1);
+  assert.equal(player.update([], 0, 60, resolve), undefined);
+  const next = { id: 3, tick: 61, skill: 0, slot: 0 },
+    cancel = { id: 4, tick: 64, skill: 1, slot: 0 };
+  assert.equal(player.update([next, cancel], 0, 61, resolve).cue.id, 3);
+  assert.equal(player.update([next, cancel], 0, 64, resolve).cue.id, 4);
+  assert.equal(player.update([next, cancel], 0, 125, resolve), undefined);
+  assert.equal(player.update([cast], 0, 0, resolve).cue.id, 1);
+});

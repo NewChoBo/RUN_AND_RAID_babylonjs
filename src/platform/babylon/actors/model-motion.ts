@@ -49,6 +49,13 @@ export class ModelMotion {
   has(name: string) {
     return this.clips.has(name);
   }
+  duration(name: string) {
+    return this.clips.get(name)?.seconds ?? 0;
+  }
+  once(name: string, elapsedSeconds: number, dt: number) {
+    const clip = this.clips.get(name);
+    if (clip) this.sample(clip, Math.min(1, Math.max(0, elapsedSeconds / clip.seconds)), dt);
+  }
   loop(name: string, seconds: number, dt: number) {
     const clip = this.clips.get(name) ?? this.clips.get('run');
     if (!clip) return;

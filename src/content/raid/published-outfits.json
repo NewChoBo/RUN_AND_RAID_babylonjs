@@ -39,43 +39,43 @@
     "group": "alice",
     "skin": "bug",
     "model": "./assets/fighters/alice-bug.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
   },
   {
     "group": "alice",
     "skin": "dark",
     "model": "./assets/fighters/alice-dark.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
   },
   {
     "group": "alice",
     "skin": "default",
     "model": "./assets/fighters/alice-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
   },
   {
     "group": "alice",
     "skin": "dorothy",
     "model": "./assets/fighters/alice-dorothy.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
   },
   {
     "group": "alice",
     "skin": "hanbok",
     "model": "./assets/fighters/alice-hanbok.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
   },
   {
     "group": "alice",
     "skin": "skin3",
     "model": "./assets/fighters/alice-skin3.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
   },
   {
     "group": "alice",
     "skin": "wonderland",
     "model": "./assets/fighters/alice-wonderland.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
   },
   {
     "group": "base",
@@ -369,25 +369,69 @@
     "group": "kaiken",
     "skin": "default",
     "model": "./assets/fighters/kaiken-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "fullMoonEnd"
+    ]
   },
   {
     "group": "kaiken",
     "skin": "onimusha",
     "model": "./assets/fighters/kaiken-onimusha.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "fullMoonEnd"
+    ]
   },
   {
     "group": "kaiken",
     "skin": "sin",
     "model": "./assets/fighters/kaiken-sin.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "fullMoonEnd"
+    ]
   },
   {
     "group": "kaiken",
     "skin": "suit",
     "model": "./assets/fighters/kaiken-suit.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "fullMoonEnd"
+    ]
   },
   {
     "group": "kali",
@@ -531,25 +575,77 @@
     "group": "rildin",
     "skin": "default",
     "model": "./assets/fighters/rildin-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "slash2",
+      "slash3",
+      "slash4"
+    ]
   },
   {
     "group": "rildin",
     "skin": "fallen",
     "model": "./assets/fighters/rildin-fallen.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "slash2",
+      "slash3",
+      "slash4"
+    ]
   },
   {
     "group": "rildin",
     "skin": "party",
     "model": "./assets/fighters/rildin-party.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "slash2",
+      "slash3",
+      "slash4"
+    ]
   },
   {
     "group": "rildin",
     "skin": "rugged",
     "model": "./assets/fighters/rildin-rugged.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "slash2",
+      "slash3",
+      "slash4"
+    ]
   },
   {
     "group": "rildin",
@@ -561,7 +657,20 @@
     "group": "rildin",
     "skin": "skin3",
     "model": "./assets/fighters/rildin-skin3.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "slash2",
+      "slash3",
+      "slash4"
+    ]
   },
   {
     "group": "shaman",

@@ -96,3 +96,14 @@ await previewStaticHero('hammer', 'hammer/hammer#default.max');
 ```
 
 이 미리보기 도구는 개별 장면을 경기 카메라에서 점검할 때 사용한다. 상점과 경기에서는 외형별 게임용 GLB를 읽는다. 해머 봇 경기에서 본체와 무기, 달리기, 타격 시 자세를 확인했다.
+
+## 롱샷의 활과 화살 재베이크
+
+`.asset-work/player-release/Blender/longShot.blend`에는 FBX에서 가져온 원본별 장면이 있다. `Bowbone`과 `ArrowBn`은 FBX 단계에서 손과 어긋나므로 게임용 동작은 3ds Max의 평가 결과를 사용한다. `RUN_RAID_PROJECT`를 체크아웃 절대경로로 지정한 후 3ds Max Batch에서 `tools/assets/longshot_reference.py`를 실행한다. 원본은 `asset-sources/player/longShot/Animation`에서 읽으며 `.asset-work/longshot-grip.json`에 12개 테이크의 프레임별 좌표를 저장한다. 비공개 Drive의 `GLB/longShot.zip` 안에 있는 `Reference/longshot-grip.json`을 같은 경로에 복원할 수도 있다.
+
+```powershell
+uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/assemble_player.py --outfits longshot
+python tools/assets/package_players.py --groups longshot
+```
+
+기본·히트맨·로열가드·시프길드의 움직임은 각 스킨의 바인드 포즈와 원본 왼손 검지 좌표를 기준으로 보정한다. 활과 화살은 독립적으로 움직인다. Blender에서 포즈나 타이밍을 편집할 때는 `Outfits/longshot-<스킨>.glb`를 가져온 뒤 NLA의 개별 액션을 선택한다. 원본 장면과 게임용 베이크 결과를 비교할 때는 평타의 같은 프레임을 사용한다.

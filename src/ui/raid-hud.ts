@@ -321,7 +321,7 @@ export function createRaidHud(
     warning.hidden = !counterText || !!view.result;
     const conditions = [
       runner.staggered && t('stagger'),
-      runner.slowed && t('slow'),
+      (runner.slowed || runner.lightningSlow) && t('slow'),
       runner.silenced && t('silence'),
       runner.taunt && t('taunted'),
     ]

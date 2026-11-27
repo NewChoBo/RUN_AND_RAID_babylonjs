@@ -211,6 +211,14 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   const shadowMat = raidMaterial(scene, 'runner contact shade', '#1a1b23');
   shadowMat.alpha = 0.55;
   const actors = new Map<RaidHero, ReturnType<typeof createRaidActor>>();
+  const lightningOrb = MeshBuilder.CreateSphere(
+    'Jade lightning orb',
+    { diameter: 0.31, segments: 12 },
+    scene,
+  );
+  lightningOrb.material = raidMaterial(scene, 'Jade orb light', '#8aeaff', 1);
+  lightningOrb.isPickable = false;
+  lightningOrb.setEnabled(false);
   const effects = createRaidEffects(scene);
   const drawCounter = createRaidCounterVisual(scene);
   const lock = MeshBuilder.CreateTorus(
@@ -348,6 +356,13 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
         .get(r.hero)!
         .draw(r, positions[r.slot]!, view.actions, view.tick, subtick, dt, localTeam);
     effects(view, subtick);
+    const jade = view.runners.find((r) => r.hero === 'jade' && !r.respawn);
+    lightningOrb.setEnabled(!!jade);
+    if (jade) {
+      const carrier = view.runners[jade.lastWard ?? jade.slot]!;
+      const p = positions[carrier.slot]!;
+      lightningOrb.position.set(p.x, 2 + raidRunnerHeight(carrier, subtick), p.z);
+    }
     const quarry = view.runners.find((r) => r.heroView.quarry != null)?.heroView.quarry;
     quarryMark.setEnabled(quarry != null);
     if (quarry != null) {

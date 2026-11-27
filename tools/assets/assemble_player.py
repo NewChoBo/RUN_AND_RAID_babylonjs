@@ -1,9 +1,11 @@
 """Bake source skin deformation onto the default playable body using its own bind pose."""
 
 import argparse
+from functools import lru_cache
 from pathlib import Path
 
 import bpy
+import numpy as np
 from activate import activate, fighter_materials
 from asset_names import outfit_name
 from library import PUBLIC, ROOT, WORK, read_json, save_json
@@ -21,6 +23,8 @@ STANDARD = {
     "fury": "skill4start",
 }
 OVERRIDES = {
+    "alice": {"orbLoop": "skill4loop"},
+    "kaiken": {"fullMoonEnd": "skill3end"},
     "elfprince": {"bolt": "skill2start1"},
     "vallet": {"fury": "skill4"},
     "hof": {"jump": ("jump_loopup", "jump_loopdown"), "bolt": "humanmissle",
@@ -28,7 +32,8 @@ OVERRIDES = {
     "magnus": {"pulse": "shockwave", "bolt": "shield_attack2", "field": "battleshout",
                "fury": "switchmode", "shieldCharge": "rollingattack", "shieldRun": "shield_run",
                "shieldBasic": "shield_attack1", "shieldJump": "shield_jump_loop"},
-    "rildin": {"pulse": "skill1start1", "fury": "unleashedsword"},
+    "rildin": {"pulse": "skill1start1", "slash2": "skill1start2", "slash3": "skill1start3",
+               "slash4": "skill1start4", "fury": "unleashedsword"},
     "kali": {
         "bolt": "attack1"
     },  # Poison arms the next basic attack; no skill2 take in the archive.
@@ -41,6 +46,39 @@ def rig_and_body(scene):
     return body.find_armature(), body
 
 
+@lru_cache(maxsize=1)
+def longshot_references():
+    path = WORK / "longshot-grip.json"
+    if not path.exists():
+        raise FileNotFoundError("Bake longshot_reference.py in 3ds Max Batch first (docs/PLAYER-ASSETS.md)")
+    return read_json(path)
+
+
+def rigid_alignment(before, after):
+    """Fit a proper rotation and translation to matching surface vertices."""
+    before, after = np.asarray(before), np.asarray(after)
+    a, b = before.mean(axis=0), after.mean(axis=0)
+    u, _, vt = np.linalg.svd((before - a).T @ (after - b))
+    if np.linalg.det(vt.T @ u.T) < 0:
+        vt[-1] *= -1
+    rotation = vt.T @ u.T
+    transform = np.eye(4)
+    transform[:3, :3], transform[:3, 3] = rotation, b - rotation @ a
+    return Matrix(transform)
+
+
+def grip_corrections(body, reference, frame):
+    # Max's Skin and the baked FBX agree on the fingers, but FBX changes the weapon
+    # helper's bind transform. Correct each rigid piece independently so the arrow can release.
+    actual = reference["frames"][frame - reference["first"]]
+    mesh = body.evaluated_get(bpy.context.evaluated_depsgraph_get())
+    imported = {name: [mesh.matrix_world @ mesh.data.vertices[i].co for i in indices]
+                for name, indices in reference["vertices"].items()}
+    hand = "Bip001 L Finger1"
+    to_hand = rigid_alignment(actual[hand], imported[hand])
+    return {name: to_hand @ rigid_alignment(imported[name], actual[name]) for name in ("Bowbone", "ArrowBn")}
+
+
 def sample_motion(target, mesh, scene, body):
     bpy.context.window.scene = scene
     first, last = scene.frame_start, scene.frame_end
@@ -48,6 +86,8 @@ def sample_motion(target, mesh, scene, body):
         raise ValueError(f"Empty take: {scene.name}")
     scene.frame_set(first)
     source = body.find_armature()
+    path = scene["source_max"].lower()
+    grip = longshot_references()[path] if path.startswith("longshot/") else None
     # Evaluate skinning in the source mesh's coordinates. A Max file may store a different
     # animated armature object transform and bind pose for each take of the same character.
     target_world = target.matrix_world.copy()
@@ -71,6 +111,8 @@ def sample_motion(target, mesh, scene, body):
         scene.frame_set(frame)
         source_world = source.matrix_world
         left = target_inv @ source_world
+        corrected = {n: target_inv @ fix @ source_world for n, fix in
+                     grip_corrections(body, grip, frame).items()} if grip else {}
         right = source_world.inverted() @ body.matrix_world @ src_mesh_bind_inv
         pose = {}
         for n, bone in bones.items():
@@ -78,7 +120,7 @@ def sample_motion(target, mesh, scene, body):
             parent_matrix = pose[parent.name] if parent else Matrix.Identity(4)
             if n in source_rest_inv:
                 pose[n] = (
-                    left
+                    corrected.get(n, left)
                     @ source.pose.bones[n].matrix
                     @ source_rest_inv[n]
                     @ right

@@ -22,6 +22,7 @@ export function pendingProfile(id: DraftProfile): id is (typeof pendingProfiles)
 
 // Slots with newly authored names or rules. Historical evidence and open questions are in docs/ORIGINAL-ROSTER.md.
 export const adaptedSkills: Partial<Record<RaidHero, readonly number[]>> = {
+  longshot: [0, 1, 2, 3],
   drizz: [2, 3],
   flare: [2, 3],
   hof: [0, 1, 2, 3],
