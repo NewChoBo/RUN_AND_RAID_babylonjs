@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+asset-sources/player/
+public/player-assets/
+.asset-work/
+__pycache__/
+*.blend1
+asset-sources/baked-fbx/

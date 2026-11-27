@@ -1,0 +1,10 @@
+* text=auto
+*.ts text eol=lf
+*.js text eol=lf
+*.py text eol=lf
+*.ms text eol=crlf
+*.glb binary
+*.png binary
+*.webp binary
+*.jpg binary
+public/assets/licenses/*.txt whitespace=-blank-at-eol

@@ -1,0 +1,22 @@
+# RUN AND RAID · Babylon.js
+
+브라우저에서 실행하는 런앤레이드 전용 프로젝트입니다. 기존 2대2 화물 추격 경기, 영웅 선택, 봇 연습, 터치 조준과 온라인 방 코드를 포함합니다.
+
+## 실행
+
+Node.js 22.12 이상에서 프로젝트 루트에서 실행합니다.
+
+```sh
+npm ci
+npm run dev
+```
+
+브라우저에서 http://127.0.0.1:5198/ 을 엽니다. 봇 연습은 오프라인으로 실행할 수 있습니다. 온라인 경기는 프로젝트 루트의 `.env.local`에 이 프로젝트의 `VITE_PHOTON_APP_ID`를 설정한 뒤 서버를 다시 시작합니다.
+
+```sh
+npm run check
+npm test
+npm run build
+```
+
+경기 구현은 [기존 웹판의 3fcadc2](https://github.com/NewChoBo/oblivion-archive/tree/3fcadc2)에서 이식했습니다. 게임 규칙은 `src/game/raid`, 영웅별 콘텐츠는 `src/content/raid`, Babylon.js 렌더링은 `src/platform/babylon/raid`에 있습니다. 기본 플레이 모델과 파티클 출처는 [에셋 출처](docs/ASSETS.md)에 기록했습니다.

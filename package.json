@@ -1,0 +1,32 @@
+{
+  "name": "run-and-raid-babylonjs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "lint": "oxlint --deny-warnings .",
+    "lint:fix": "oxlint --fix --deny-warnings .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run lint && npm run format:check && npm run typecheck",
+    "typecheck": "tsc -p tsconfig.game.json && tsc -p tsconfig.json",
+    "test": "node --experimental-strip-types --test \"tests/{unit,integration,content}/*.test.mjs\"",
+    "dev": "vite --host 127.0.0.1",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@babylonjs/core": "9.37.1",
+    "@babylonjs/loaders": "9.37.1",
+    "photon-realtime": "4.4.0"
+  },
+  "devDependencies": {
+    "oxlint": "1.95.0",
+    "prettier": "3.10.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.8"
+  }
+}

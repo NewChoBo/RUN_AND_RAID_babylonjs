@@ -1,0 +1,504 @@
+import { raidSkill } from '../game/raid/heroes/hero-catalog.ts';
+import { raidText as t } from '../content/locales/run-and-raid.ts';
+import {
+  HEROES,
+  canUseRaidSkill,
+  HERO_IDS,
+  raidRunnerAimKind,
+  raidBossBonusPercent,
+  RAID_HZ,
+  ROUND_TICKS,
+  SKILL_COOLDOWNS,
+  WAGON_HP,
+  type RaidHero,
+  type RaidView,
+  type Skill,
+} from '../game/raid/raid-match.ts';
+import { createTouchPad } from './touch-pad.ts';
+import { createRaidCombatNumbers } from './raid-combat-numbers.ts';
+import {
+  RaidAimPad,
+  aimFeedback,
+  type RaidAimActions,
+  type RaidAimFeedback,
+} from './raid-aim-pad.ts';
+import './styles/raid.css';
+import './styles/raid-touch.css';
+
+function element<K extends keyof HTMLElementTagNameMap>(tag: K, parent: HTMLElement, text = '') {
+  const node = document.createElement(tag);
+  node.textContent = text;
+  parent.append(node);
+  return node;
+}
+function button(parent: HTMLElement, text: string, click?: () => void) {
+  const b = element('button', parent, text);
+  b.type = 'button';
+  if (click) b.onclick = click;
+  return b;
+}
+const skills = ['pulse', 'bolt', 'field', 'fury'] as const;
+function matchClock(seconds: number) {
+  return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+}
+const counterLabels = {
+  lane: 'counterLane',
+  mortar: 'counterMortar',
+  wave: 'counterWave',
+} as const;
+const skillNames = ['Pulse', 'Bolt', 'Field', 'Fury'] as const;
+interface RaidActions extends RaidAimActions {
+  repeatCast(slot: Skill): void;
+  callTarget(): void;
+  skill(slot: Skill): void;
+  target(): void;
+  pause(): void;
+  resume(): void;
+  retry(): void;
+  leave(): void;
+  jump(): void;
+  steer(side: number, brake: number): void;
+  beginPadAim(): void;
+  setSkillSize(percent: number): void;
+}
+export function createRaidHud(
+  actions: RaidActions,
+  course: HTMLCanvasElement,
+  skillSize: { min: number; max: number; step: number; value: number },
+) {
+  const setup = document.createElement('div');
+  setup.className = 'raid-setup';
+  const start = document.querySelector<HTMLButtonElement>('#start')!;
+  start.before(setup);
+  element('p', setup, t('rules'));
+  const label = element('label', setup, t('hero'));
+  const select = element('select', label);
+  for (const hero of HERO_IDS)
+    select.add(new Option(t('runnerRange', { name: t(hero), range: HEROES[hero].reach }), hero));
+  const detail = element('small', setup);
+  const selected = () => select.value as RaidHero;
+  const heroInfo = {
+    hammer: 'hammerInfo',
+    abyss: 'abyssInfo',
+    longshot: 'longshotInfo',
+    jade: 'jadeInfo',
+    rend: 'rendInfo',
+    bastion: 'bastionInfo',
+    rime: 'rimeInfo',
+    rildin: 'rildinInfo',
+    kaiken: 'kaikenInfo',
+    swift: 'swiftInfo',
+    kali: 'kaliInfo',
+  } as const;
+  select.onchange = () => {
+    detail.textContent = t(heroInfo[selected()]);
+  };
+  detail.textContent = t(heroInfo[selected()]);
+  const instructions = t('controls');
+  const guide = element('small', setup, instructions);
+  const compact = matchMedia('(orientation: landscape) and (max-height: 319px)');
+  const titleCopy = document.querySelector<HTMLElement>('#overlay .title-copy')!;
+  const placeGuide = () => (compact.matches ? titleCopy : setup).append(guide);
+  placeGuide();
+  compact.addEventListener('change', placeGuide);
+  const home = button(start.parentElement!, t('leave'), actions.leave);
+  home.className = 'subtle';
+  // Keep solo launch next to its hero selector, ahead of the online room controls.
+  setup.append(start);
+  const root = element('section', document.body);
+  root.className = 'raid-hud';
+  root.hidden = true;
+  const drawCombatNumbers = createRaidCombatNumbers(root);
+  const score = element('header', root);
+  score.className = 'raid-score';
+  function team(name: 'blue' | 'red') {
+    const group = element('div', score);
+    group.className = 'raid-team ' + name;
+    element('small', group, t(name));
+    const value = element('strong', group);
+    const bar = element('progress', group);
+    bar.max = WAGON_HP;
+    bar.setAttribute('aria-label', t(name) + ' · ' + t('boss'));
+    const kills = element('small', group);
+    kills.className = 'raid-kills';
+    const bonus = element('small', group);
+    bonus.className = 'raid-boss-bonus';
+    bonus.hidden = true;
+    return { value, bar, kills, bonus };
+  }
+  const blue = team('blue');
+  const clock = element('time', score);
+  clock.setAttribute('aria-label', t('time'));
+  const red = team('red');
+  const enemyRespawns = element('div', score);
+  enemyRespawns.className = 'raid-enemy-respawns';
+  enemyRespawns.hidden = true;
+  const enemyHeading = element('strong', enemyRespawns, t('enemyRespawns'));
+  enemyHeading.id = 'raid-enemy-respawns-title';
+  const enemyList = element('ul', enemyRespawns);
+  enemyList.setAttribute('aria-labelledby', enemyHeading.id);
+  const warning = element('output', score);
+  warning.className = 'raid-counter';
+  warning.hidden = true;
+  const callout = element('output', score);
+  callout.className = 'raid-callout';
+  callout.hidden = true;
+  const pauseButton = button(root, 'Ⅱ', actions.pause);
+  pauseButton.className = 'raid-pause';
+  pauseButton.setAttribute('aria-label', t('pause'));
+  const hint = element('output', root);
+  let feedbackUntil = 0;
+  hint.className = 'raid-hint';
+  const respawn = element('div', root);
+  respawn.className = 'raid-respawn';
+  respawn.hidden = true;
+  respawn.setAttribute('role', 'status');
+  element('strong', respawn, t('defeated'));
+  const countdown = element('span', respawn);
+  const startCountdown = element('output', root);
+  startCountdown.className = 'raid-start-countdown';
+  startCountdown.setAttribute('aria-label', t('startCountdown'));
+  startCountdown.hidden = true;
+  const stick = createTouchPad(t('steer'), { shape: 'semicircle', surface: course }, actions.steer);
+  root.append(stick.pad);
+  const deck = element('div', root);
+  deck.className = 'raid-deck';
+  const vitals = element('div', deck);
+  vitals.className = 'raid-vitals';
+  const hp = element('span', vitals);
+  const rage = element('span', vitals);
+  const condition = element('output', vitals);
+  condition.className = 'raid-condition';
+  condition.hidden = true;
+  const orders = element('div', vitals);
+  orders.className = 'raid-orders';
+  const lock = button(orders, '', actions.target);
+  const call = button(orders, t('callTarget'));
+  call.setAttribute('aria-keyshortcuts', 'G');
+  const jump = button(deck, t('jump'));
+  // The second finger does not always generate a click while a steering finger is held.
+  for (const [b, activate] of [
+    [jump, actions.jump],
+    [call, actions.callTarget],
+  ] as const) {
+    b.onpointerdown = (e) => {
+      if (e.button === 0) b.setPointerCapture(e.pointerId);
+    };
+    b.onpointerup = (e) => {
+      if (
+        e.button === 0 &&
+        b.hasPointerCapture(e.pointerId) &&
+        b.contains(document.elementFromPoint(e.clientX, e.clientY))
+      )
+        activate();
+    };
+    b.onclick = (e) => {
+      if (e.detail === 0) activate();
+    };
+  }
+  jump.className = 'raid-jump';
+  const rack = element('div', deck);
+  rack.className = 'raid-skills';
+  const aimPad = new RaidAimPad(root, actions);
+  let gesture: {
+    id: number;
+    slot: Skill;
+    x: number;
+    y: number;
+    dragged: boolean;
+    button: HTMLButtonElement;
+  } | null = null;
+  function endGesture() {
+    const current = gesture;
+    gesture = null;
+    if (!current) return;
+    if (current.button.hasPointerCapture(current.id))
+      current.button.releasePointerCapture(current.id);
+    actions.clearPreview();
+  }
+  let displayedRunner: RaidView['runners'][number] | undefined;
+  const buttons = skills.map((key, i) => {
+    const slot = i as Skill;
+    const b = button(rack, '');
+    b.dataset.skill = key;
+    b.setAttribute('aria-keyshortcuts', String(i + 1));
+    const meta = element('span', b);
+    meta.className = 'raid-skill-meta';
+    meta.setAttribute('aria-hidden', 'true');
+    const glyph = element('i', meta);
+    const type = element('b', meta);
+    const charge = element('small', meta);
+    const name = element('span', b, t(key));
+    name.className = 'raid-skill-name';
+    b.onpointerdown = (e) => {
+      if (gesture || aimPad.skill !== null || e.button !== 0 || b.disabled) return;
+      e.preventDefault();
+      gesture = { id: e.pointerId, slot, x: e.clientX, y: e.clientY, dragged: false, button: b };
+      b.setPointerCapture(e.pointerId);
+    };
+    function track(e: PointerEvent) {
+      if (!gesture || gesture.id !== e.pointerId || gesture.slot !== slot) return;
+      if (Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) > 12) gesture.dragged = true;
+    }
+    b.onpointermove = track;
+    b.onpointerup = (e) => {
+      if (gesture?.id !== e.pointerId || gesture.slot !== slot) return;
+      track(e);
+      const dragged = gesture.dragged;
+      endGesture();
+      if (b.disabled) return;
+      if (dragged) {
+        if (!b.contains(document.elementFromPoint(e.clientX, e.clientY))) actions.repeatCast(slot);
+        return;
+      }
+      if (!displayedRunner) return;
+      const kind = raidRunnerAimKind(displayedRunner, slot);
+      if (kind === 'pulse') {
+        if (b.contains(document.elementFromPoint(e.clientX, e.clientY))) actions.skill(slot);
+        return;
+      }
+      actions.beginPadAim();
+      aimPad.open(slot, name.textContent ?? '', kind);
+    };
+    b.onpointercancel = b.onlostpointercapture = (e) => {
+      if (gesture?.id === e.pointerId) endGesture();
+    };
+    // Keyboard and assistive activations have no preceding pointer sequence.
+    b.onclick = (e) => {
+      if (e.detail === 0 && !gesture) actions.skill(slot);
+    };
+    return { b, charge, name, glyph, type };
+  });
+  const panel = element('section', document.body);
+  panel.className = 'raid-panel';
+  panel.hidden = true;
+  panel.setAttribute('aria-label', t('mode'));
+  const card = element('div', panel);
+  const title = element('h2', card);
+  const reason = element('p', card);
+  const sizeSetting = element('label', card);
+  sizeSetting.className = 'raid-skill-size';
+  element('span', sizeSetting, t('skillSize'));
+  const sizeInput = element('input', sizeSetting);
+  sizeInput.type = 'range';
+  sizeInput.min = String(skillSize.min);
+  sizeInput.max = String(skillSize.max);
+  sizeInput.step = String(skillSize.step);
+  sizeInput.value = String(skillSize.value);
+  const sizeValue = element('span', sizeSetting);
+  sizeValue.setAttribute('aria-hidden', 'true');
+  const applySize = () => {
+    const percent = sizeInput.valueAsNumber;
+    sizeValue.textContent = percent + '%';
+    sizeInput.setAttribute('aria-valuetext', sizeValue.textContent);
+    root.style.setProperty('--skill-scale', String(percent / 100));
+    root.classList.toggle('large-skills', percent > 100);
+  };
+  applySize();
+  sizeInput.oninput = applySize;
+  sizeInput.onchange = () => actions.setSkillSize(sizeInput.valueAsNumber);
+  const records = element('table', card);
+  const resume = button(card, t('resume'), actions.resume);
+  const retry = button(card, t('retry'), actions.retry);
+  resume.dataset.resumeRaid = retry.dataset.resumeRaid = '';
+  button(card, t('leave'), actions.leave);
+  function update(view: RaidView, aiming: Skill | null, slot = 0) {
+    // A keyboard-armed skill can point to either half of the screen.
+    if (aiming !== null && !stick.pad.hidden) stick.reset();
+    stick.pad.hidden = aiming !== null;
+    const runner = view.runners[slot]!;
+    displayedRunner = runner;
+    const fallen = view.runners.filter((r) => r.team !== runner.team && r.respawn > 0);
+    enemyRespawns.hidden = fallen.length === 0;
+    while (enemyList.children.length > fallen.length) enemyList.lastElementChild!.remove();
+    fallen.forEach((r, i) => {
+      const row = enemyList.children[i] ?? element('li', enemyList);
+      const text = t('runnerRespawn', { name: t(r.hero), seconds: Math.ceil(r.respawn / RAID_HZ) });
+      if (row.textContent !== text) row.textContent = text;
+    });
+    jump.disabled = !!runner.leap || !!runner.jumping || !!runner.respawn || !!runner.staggered;
+    const request = view.calls[runner.team];
+    call.disabled = !!runner.respawn || runner.target === null || !!request || !!view.result;
+    const message = request
+      ? t('attackRequest', {
+          from: t(view.runners[request.from]!.hero),
+          target: t(request.target === 'wagon' ? 'wagon' : view.runners[request.target]!.hero),
+        })
+      : '';
+    if (callout.textContent !== message) callout.textContent = message;
+    callout.hidden = !message;
+    const counterText = view.hazard ? t(counterLabels[view.hazard.kind]) : '';
+    if (warning.textContent !== counterText) warning.textContent = counterText;
+    warning.hidden = !counterText || !!view.result;
+    const conditions = [
+      runner.staggered && t('stagger'),
+      runner.slowed && t('slow'),
+      runner.silenced && t('silence'),
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    if (condition.textContent !== conditions) condition.textContent = conditions;
+    condition.hidden = !conditions || !!runner.respawn;
+    const seconds = Math.ceil((ROUND_TICKS - view.tick) / RAID_HZ);
+    clock.textContent = matchClock(seconds);
+    [blue, red].forEach((side, i) => {
+      const teamId = i ^ runner.team;
+      const dmg = Math.min(WAGON_HP, view.damage[teamId]!);
+      side.bar.value = dmg;
+      side.value.textContent = Math.floor((dmg / WAGON_HP) * 100) + '%';
+      const kills = view.runners.reduce((sum, r) => sum + (r.team === teamId ? r.kills : 0), 0);
+      side.kills.textContent = t('teamKills', { count: kills });
+      const percent = raidBossBonusPercent(view.runners, teamId);
+      const bonus = percent ? t('bossBonus', { percent }) : '';
+      if (side.bonus.textContent !== bonus) side.bonus.textContent = bonus;
+      side.bonus.hidden = !percent;
+    });
+    hp.textContent = t('hp') + ' ' + runner.hp + '/' + HEROES[runner.hero].hp;
+    rage.textContent = t('rage') + ' ' + runner.rage + '%';
+    if (runner.heroView.comboPoints !== undefined)
+      rage.textContent += ' · ' + t('shadowCombo', { count: runner.heroView.comboPoints });
+    if (runner.heroView.poisonArmed) rage.textContent += ' · ' + t('poisonArmed');
+    const target =
+      runner.target === null
+        ? 'noTarget'
+        : runner.target === 'wagon'
+          ? 'wagon'
+          : view.runners[runner.target]!.hero;
+    lock.textContent = t('target') + ' · ' + t(target);
+    buttons.forEach(({ b, charge, name, glyph, type }, i) => {
+      const rule = raidSkill(runner.hero, i as Skill);
+      const instant = rule.kind === 'pulse';
+      const typeLabel = t(instant ? 'typeInstant' : 'typeAimed');
+      if (type.textContent !== typeLabel) {
+        glyph.textContent = instant ? '✴' : '◎';
+        type.textContent = typeLabel;
+      }
+      const recastMoon = runner.dash?.skill === i && instant && !!rule.recastDuringDash;
+      name.textContent = recastMoon ? t('moonFinish') : t(`${runner.hero}${skillNames[i]!}`);
+      const cd = Math.ceil(runner.cooldowns[i]! / RAID_HZ);
+      b.disabled = !canUseRaidSkill(runner, i as Skill);
+      if (b.disabled && gesture?.slot === i) endGesture();
+      if (b.disabled && aimPad.skill === i) aimPad.close();
+      if (i === 3) {
+        const recasts = runner.heroView.ultimateRecasts;
+        b.style.setProperty('--rage-fill', recasts ? '100%' : runner.rage + '%');
+        charge.textContent = recasts
+          ? t('bladeCharges', { count: recasts }) + (cd ? ' · ' + cd + 's' : '')
+          : runner.rage + '%';
+      } else {
+        const fraction = runner.cooldowns[i]! / (rule.cooldownTicks ?? SKILL_COOLDOWNS[i as Skill]);
+        b.style.setProperty('--cooldown', Math.round(fraction * 360) + 'deg');
+        const slashes = i === 0 ? (runner.heroView.slashes ?? 0) : 0;
+        charge.textContent = recastMoon ? '' : slashes ? 4 - slashes + '/4' : cd ? cd + 's' : '';
+      }
+      b.setAttribute(
+        'aria-label',
+        [name.textContent, typeLabel, charge.textContent].filter(Boolean).join(' · '),
+      );
+      b.classList.toggle('armed', i === aiming);
+    });
+    if (runner.respawn) {
+      const remaining = t('respawn', { seconds: Math.ceil(runner.respawn / RAID_HZ) });
+      if (countdown.textContent !== remaining) countdown.textContent = remaining;
+    }
+    respawn.hidden = !runner.respawn;
+    if (aiming !== null || performance.now() >= feedbackUntil)
+      hint.textContent = aiming !== null ? t('aim') : '';
+    hint.hidden = !!runner.respawn || !hint.textContent;
+  }
+  function showPanel(view: RaidView | null, slot = 0, online = false) {
+    stick.reset();
+    aimPad.close();
+    endGesture();
+    actions.clearPreview();
+    root.hidden = true;
+    panel.hidden = false;
+    sizeSetting.hidden = !!view;
+    resume.hidden = !!view;
+    retry.hidden = !view;
+    retry.textContent = t(online ? 'backToLobby' : 'retry');
+    const teamId = slot < 2 ? 0 : 1;
+    const result = view?.result;
+    title.textContent = result
+      ? t(result.winner === 'draw' ? 'draw' : result.winner === teamId ? 'win' : 'lose')
+      : t(online ? 'onlineMenu' : 'paused');
+    reason.textContent =
+      view && result
+        ? t('matchRecap', {
+            reason: t(result.reason === 'time' ? 'timeUp' : 'destruction'),
+            duration: matchClock(Math.floor(view.tick / RAID_HZ)),
+            count: view.leadChanges,
+          })
+        : instructions;
+    records.hidden = !view;
+    if (view) {
+      records.replaceChildren();
+      const columns = element('tr', records.createTHead());
+      for (const title of [t('runner'), t('boss'), t('kda')])
+        element('th', columns, title).scope = 'col';
+      for (const team of [teamId, 1 - teamId]) {
+        const group = records.createTBody();
+        const teamRow = element('tr', group);
+        const members = view.runners.filter((r) => r.team === team);
+        element('th', teamRow, t(team === teamId ? 'blue' : 'red')).scope = 'rowgroup';
+        element('td', teamRow, String(view.damage[team]));
+        const totals = (['kills', 'deaths', 'assists'] as const).map((stat) =>
+          members.reduce((sum, r) => sum + r[stat], 0),
+        );
+        element('td', teamRow, totals.join(' / '));
+        for (const r of members) {
+          const row = element('tr', group);
+          const name = t(r.hero) + (r.slot === slot ? ' (' + t('you') + ')' : '');
+          element('th', row, name).scope = 'row';
+          element('td', row, String(r.wagonDamage));
+          element('td', row, [r.kills, r.deaths, r.assists].join(' / '));
+        }
+      }
+    }
+    (view ? retry : resume).focus({ preventScroll: true });
+  }
+  function showStartCountdown(seconds: number) {
+    const text = seconds > 0 ? String(seconds) : '';
+    if (startCountdown.textContent === text) return;
+    startCountdown.hidden = seconds === 0;
+    startCountdown.textContent = text;
+    deck.inert = seconds > 0;
+  }
+  return {
+    aimPad,
+    drawCombatNumbers,
+    selected,
+    setup,
+    select,
+    selectHero(hero: RaidHero) {
+      select.value = hero;
+      detail.textContent = t(heroInfo[hero]);
+    },
+    reset() {
+      root.hidden = panel.hidden = true;
+      aimPad.close();
+      stick.reset();
+      endGesture();
+    },
+    update,
+    showStartCountdown,
+    showPanel,
+    showSkillAim(aim: RaidAimFeedback) {
+      hint.hidden = false;
+      const { state, metrics } = aimFeedback(aim);
+      const text = state + ' · ' + metrics;
+      if (hint.textContent !== text) hint.textContent = text;
+    },
+    play(seconds: number) {
+      feedbackUntil = 0;
+      panel.hidden = true;
+      root.hidden = false;
+      showStartCountdown(seconds);
+    },
+    showFeedback(text: string) {
+      hint.textContent = text;
+      hint.hidden = false;
+      feedbackUntil = performance.now() + 1500;
+    },
+  };
+}

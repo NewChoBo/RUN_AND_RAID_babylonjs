@@ -1,0 +1,496 @@
+.raid-lobby {
+  border-block-start: 1px solid #bfa27066;
+  padding-top: 0.5rem;
+}
+.raid-lobby h2 {
+  font: inherit;
+  color: #ffdf9c;
+  margin: 0 0 0.35rem;
+}
+.raid-lobby > div:not(.raid-draft) {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.raid-lobby input {
+  width: 8ch;
+  min-width: 6rem;
+  padding: 0.4em;
+  font: inherit;
+  color: inherit;
+  background: #172129;
+  border: 1px solid #bfa27088;
+}
+.raid-lobby ul {
+  padding: 0;
+  margin: 0.3rem 0 0;
+  list-style: none;
+}
+.raid-lobby ul:empty {
+  display: none;
+}
+.raid-lobby output {
+  display: block;
+  margin-top: 0.25rem;
+}
+.raid-pick-profile {
+  margin: 0.5rem 0;
+  grid-column: 1/-1;
+  color: var(--paper);
+}
+.raid-pick-profile > img {
+  display: none;
+}
+.raid-pick-profile figcaption > strong {
+  font: 600 1.4rem var(--font-display);
+  margin-right: 0.6rem;
+}
+.raid-pick-profile figcaption > small {
+  color: #f2d3a2;
+}
+.raid-pick-profile figcaption > p {
+  margin: 0.35rem 0;
+  font: 400 0.92rem/1.45 var(--font-ui);
+  color: #e3e4df;
+}
+.raid-pick-profile figcaption > .raid-pick-skills {
+  color: #c9d6de;
+  font-size: 0.8rem;
+}
+@media (min-width: 820px) and (min-height: 480px),
+  (orientation: landscape) and (min-width: 568px) and (min-height: 320px) {
+  #overlay .title-copy:has(.raid-pick-profile:not([hidden])) h1 {
+    font-size: clamp(1.4rem, 2.5vw, 2.2rem);
+  }
+  .raid-pick-profile {
+    max-width: 23rem;
+    padding: 0 0.75rem 0.7rem;
+    background: linear-gradient(0deg, #0a131bec, transparent);
+  }
+  .raid-pick-profile > img {
+    display: block;
+    width: min(100%, 240px);
+    height: auto;
+    max-height: 30vh;
+    object-fit: contain;
+    object-position: bottom;
+  }
+  .raid-pick-profile figcaption > strong {
+    font-size: 2.2rem;
+  }
+}
+@media (orientation: landscape) and (max-height: 479px) {
+  .raid-pick-profile {
+    margin: 0;
+    padding: 0.2rem 0.45rem 0.4rem;
+  }
+  .raid-pick-profile figcaption > strong {
+    font-size: 1.2rem;
+  }
+  .raid-pick-profile figcaption > p {
+    font-size: 0.76rem;
+  }
+  .raid-pick-profile img {
+    max-height: 22vh;
+  }
+  #overlay .menu-folio:has(.raid-draft:not([hidden])) {
+    align-content: start;
+  }
+}
+.raid-setup.in-room > :not(.raid-lobby) {
+  display: none;
+}
+.raid-draft h3 {
+  font: 600 1.35rem var(--font-display);
+  color: var(--paper);
+  margin: 0.65rem 0 0.4rem;
+}
+.raid-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.32rem;
+}
+#overlay[data-screen='title'] .raid-pick-grid button {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  width: 100%;
+  padding: 0.15rem;
+  min-height: 2.7rem;
+  background: linear-gradient(165deg, #29343d, #101923);
+  color: #ede1ca;
+  border: 1px solid #677073;
+  line-height: 1.1;
+  font-size: 0.86rem;
+}
+#overlay[data-screen='title'] .raid-pick-grid button[aria-pressed='true'] {
+  border: 2px solid #f0c57d;
+  background: #343231;
+}
+.raid-pick-grid img {
+  width: 100%;
+  height: clamp(40px, 9vh, 76px);
+  object-fit: contain;
+}
+.raid-pick-grid button:disabled img {
+  opacity: 0.47;
+}
+.raid-pick-grid small {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px;
+  background: #10161d;
+}
+.raid-draft > p {
+  margin: 0.4rem 0;
+  line-height: 1.35;
+}
+.raid-lobby ul:not(:empty) {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+.raid-lobby li {
+  border-inline-start: 3px solid #74c0bd;
+  padding-inline-start: 0.4rem;
+}
+.raid-lobby li + li {
+  border-color: #d79598;
+}
+.raid-setup {
+  display: grid;
+  gap: 0.6rem;
+  color: #f0ebde;
+  line-height: 1.45;
+}
+.raid-setup p {
+  margin: 0;
+}
+.raid-setup label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.raid-setup select {
+  font: inherit;
+  color: #f7e8c0;
+  background: #172129;
+  padding: 0.35rem;
+}
+.raid-setup small {
+  color: #d4d2c8;
+}
+body.raid-mode :is(.hud, #crosshair) {
+  display: none;
+}
+body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
+  filter: grayscale(0.7) brightness(0.92);
+}
+@media (prefers-reduced-motion: no-preference) {
+  body.raid-mode #game {
+    transition: filter 160ms ease-out;
+  }
+}
+.raid-hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  color: #fff9ed;
+  font: 600 clamp(0.78rem, 1.4vw, 1rem)/1.2 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+.raid-combat-numbers {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.raid-combat-numbers span {
+  position: absolute;
+  color: #ffde8b;
+  font: 800 clamp(15px, 3.8dvh, 24px)/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: 2.5px #291d21;
+  paint-order: stroke fill;
+  text-shadow: 0 2px 3px #181214;
+  transform: translate(-50%, calc(-100% + var(--row) + var(--rise)));
+}
+.raid-combat-numbers .taken {
+  color: #ff878e;
+}
+.raid-combat-numbers .heal {
+  color: #88ffaf;
+}
+@media (prefers-reduced-motion: reduce) {
+  .raid-combat-numbers span {
+    transform: translate(-50%, calc(-100% + var(--row)));
+  }
+}
+.raid-hud button,
+.raid-panel button {
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: none;
+  color: #f8f3e8;
+  border: 1px solid #bfa27088;
+  background: #142029ed;
+  border-radius: 4px;
+  padding: 0.55em 0.8em;
+  font: inherit;
+}
+.raid-hud button:disabled {
+  color: #afa9a0;
+  background: #10161cd9;
+}
+.raid-score {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1.2em;
+  background: #0a131aeb;
+  border-bottom: 2px solid #a98d61;
+  border-radius: 5px;
+  padding: 0.65em 1em;
+}
+.raid-counter {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  padding: 0.2em 0.3em;
+  text-align: center;
+  background: #351d19ed;
+  color: #ffcf98;
+  font-size: clamp(10px, 2.7dvh, 14px);
+  line-height: 1.2;
+  pointer-events: none;
+}
+.raid-condition {
+  color: #ffcc8a;
+  font-weight: 700;
+}
+.raid-team {
+  display: grid;
+  gap: 0.18em;
+  min-width: 8em;
+}
+.raid-team small {
+  color: #83e1d9;
+}
+.raid-team.red {
+  text-align: right;
+}
+.raid-team.red small {
+  color: #ffa5b3;
+}
+.raid-team progress {
+  display: block;
+  width: 100%;
+  height: 0.4em;
+  accent-color: #61dad0;
+}
+.raid-team.red progress {
+  accent-color: #ec7586;
+}
+.raid-score time {
+  font-size: 1.7em;
+  letter-spacing: 0.03em;
+}
+.raid-pause {
+  position: absolute;
+  right: 2%;
+  top: 3%;
+}
+.raid-hint {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #181c26eb;
+  color: #ffe6ab;
+  padding: 0.6em 1em;
+  text-align: center;
+}
+.raid-respawn {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  gap: 0.2em;
+  padding: 0.55em 1.8em;
+  width: max-content;
+  max-width: 65vw;
+  text-align: center;
+  color: #f7f5ee;
+  background: linear-gradient(90deg, transparent, #172029eb 14% 86%, transparent);
+}
+.raid-respawn strong {
+  font: 600 clamp(16px, 3.5dvh, 25px)/1.2 var(--font-display);
+}
+.raid-respawn span {
+  font-size: clamp(19px, 4.5dvh, 34px);
+}
+.raid-start-countdown {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1.55em;
+  line-height: 1.55;
+  text-align: center;
+  font-family: var(--font-display, serif);
+  font-size: clamp(44px, 14dvh, 96px);
+  color: #ffedc3;
+  background: radial-gradient(ellipse, #111a25cc 10%, transparent 72%);
+  text-shadow: 0 2px 5px #0d141d;
+}
+.raid-deck[inert] :is(.raid-skills, .raid-jump, .raid-vitals button) {
+  opacity: 0.45;
+}
+.raid-skills button:active {
+  background: #4a3f31;
+}
+.raid-skills,
+.raid-vitals {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.3em;
+}
+.raid-skills button {
+  position: relative;
+  min-width: 4.3em;
+  min-height: 3.4em;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.15em;
+}
+.raid-skills small:empty {
+  display: none;
+}
+.raid-skills [data-skill='fury'] {
+  isolation: isolate;
+  overflow: hidden;
+}
+.raid-hud .raid-skills [data-skill='fury']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    to top,
+    #b54b6b var(--rage-fill, 0%),
+    transparent var(--rage-fill, 0%)
+  );
+}
+.raid-hud .raid-skills [data-skill='fury']:enabled {
+  border-color: #ffe4b8;
+  box-shadow: 0 0 8px #ffb38a99;
+}
+.raid-skill-size {
+  display: none;
+}
+.raid-vitals {
+  background: #0b141be6;
+  border-radius: 4px;
+  padding: 0.28em 0.4em;
+  gap: 0.65em;
+}
+.raid-vitals span:nth-child(2) {
+  color: #ffb3b6;
+}
+.raid-vitals button {
+  font-size: 0.86em;
+}
+.raid-panel {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #070d15bd;
+  color: #f3ebdb;
+}
+.raid-panel > div {
+  width: min(90vw, 30rem);
+  padding: 1.7rem;
+  border: 1px solid #ad9262;
+  background: #141e27;
+  box-shadow: 0 14px 55px #0008;
+}
+.raid-panel h2 {
+  font: 500 2rem/1.05 var(--font-display, serif);
+  margin: 0;
+  color: #edd3a0;
+}
+.raid-panel button {
+  margin-right: 0.5em;
+}
+.raid-panel {
+  overflow: auto;
+}
+.raid-panel table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.6em 0 1em;
+  font-variant-numeric: tabular-nums;
+}
+.raid-panel th,
+.raid-panel caption {
+  text-align: left;
+}
+.raid-panel td {
+  text-align: right;
+}
+.raid-panel tr {
+  border-bottom: 1px solid #97825f44;
+}
+.raid-panel :is(td, th) {
+  padding: 0.12em 0.35em;
+}
+.raid-panel thead th:not(:first-child) {
+  text-align: right;
+}
+.raid-panel tbody tr:first-child {
+  color: #a6eadf;
+  background: #1c343a;
+  font-weight: 700;
+}
+.raid-panel tbody + tbody tr:first-child {
+  color: #ffc0c6;
+  background: #392b35;
+}
+.raid-panel th[scope='row'] {
+  padding-left: 1em;
+  font-weight: 400;
+}
+.raid-skills button {
+  touch-action: none;
+}
+.raid-skills .armed {
+  border-color: #f0cf88;
+}
+@media (max-height: 480px), (max-width: 700px) {
+  .raid-score {
+    top: 4px;
+    padding: 0.35em 0.6em;
+    gap: 0.7em;
+  }
+  .raid-hud button {
+    padding: 0.42em 0.5em;
+  }
+  .raid-skills button {
+    min-height: 2.8em;
+    min-width: 3.7em;
+  }
+}
+#game.raid-placement-aim {
+  cursor: none;
+}
