@@ -9,7 +9,22 @@ export function raidGroundPointAfter(point: Readonly<RaidPoint>, age: number): R
 export const raidLeapHeight = (fraction: number) => 2.2 * 4 * fraction * (1 - fraction);
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 // Metres per second relative to the wagon, from a free run to full braking.
-const forwardSpeed = (brake: number) => 2.25 * (1 - brake) - 3.1 * brake;
+const RUN_SPEED = 2.8;
+const BRAKE_SPEED = -4.2;
+const forwardSpeed = (brake: number) => RUN_SPEED + (BRAKE_SPEED - RUN_SPEED) * brake;
+// Full braking takes 0.30 s. Returning to a free run takes 0.40 s.
+function brakeTransitionTicks(r: RaidRunner) {
+  return (r.brake >= r.appliedBrake ? 0.3 : 0.4) * RAID_HZ;
+}
+export function raidBrakeAfter(r: RaidRunner, ticks: number) {
+  const step = ticks / brakeTransitionTicks(r);
+  return r.appliedBrake + clamp(r.brake - r.appliedBrake, -step, step);
+}
+function forwardTravel(r: RaidRunner, ticks: number) {
+  const rampTicks = Math.min(ticks, Math.abs(r.brake - r.appliedBrake) * brakeTransitionTicks(r));
+  const meanSpeed = forwardSpeed((r.appliedBrake + raidBrakeAfter(r, rampTicks)) / 2);
+  return (meanSpeed * rampTicks + forwardSpeed(r.brake) * (ticks - rampTicks)) / RAID_HZ;
+}
 // Wagon-relative rear boundary estimated from the distant chase frames in docs/CAMERA.md.
 export const RAID_REAR_Z = WAGON.z - 56;
 export const RAID_FRONT_Z = WAGON.z - 1.6;
@@ -73,8 +88,17 @@ export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint
   const seconds = r.respawn || r.staggered ? 0 : (ticks / RAID_HZ) * (r.slowed ? 0.55 : 1);
   return {
     x: runAxis(r.x, r.side * 4.8 * seconds, -5, 5, 4.8 * seconds),
-    z: runAxis(r.z, forwardSpeed(r.brake) * seconds, RAID_REAR_Z, RAID_FRONT_Z, 3.1 * seconds),
+    z: runAxis(
+      r.z,
+      r.respawn || r.staggered ? 0 : forwardTravel(r, ticks) * (r.slowed ? 0.55 : 1),
+      RAID_REAR_Z,
+      RAID_FRONT_Z,
+      -BRAKE_SPEED * seconds,
+    ),
   };
 }
-export const jumpHeight = (ticks: number) =>
-  ticks > 0 ? 1.5 * Math.sin((Math.PI * ticks) / 24) : 0;
+export const RAID_JUMP_TICKS = 22;
+export function jumpHeight(ticks: number) {
+  const t = clamp(ticks / RAID_JUMP_TICKS, 0, 1);
+  return 4 * 3.2 * t * (1 - t);
+}

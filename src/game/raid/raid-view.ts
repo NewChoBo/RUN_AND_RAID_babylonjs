@@ -76,6 +76,7 @@ export interface Runner extends RaidPoint, RaidControl {
   lastWard: number | null;
   side: number;
   brake: number;
+  appliedBrake: number;
   jumping: number;
   // Both endpoints describe fixed road positions in the wagon frame at takeoff.
   leap: Readonly<{

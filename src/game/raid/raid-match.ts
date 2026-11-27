@@ -33,6 +33,8 @@ import {
   distance,
 } from './raid-rules.ts';
 import {
+  RAID_JUMP_TICKS,
+  raidBrakeAfter,
   limitRaidDash,
   limitRaidPlacement,
   raidRunnerHeight,
@@ -106,6 +108,7 @@ const makeRunner = (hero: RaidHero, slot: number, view: () => HeroView): Runner 
   lastWard: null,
   side: 0,
   brake: 0,
+  appliedBrake: 0,
   jumping: 0,
   leap: null,
   respawn: 0,
@@ -209,7 +212,7 @@ export class RaidMatch implements RaidView {
   jump(slot: number) {
     const r = this.#active(slot);
     if (!r || r.jumping || r.leap || r.dash || r.staggered) return false;
-    r.jumping = 24;
+    r.jumping = RAID_JUMP_TICKS;
     return true;
   }
   #position(r: Runner, target: RaidTarget) {
@@ -487,6 +490,7 @@ export class RaidMatch implements RaidView {
       if (r.staggered) r.dash = null;
       if (r.spinTicks) r.slowed = 0;
       const next = raidRunnerPositionAfter(r, 1);
+      r.appliedBrake = raidBrakeAfter(r, 1);
       r.x = next.x;
       r.z = next.z;
       if (r.leap) r.leap = { ...r.leap, elapsed: r.leap.elapsed + 1 };

@@ -120,7 +120,7 @@ test('jumping clears the low Crescent but not an upright Rising Moon blade; the 
     const [r, , victim] = match.runners;
     for (const runner of match.runners) {
       runner.basic = 300;
-      runner.brake = 2.25 / 5.35;
+      runner.brake = 0.4;
     }
     r.x = r.z = 0;
     victim.x = x;
@@ -143,7 +143,7 @@ test('Kaiken can cut Full Moon short and spin on the road tile at the interrupti
   const [r, , victim] = match.runners;
   for (const runner of match.runners) {
     runner.basic = 300;
-    runner.brake = 2.25 / 5.35;
+    runner.brake = 0.4;
   }
   victim.x = r.x + 2;
   victim.z = r.z;
@@ -171,7 +171,7 @@ test('Kaiken channels five ultimate pulses with other attacks locked and no rage
   const { match, send } = battle('kaiken');
   const [r] = match.runners;
   for (const runner of match.runners) runner.basic = 300;
-  assert.ok(send(0, 'move', { side: 0, brake: 2.25 / 5.35 }));
+  assert.ok(send(0, 'move', { side: 0, brake: 0.4 }));
   r.x = 0;
   r.z = 8;
   r.rage = 100;
@@ -341,7 +341,7 @@ test('Swift designates a quarry, closes over time and blinks behind a visible ta
   const [r, , victim] = match.runners;
   for (const runner of match.runners) {
     runner.basic = 90;
-    runner.brake = 2.25 / 5.35;
+    runner.brake = 0.4;
   }
   r.x = victim.x = 0;
   r.z = 0;
@@ -445,7 +445,7 @@ test('aim feedback distinguishes an empty cast, a hit and an unreachable point b
   assert.equal(runner.cooldowns[1], 0);
   assert.ok(send(0, 'move', { side: 0, brake: 0 }));
   // Run until the actual muzzle-to-wagon distance is back inside the 16 m targeting range.
-  while (Math.hypot(runner.x - WAGON.x, runner.z - WAGON.z) > shot.range && match.tick < 100)
+  while (Math.hypot(runner.x - WAGON.x, runner.z - WAGON.z) > shot.range && match.tick < 150)
     match.step();
   assert.equal(match.previewSkill(0, 1, null, 'wagon').status, 'ready');
   assert.ok(send(0, 'cast', { skill: 1, target: 'wagon' }));
@@ -534,7 +534,7 @@ test('each charged ultimate applies its hero effect to the selected formation', 
   for (const hero of ['hammer', 'abyss', 'longshot', 'jade', 'rend', 'bastion', 'rime']) {
     const { match, send } = battle(hero);
     const [caster, ally, flank, rear] = match.runners;
-    for (const r of match.runners) send(r.slot, 'move', { side: 0, brake: 2.25 / 5.35 });
+    for (const r of match.runners) send(r.slot, 'move', { side: 0, brake: 0.4 });
     if (hero === 'hammer') {
       caster.z = 8;
       assert.ok(send(0, 'cast', { skill: 1 }));
@@ -709,18 +709,54 @@ test('stick travel scales lateral and forward distance, and release restores ful
   const { match, send } = battle();
   const runner = match.runners[0];
   for (const [side, brake, lateral, forward] of [
-    [-0.25, 0.25, -1.2, 6.9125],
-    [0.5, 0.5, 2.4, 5.575],
-    [0, 1, 0, 2.9],
-    [0, 0, 0, 8.25],
+    [-0.25, 0.25, -1.2, 7.05],
+    [0.5, 0.5, 2.4, 5.3],
+    [0, 1, 0, 1.8],
+    [0, 0, 0, 8.8],
   ]) {
-    const { x, z } = runner;
     assert.ok(send(0, 'move', { side, brake }));
+    advance(match, 12);
+    const { x, z } = runner;
     advance(match, RAID_HZ);
     assert.ok(Math.abs(runner.x - x - lateral) < 0.001);
     assert.ok(Math.abs(runner.z - z + raidRoadTravel(RAID_HZ) - forward) < 0.001);
   }
 });
+test('braking and release integrate the same speed ramp in simulation and camera prediction', () => {
+  const { match, send } = battle();
+  const r = match.runners[0];
+  for (const [brake, ticks] of [
+    [1, 9],
+    [0, 12],
+  ]) {
+    assert.ok(send(0, 'move', { side: 0, brake }));
+    const startZ = r.z;
+    const halfway = raidRunnerPositionAfter(r, 0.5).z;
+    for (let i = 0; i < ticks; i++) {
+      const predicted = raidRunnerPositionAfter(r, 1).z;
+      match.step();
+      assert.equal(r.z, predicted);
+      if (!i)
+        assert.ok(brake ? halfway > startZ && halfway < r.z : halfway < startZ && halfway > r.z);
+    }
+    assert.ok(Math.abs(r.appliedBrake - brake) < 1e-8);
+    assert.ok(Math.abs(r.z - startZ + (0.7 * ticks) / RAID_HZ) < 1e-8);
+  }
+});
+
+test('ordinary jump reaches its measured apex and lands after 22 ticks', () => {
+  const { match, send } = battle('kaiken');
+  const r = match.runners[0];
+  assert.ok(send(0, 'jump'));
+  assert.equal(raidRunnerHeight(r), 0);
+  advance(match, 11);
+  assert.equal(raidRunnerHeight(r), 3.2);
+  assert.equal(send(0, 'jump'), false);
+  advance(match, 11);
+  assert.equal(raidRunnerHeight(r), 0);
+  assert.ok(send(0, 'jump'));
+});
+
 test('out-of-range or malformed steering preserves both previous axes', () => {
   const { match, send } = battle();
   assert.ok(send(0, 'move', { side: -0.6, brake: 0.4 }));
@@ -743,13 +779,16 @@ test('out-of-range or malformed steering preserves both previous axes', () => {
 test('a locked opponent crossing just behind the runner escapes basics but can still be hit by Bolt', () => {
   const { match, send } = battle(['rend', 'abyss', 'longshot', 'jade']);
   const [player, , rival] = match.runners;
+  // Keep the wagon outside automatic basic range throughout this crossing.
+  for (const r of match.runners) r.z -= 4;
+  match.runners[3].z = -40;
   send(0, 'move', { side: 1, walk: true });
   advance(match, 20);
   assert.ok(send(0, 'lock', 2));
   assert.ok(send(2, 'lock', 0));
   send(0, 'move', { side: 0, walk: false });
   send(2, 'move', { side: 0, walk: true });
-  advance(match, 21);
+  for (let i = 0; i < 45 && rival.z >= player.z; i++) match.step();
   assert.ok(rival.z < player.z && player.z - rival.z < 0.45);
   assert.ok(Math.hypot(player.x - rival.x, player.z - rival.z) < HEROES.rend.reach);
   assert.equal(player.target, 2);
@@ -777,7 +816,7 @@ test('an opponent beside the runner enters basic attack range only after moving 
   assert.equal(rival.hp, HEROES.longshot.hp);
   assert.equal(player.basic, 0);
   send(0, 'move', { side: 1, walk: true });
-  advance(match, 10);
+  advance(match, 12);
   assert.ok(rival.z - player.z >= Math.abs(rival.x - player.x));
   assert.equal(rival.hp, HEROES.longshot.hp - HEROES.hammer.power);
 });
@@ -820,7 +859,7 @@ test('targeted attacks and wards can use the extra aiming view while basic locks
 test('bots can target a closer opponent behind them with skills while that opponent is on camera', () => {
   const { match, send } = battle();
   // Enter the rear runner's skirmish phase with the starting formation intact.
-  for (const r of match.runners) send(r.slot, 'move', { side: 0, brake: 2.25 / 5.35 });
+  for (const r of match.runners) send(r.slot, 'move', { side: 0, brake: 0.4 });
   advance(match, 216);
   for (const r of match.runners) send(r.slot, 'move', { side: 0, brake: 0 });
   send(0, 'move', { side: 0, walk: true });
@@ -1155,6 +1194,7 @@ test('a runner can dodge a thorn in flight or run into a shot aimed ahead', () =
     const { match, send } = battle('jade');
     const [player, , rival] = match.runners;
     send(2, 'move', { side: 0, brake: 1 });
+    advance(match, 9);
     const hp = rival.hp;
     assert.ok(send(0, 'cast', { skill: 1, dx: rival.x - player.x, dz: rival.z - player.z - lead }));
     match.step();
@@ -1229,7 +1269,7 @@ test('Hammer slams at his feet and each whirlwind pulse can reach a new opponent
   const [hammer, , first, second] = match.runners;
   for (const r of match.runners) {
     r.basic = 300;
-    r.brake = 2.25 / 5.35;
+    r.brake = 0.4;
   }
   hammer.x = hammer.z = first.x = first.z = second.z = 0;
   second.x = 4.5;
@@ -1241,7 +1281,7 @@ test('Hammer slams at his feet and each whirlwind pulse can reach a new opponent
   assert.ok(first.slowed && first.staggered);
   assert.equal(second.hp, HEROES[second.hero].hp);
   assert.ok(send(0, 'cast', { skill: 2 }));
-  assert.ok(send(0, 'move', { side: 1, brake: 2.25 / 5.35 }));
+  assert.ok(send(0, 'move', { side: 1, brake: 0.4 }));
   advance(match, 14);
   assert.equal(second.hp, HEROES[second.hero].hp);
   advance(match, 1);
@@ -1323,7 +1363,7 @@ test('an empty leap lands outside the running lanes and returns smoothly, while 
 
   const other = battle();
   const [caster, , archer, jade] = other.match.runners;
-  for (const r of other.match.runners) other.send(r.slot, 'move', { side: 0, brake: 2.25 / 5.35 });
+  for (const r of other.match.runners) other.send(r.slot, 'move', { side: 0, brake: 0.4 });
   assert.ok(other.send(0, 'cast', { skill: 1 }));
   assert.ok(other.send(1, 'cast', { skill: 2, x: archer.x, z: archer.z }));
   for (const slot of [2, 3])

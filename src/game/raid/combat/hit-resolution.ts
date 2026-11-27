@@ -130,6 +130,7 @@ export class RaidHitResolution {
         victim.spin = null;
         victim.side = 0;
         victim.brake = 0;
+        victim.appliedBrake = 0;
       }
     }
     this.#hits.length = 0;
