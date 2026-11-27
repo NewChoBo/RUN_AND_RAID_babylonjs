@@ -24,3 +24,5 @@ npm run build
 개발진 제공 Player.zip의 전체 변환과 원작 모션 준비 절차는 [Player 에셋 준비](docs/PLAYER-ASSETS.md)에 있습니다.
 
 원본을 준비하면 [에셋 열람 화면](http://127.0.0.1:5198/library.html)에서 캐릭터나 파일명으로 찾아 모델을 회전하고 변환 파일을 내려받을 수 있습니다.
+
+공개 플레이판 배포, Photon 연결 검증, 이어서 지킬 전투 규칙은 [전용 프로젝트 인계 가이드](docs/HANDOFF.md)에 정리했습니다.
