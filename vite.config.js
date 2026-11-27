@@ -12,7 +12,7 @@ export default defineConfig({
     target: 'es2022',
     chunkSizeWarningLimit: 1800,
     rolldownOptions: {
-      input: { game: resolve('index.html') },
+      input: { game: resolve('index.html'), library: resolve('library.html') },
       output: {
         codeSplitting: {
           groups: [
