@@ -504,6 +504,7 @@ export function createRaidLobby(
         if (roomCode && !offline) {
           const invite = document.createElement('span');
           invite.className = 'draft-room-code';
+          invite.dataset.copyable = '';
           invite.textContent = roomCode;
           const [before = '', after = ''] = roomStatus.split(roomCode);
           status.replaceChildren(before, invite, after);

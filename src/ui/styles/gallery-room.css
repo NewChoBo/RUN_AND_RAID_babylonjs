@@ -226,10 +226,6 @@
 .team-versus output {
   color: #fff0c7;
 }
-.draft-room-code {
-  -webkit-user-select: all;
-  user-select: all;
-}
 .team-versus time,
 .picker-clock time {
   color: #ff6959;

@@ -2,7 +2,9 @@ import { landscapeFrame, mountLandscapeFrame } from './platform/browser/game-nav
 import { installLandscapeRecovery, requestLandscape } from './platform/browser/landscape.ts';
 import { initializeUiLanguage } from './platform/browser/ui-language.ts';
 import { uiText } from './content/locales/ui.ts';
+import { installGameGestures } from './platform/browser/game-gestures.ts';
 
+installGameGestures();
 initializeUiLanguage();
 const frame = landscapeFrame();
 const splash = document.querySelector<HTMLElement>('#launch-splash')!;

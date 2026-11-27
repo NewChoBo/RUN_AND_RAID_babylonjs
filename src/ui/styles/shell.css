@@ -2,6 +2,8 @@
   box-sizing: border-box;
 }
 :root {
+  overscroll-behavior: none;
+  touch-action: pan-x pan-y;
   color-scheme: dark;
   --font-ui: 'Malgun Gothic', system-ui, sans-serif;
   --font-display: Georgia, var(--font-ui);
@@ -17,16 +19,30 @@
 body {
   margin: 0;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 body,
 dialog {
   -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none;
 }
 input,
-textarea {
+textarea,
+[contenteditable]:not([contenteditable='false']) {
   -webkit-user-select: text;
   user-select: text;
+}
+input,
+textarea,
+select,
+[contenteditable]:not([contenteditable='false']),
+[data-copyable] {
+  -webkit-touch-callout: default;
+}
+[data-copyable] {
+  -webkit-user-select: all;
+  user-select: all;
 }
 button,
 input,
