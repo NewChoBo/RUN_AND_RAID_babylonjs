@@ -1,4 +1,5 @@
 import { appearance, RAID_RUNNER_SCALE } from './hero-appearance.ts';
+import { heroModelSource } from './hero-model-source.ts';
 import { equipRaidGear } from './raid-equipment.ts';
 import {
   LoadAssetContainerAsync,
@@ -26,7 +27,8 @@ import {
 const clips = ['pulse', 'bolt', 'field', 'fury'] as const;
 
 async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode) {
-  const model = await LoadAssetContainerAsync('./assets/raid/' + hero + '.glb', scene, {
+  const source = heroModelSource(hero);
+  const model = await LoadAssetContainerAsync(source.url, scene, {
     pluginOptions: { gltf: { animationStartMode: 0 } },
   });
   try {
@@ -41,9 +43,11 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode) {
     ]);
     model.addAllToScene();
     model.meshes[0]!.parent = rig;
-    const cape = model.meshes.find((m) => m.name.endsWith('_Cape') || m.name.endsWith('_Cloak'));
-    if (cape) cape.material = raidMaterial(scene, hero + ' mantle', appearance[hero].cape, 0.12);
-    equipRaidGear(scene, hero, model.transformNodes, cape ?? rig);
+    if (!source.authored) {
+      const cape = model.meshes.find((m) => m.name.endsWith('_Cape') || m.name.endsWith('_Cloak'));
+      if (cape) cape.material = raidMaterial(scene, hero + ' mantle', appearance[hero].cape, 0.12);
+      equipRaidGear(scene, hero, model.transformNodes, cape ?? rig);
+    }
     for (const mesh of rig.getChildMeshes()) mesh.isPickable = false;
     return motion;
   } catch (error) {

@@ -37,3 +37,13 @@ uv run --no-project --python 3.13 --with bpy==5.3.0 --with pillow==11.1.0 python
 3ds Max 경로는 설치 위치에 맞춘다. 각 MAX 장면의 타임라인 범위로 스킨과 애니메이션을 베이크한다. 별도로 받은 FBX도 원본 MAX와 동일한 상대경로로 `asset-sources/baked-fbx/`에 둘 수 있다. 예를 들어 `hammer/Animation/hammer#default#run.max`는 `hammer/Animation/hammer#default#run.fbx`와 짝을 이룬다. 변환기는 짝을 이루는 FBX를 우선하고 내보낸 GLB에서 실제 스킨과 클립이 모두 있을 때만 `animated`로 표시한다.
 
 경기용 영웅은 기본 모델 하나에 스킨과 게임용 아홉 클립을 합친 구조다. 각 스킬의 여러 원본 단계가 어느 클립에 해당하는지는 실제 동작과 공식 스킬표를 대조한 뒤 결정한다.
+
+## 경기 모델로 등록
+
+영웅의 스킨 메시와 9개 클립을 하나의 GLB로 정리한 뒤 아래 명령을 실행한다. 예제 경로는 준비한 파일로 바꾼다.
+
+```powershell
+python tools/assets/activate.py hammer C:/art/hammer-ready.glb
+```
+
+등록 가능한 클립 이름은 `run`, `walk`, `jump`, `fall`, `basic`, `pulse`, `bolt`, `field`, `fury`이다. 스킨이 없거나 클립이 빠진 GLB는 등록하기 전에 오류를 표시한다. 게임은 등록한 영웅의 원래 재질과 장비를 사용한다. 등록하지 않은 영웅은 기존 모델로 플레이한다. 로컬 등록 뒤 개발 서버를 다시 열거나 배포본을 다시 빌드한다. 원래 플레이 모델로 되돌리려면 `src/content/raid/ready-heroes/<hero>.json`을 제거한다.

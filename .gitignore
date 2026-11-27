@@ -9,3 +9,4 @@ public/player-assets/
 __pycache__/
 *.blend1
 asset-sources/baked-fbx/
+src/content/raid/ready-heroes/
