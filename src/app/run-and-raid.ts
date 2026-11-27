@@ -159,36 +159,37 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     canvas.inert = true;
   }
   // Prepare the arena before joining Photon so renderer startup cannot delay an online round.
-  let preparing: Promise<boolean> | undefined;
-  function prepareCourse() {
-    return (preparing ??= loadCourse().finally(() => {
-      preparing = undefined;
-    }));
-  }
-  async function loadCourse() {
+  let preparing: Promise<void> | undefined;
+  async function prepareCourse() {
     if (course) return true;
+    const token = attempt;
     const progress = document.getElementById('startup-progress')!;
-    const actions = document.getElementById('menu-actions')!;
-    document.getElementById('startup-error')!.hidden = true;
     state = 'loading';
     progress.hidden = false;
-    actions.hidden = true;
     try {
-      const { openRaidCourse } = await import('../platform/babylon/raid/raid-course.ts');
-      course = await openRaidCourse(canvas, preferences.fpsLimit, () => {
-        keyboardAimPoint = null;
-        hud.aimPad.close();
-      });
-      progress.hidden = true;
-      actions.hidden = false;
-      state = 'setup';
+      await (preparing ??= loadCourse().finally(() => {
+        preparing = undefined;
+      }));
       return true;
     } catch (error) {
-      state = 'setup';
-      actions.hidden = false;
-      showStartupError(error);
+      if (token === attempt) {
+        lobby.reset();
+        showStartupError(error);
+      }
       return false;
+    } finally {
+      if (token === attempt) {
+        progress.hidden = true;
+        state = 'setup';
+      }
     }
+  }
+  async function loadCourse() {
+    const { openRaidCourse } = await import('../platform/babylon/raid/raid-course.ts');
+    course = await openRaidCourse(canvas, preferences.fpsLimit, () => {
+      keyboardAimPoint = null;
+      hud.aimPad.close();
+    });
   }
   async function begin() {
     if (room || !playableViewport.matches || (state !== 'setup' && state !== 'finished')) return;
@@ -342,7 +343,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       leave: () => resetLobby(),
     },
   );
-  function resetLobby(reason?: RoomError, restart = false) {
+  function resetLobby(reason?: RoomError, exiting = false) {
     attempt++;
     clearInterval(timer);
     room?.close();
@@ -359,14 +360,15 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     offlinePick = null;
     canvas.inert = true;
     document.getElementById('overlay')!.hidden = false;
-    lobby.reset(reason, restart);
+    document.getElementById('startup-progress')!.hidden = true;
+    if (exiting) lobby.close();
+    else lobby.reset(reason);
   }
   async function connect(code: string, entry: RaidEntry) {
     if (state !== 'setup' || room) return;
     const token = ++attempt;
-    if (!(await prepareCourse()) || token !== attempt) return;
-
     lobby.pending();
+    if (!(await prepareCourse()) || token !== attempt) return;
     try {
       const id = import.meta.env.VITE_PHOTON_APP_ID;
       if (!id) throw new Error('Missing Photon App ID');
@@ -613,5 +615,5 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       hud.showPanel(match, slot, !!round);
     }
   }
-  return () => resetLobby(undefined, true);
+  return { enter: lobby.open, exit: () => resetLobby(undefined, true) };
 }

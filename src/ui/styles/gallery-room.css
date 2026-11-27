@@ -90,9 +90,6 @@
   margin: 0;
   background: #252424;
 }
-#overlay .drafting > h2 {
-  display: none;
-}
 #overlay .drafting > .team-seats {
   grid-area: 1/1/2/4;
   display: grid;
@@ -391,37 +388,61 @@
 #overlay #menu-actions {
   grid-template-columns: minmax(0, 1fr);
 }
-#overlay .raid-lobby:not(.drafting) {
-  width: min(100%, 720px);
-  margin: auto;
-  padding: 0 0 0.75rem;
+#match-menu {
+  width: min(30rem, calc(100% - 24px));
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+  padding: 0;
+  color: #f8f0de;
+  background: #302c29;
+  border: 2px ridge #b6a589;
+  border-radius: 6px;
+  box-shadow: 0 12px 40px #0008;
 }
-#overlay .raid-lobby:not(.drafting) > div:last-of-type {
-  display: flex;
-  justify-content: center;
+#match-menu::backdrop {
+  background: #100e0bb8;
+}
+#match-menu header {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
   align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  margin: clamp(8px, 3vh, 24px);
+  color: #352d23;
+  background: linear-gradient(#fff5df, #c7b99e);
 }
-#overlay .raid-lobby:not(.drafting) > div:last-of-type button {
-  min-height: 48px;
-  min-width: 84px;
-  font-size: 1rem;
-}
-#overlay .raid-lobby:not(.drafting) > div:last-of-type button:nth-child(-n + 4) {
-  flex: 1 1 30%;
-  min-height: clamp(56px, 17vh, 110px);
-  font-size: clamp(1rem, 3vw, 1.65rem);
-}
-#overlay .raid-lobby:not(.drafting) input {
-  flex: 0 1 10em;
-  min-height: 48px;
-}
-#overlay .raid-lobby:not(.drafting) > output {
-  display: block;
+#match-heading {
+  grid-column: 2;
+  margin: 0;
+  font-size: clamp(1.05rem, 2.8vw, 1.4rem);
   text-align: center;
 }
-#overlay .raid-lobby:not(.drafting) > output:empty {
-  display: none;
+#match-menu header button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: 1.6rem/1 var(--font-ui);
+}
+#match-menu .match-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: clamp(8px, 3dvh, 20px);
+}
+#match-menu .match-options > * {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+#match-menu .match-options > :nth-child(-n + 4) {
+  min-height: clamp(54px, 13dvh, 80px);
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+}
+#match-menu .match-options > :last-child {
+  grid-column: 1 / -1;
+}
+#match-menu > :is(p, output):not(:empty) {
+  display: block;
+  margin: 0;
+  padding: 0.55rem 1rem;
+  text-align: center;
 }

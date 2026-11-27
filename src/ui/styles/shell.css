@@ -41,6 +41,10 @@ a {
 button:disabled {
   cursor: default;
 }
+dialog:modal {
+  inset: 0;
+  margin: auto;
+}
 #game {
   display: block;
   width: 100vw;

@@ -18,8 +18,18 @@ export function createRaidLobby(
   const group = document.createElement('section');
   group.className = 'raid-lobby';
   parent.append(group);
-  const heading = document.createElement('h2');
-  heading.textContent = t('online');
+  const dialog = document.querySelector<HTMLDialogElement>('#match-menu')!;
+  const heading = dialog.querySelector('h2')!;
+  const options = dialog.querySelector<HTMLElement>('.match-options')!;
+  const message = dialog.querySelector('output')!;
+  const dismiss = () => {
+    location.hash = '/home';
+  };
+  dialog.querySelector('button')!.onclick = dismiss;
+  dialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    dismiss();
+  });
   const controls = document.createElement('div');
   const code = document.createElement('input');
   code.placeholder = t('roomCode');
@@ -133,13 +143,12 @@ export function createRaidLobby(
   selection.append(title, cards);
   picker.append(selection, profile, confirm);
   draft.append(choose, lock, outfitButton, notice);
-  group.append(heading, status, teams, versus, draft, controls, picker);
+  group.append(status, teams, versus, draft, controls, picker);
   function button(label: string, click: () => void) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = label;
     b.onclick = click;
-    controls.append(b);
     return b;
   }
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -154,11 +163,7 @@ export function createRaidLobby(
       'host',
     ),
   );
-  const enterCode = button('참가하기', () => {
-    menu('code');
-    code.focus();
-  });
-  controls.append(code);
+  const enterCode = button('참가하기', () => menu('code'));
   const join = button(t('joinRoom'), () => actions.connect(code.value, 'join'));
   code.oninput = () => {
     code.value = code.value.toUpperCase().replace(/[^A-Z2-9]/g, '');
@@ -171,14 +176,19 @@ export function createRaidLobby(
   const leave = button(t('leaveRoom'), actions.leave);
   const back = button('뒤로', () => menu(page === 'code' ? 'private' : 'entry'));
   const practice = button('오프라인 봇 연습', actions.practice);
+  options.append(quick, privateRooms, host, enterCode, code, join, practice, back);
+  controls.append(start, leave);
   let page: 'entry' | 'private' | 'code' = 'entry';
   function menu(next: typeof page) {
     page = next;
-    status.textContent = '';
     show('entry');
   }
   function show(stage: 'entry' | 'connecting' | 'draft') {
     const room = stage !== 'entry';
+    group.hidden = stage !== 'draft';
+    options.hidden = room;
+    message.textContent = '';
+    document.getElementById('startup-error')!.hidden = true;
     quick.hidden = privateRooms.hidden = room || page !== 'entry';
     host.hidden = enterCode.hidden = room || page !== 'private';
     code.hidden = join.hidden = room || page !== 'code';
@@ -193,7 +203,6 @@ export function createRaidLobby(
           : page === 'private'
             ? '사설방'
             : '방 코드 입력';
-    leave.hidden = !room;
     if (stage !== 'draft') start.hidden = true;
     teams.replaceChildren();
     draft.hidden = versus.hidden = stage !== 'draft';
@@ -201,21 +210,35 @@ export function createRaidLobby(
     group.classList.toggle('drafting', stage === 'draft');
     parent.classList.toggle('in-room', room);
     join.disabled = code.value.length !== 6;
+    if (stage === 'draft') {
+      if (dialog.open) {
+        dialog.close();
+        choose.focus({ preventScroll: true });
+      }
+    } else {
+      if (!dialog.open) dialog.showModal();
+      const focus = room ? heading : page === 'code' ? code : page === 'private' ? host : quick;
+      focus.focus({ preventScroll: true });
+    }
   }
-  show('entry');
   return {
+    open() {
+      menu('entry');
+    },
+    close() {
+      dialog.close();
+      picker.close();
+    },
     closePicker() {
       if (picker.open) picker.close();
     },
     pending() {
       preview = actions.selected();
       show('connecting');
-      status.textContent = t('connecting');
     },
-    reset(reason?: RoomError, restart = false) {
-      if (restart) page = 'entry';
+    reset(reason?: RoomError) {
       show('entry');
-      status.textContent = reason ? t(reason) : '';
+      message.textContent = reason ? t(reason) : '';
       practice.hidden = !(reason && page === 'private');
     },
     room(roomCode: string, members: DraftSeat[], actor: number, isHost: boolean, offline = false) {

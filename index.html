@@ -68,7 +68,7 @@
             <svg><use href="#cup" /></svg>랭킹
           </button>
         </nav>
-        <a class="play" href="#/ready">게임시작</a>
+        <a class="play" href="#/ready" aria-haspopup="dialog">게임시작</a>
         <div class="wallet" aria-label="재화">
           <button data-wip aria-label="골드 23873, 충전"><i>●</i>23873 <b>+</b></button
           ><button data-wip aria-label="보석 0"><i>◆</i>0</button>
@@ -144,9 +144,17 @@
         </div>
         <div class="room-layout">
           <div id="menu-actions" class="raid-setup"></div>
+        </div>
+        <dialog id="match-menu" aria-labelledby="match-heading">
+          <header>
+            <h2 id="match-heading" tabindex="-1">게임 모드 선택</h2>
+            <button type="button" aria-label="닫기">×</button>
+          </header>
           <p id="startup-progress" role="status" hidden>경기장 불러오는 중…</p>
           <p id="startup-error" role="alert" hidden></p>
-        </div>
+          <output aria-live="polite"></output>
+          <div class="match-options"></div>
+        </dialog>
       </section>
       <section id="library" aria-label="원작 에셋" hidden>
         <header>

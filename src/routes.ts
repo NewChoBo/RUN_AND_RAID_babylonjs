@@ -10,7 +10,7 @@ const home = document.querySelector<HTMLButtonElement>('[data-home]')!;
 const shop = document.querySelector<HTMLButtonElement>('[data-shop]')!;
 const gallery = document.querySelector<HTMLElement>('#shop-gallery')!;
 const play = document.querySelector<HTMLAnchorElement>('.play')!;
-let exitRaid: (() => void) | undefined;
+let raid: ReturnType<typeof prepareRaid> | undefined;
 
 function route() {
   const screen =
@@ -22,7 +22,8 @@ function route() {
           ? 'shop'
           : 'home';
   if (lobby.dataset.screen === screen) return;
-  if (lobby.dataset.screen === 'ready') exitRaid?.();
+  const leavingRaid = lobby.dataset.screen === 'ready';
+  if (leavingRaid) raid?.exit();
   lobby.dataset.screen = screen;
   document.body.classList.toggle('raid-mode', screen === 'ready');
   overlay.hidden = screen !== 'ready';
@@ -40,18 +41,19 @@ function route() {
   else home.removeAttribute('aria-current');
   play.textContent = screen === 'ready' ? '대기실' : '게임시작';
   if (screen === 'ready') {
-    exitRaid ??= prepareRaid((error) => {
+    raid ??= prepareRaid((error) => {
       console.error(error);
-      document.querySelector<HTMLElement>('#startup-progress')!.hidden = true;
       const message = document.querySelector<HTMLElement>('#startup-error')!;
       message.textContent = '경기장을 열지 못했습니다. 다시 시도해 주세요.';
       message.hidden = false;
     });
-    document.querySelector<HTMLElement>('#title-name')!.focus({ preventScroll: true });
+    raid.enter();
   } else if (screen === 'shop') {
     void import('./app/shop.ts');
   } else if (screen === 'assets') {
     void import('./app/asset-library.ts');
+  } else if (leavingRaid) {
+    play.focus({ preventScroll: true });
   }
 }
 home.addEventListener('click', () => {
