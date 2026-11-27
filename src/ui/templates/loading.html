@@ -1,0 +1,38 @@
+<dialog id="launch-splash" aria-labelledby="loading-title" open>
+  <img
+    class="loading-art"
+    src="./assets/raid/lobby/returning-runners.webp"
+    alt=""
+    fetchpriority="high"
+  />
+  <h1 id="loading-title" tabindex="-1">
+    <span lang="ko">런앤레이드</span><span lang="en">Run &amp; Raid</span>
+  </h1>
+  <div class="loading-footer">
+    <div class="loading-rule" aria-hidden="true"></div>
+    <div class="loading-caption">
+      <div class="loading-tip">
+        <strong><span lang="ko">플레이 팁</span><span lang="en">Play tip</span></strong>
+        <p id="loading-tip">
+          <span lang="ko">느낌표에서 위로 밀면 아군에게 전진 신호를 보냅니다.</span
+          ><span lang="en"
+            >Drag up from the exclamation mark to tell your teammate to advance.</span
+          >
+        </p>
+      </div>
+      <p class="loading-status" role="status">
+        <span lang="ko">게임 불러오는 중…</span><span lang="en">Loading game…</span>
+      </p>
+    </div>
+    <div class="loading-recovery" role="alert">
+      <p>
+        <span lang="ko">게임 화면을 불러오지 못했습니다.</span
+        ><span lang="en">Could not load the game.</span>
+      </p>
+      <button type="button" onclick="location.reload()">
+        <span lang="ko">다시 불러오기</span><span lang="en">Reload</span>
+      </button>
+    </div>
+  </div>
+  <button type="button" class="loading-cancel" hidden></button>
+</dialog>

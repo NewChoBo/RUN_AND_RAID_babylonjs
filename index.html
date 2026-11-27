@@ -12,17 +12,39 @@
         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
       )
         document.documentElement.dataset.mobile = '';
+      // The splash is readable while the game modules are still downloading.
+      try {
+        const language =
+          new URLSearchParams(location.search).get('lang') ??
+          localStorage.getItem('run-and-raid.ui-language');
+        if (language && new Intl.Locale(language).language === 'en')
+          document.documentElement.lang = 'en';
+      } catch {
+        // Korean is the default when storage or the language tag is unavailable.
+      }
+      window.addEventListener(
+        'error',
+        (event) => {
+          if (event.target instanceof HTMLScriptElement && event.target.type === 'module') {
+            document.documentElement.classList.add('launch-error');
+            window.frameElement?.gameReady?.();
+          }
+        },
+        true,
+      );
     </script>
     <title data-i18n="homeTitle">런앤레이드 · 로비</title>
     <link rel="icon" href="./favicon.ico" />
     <link rel="stylesheet" href="./src/ui/styles/shell.css" />
+    <link rel="stylesheet" href="./src/ui/styles/loading.css" />
     <link rel="stylesheet" href="./src/ui/styles/home.css" />
     <link rel="stylesheet" href="./src/ui/styles/ready.css" />
     <link rel="stylesheet" href="./src/ui/styles/gallery-room.css" />
   </head>
   <body>
+    <!-- ui: loading -->
     <!-- ui: toolbar-icons -->
-    <main data-i18n-aria="lobbyArea" class="lobby" aria-label="런앤레이드 로비">
+    <main data-i18n-aria="lobbyArea" class="lobby" aria-label="런앤레이드 로비" inert>
       <!-- ui: toolbar -->
       <!-- ui: home -->
       <!-- ui: shop -->
@@ -49,11 +71,6 @@
       <a href="#/home" data-i18n="returnToLobby">로비로 돌아가기</a>
     </dialog>
 
-    <section data-i18n-aria="launchScreen" id="launch-splash" aria-label="게임 시작 화면">
-      <img src="./assets/raid/lobby/returning-runners.webp" alt="" />
-      <h1 data-i18n="gameName">런앤레이드</h1>
-      <p data-i18n="loadingGame" role="status">게임 불러오는 중…</p>
-    </section>
     <dialog id="message" aria-labelledby="message-text">
       <p id="message-text"></p>
       <form method="dialog"><button data-i18n="ok" autofocus>확인</button></form>

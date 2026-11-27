@@ -12,6 +12,8 @@ const home = document.querySelector<HTMLButtonElement>('[data-home]')!;
 const shop = document.querySelector<HTMLButtonElement>('[data-shop]')!;
 const gallery = document.querySelector<HTMLElement>('#shop-gallery')!;
 const play = document.querySelector<HTMLAnchorElement>('.play')!;
+const startupError = document.querySelector<HTMLElement>('#startup-error')!;
+startupError.querySelector('button')!.onclick = () => location.reload();
 let raid: ReturnType<typeof prepareRaid> | undefined;
 
 function route() {
@@ -44,9 +46,7 @@ function route() {
   if (screen === 'ready') {
     raid ??= prepareRaid((error) => {
       console.error(error);
-      const message = document.querySelector<HTMLElement>('#startup-error')!;
-      message.textContent = uiText('arenaError');
-      message.hidden = false;
+      startupError.hidden = false;
     });
     raid.enter();
   } else if (screen === 'shop') {
@@ -64,6 +64,7 @@ shop.onclick = () => {
   location.hash = '/shop';
 };
 window.addEventListener('hashchange', route);
+lobby.inert = false;
 route();
 installSettings();
 installViewportLimit(document.querySelector<HTMLDialogElement>('#viewport-limit')!);

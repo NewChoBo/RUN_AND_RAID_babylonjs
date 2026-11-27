@@ -178,7 +178,6 @@ body.raid-mode #game {
 #overlay .raid-pick-grid img {
   height: clamp(30px, 7vh, 58px);
 }
-#startup-progress,
 #startup-error {
   padding: 1em;
 }

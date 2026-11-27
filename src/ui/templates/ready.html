@@ -11,8 +11,10 @@
       <h2 data-i18n="chooseMode" id="match-heading" tabindex="-1">게임 모드 선택</h2>
       <button data-i18n-aria="close" type="button" aria-label="닫기">×</button>
     </header>
-    <p data-i18n="arenaLoading" id="startup-progress" role="status" hidden>경기장 불러오는 중…</p>
-    <p id="startup-error" role="alert" hidden></p>
+    <div id="startup-error" hidden>
+      <p role="alert" data-i18n="arenaError">경기장을 열지 못했습니다. 다시 시도해 주세요.</p>
+      <button type="button" data-i18n="reload">다시 불러오기</button>
+    </div>
     <output aria-live="polite"></output>
     <div class="match-options"></div>
   </dialog>

@@ -27,6 +27,7 @@ import {
   type RaidAimInput,
 } from '../ui/raid-aim-pad.ts';
 import { playableViewport } from '../ui/viewport-limit.ts';
+import { closeLoadingScreen, showArenaLoading } from '../ui/loading-screen.ts';
 
 export function prepareRaid(showStartupError: (error: unknown) => void) {
   const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
@@ -167,9 +168,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   async function prepareCourse() {
     if (course) return true;
     const token = attempt;
-    const progress = document.getElementById('startup-progress')!;
     state = 'loading';
-    progress.hidden = false;
+    showArenaLoading(() => resetLobby());
     try {
       await (preparing ??= loadCourse().finally(() => {
         preparing = undefined;
@@ -177,13 +177,13 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       return true;
     } catch (error) {
       if (token === attempt) {
-        lobby.reset();
+        resetLobby();
         showStartupError(error);
       }
       return false;
     } finally {
       if (token === attempt) {
-        progress.hidden = true;
+        closeLoadingScreen();
         state = 'setup';
       }
     }
@@ -361,6 +361,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   );
   function resetLobby(reason?: RoomError, exiting = false) {
     attempt++;
+    if (state === 'loading') closeLoadingScreen();
     clearInterval(timer);
     room?.close();
     room = undefined;
@@ -377,7 +378,6 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     offlinePick = null;
     canvas.inert = true;
     document.getElementById('overlay')!.hidden = false;
-    document.getElementById('startup-progress')!.hidden = true;
     if (exiting) lobby.close();
     else lobby.reset(reason);
   }
@@ -461,7 +461,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   }
   window.addEventListener('pagehide', () => {
     clearInterval(timer);
-    if (room || offline) resetLobby();
+    if (room || offline || state === 'loading') resetLobby();
     else attempt++;
   });
   canvas.addEventListener('pointermove', (e) => {

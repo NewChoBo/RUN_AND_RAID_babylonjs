@@ -13,6 +13,7 @@ export function landscapeFrame(): LandscapeFrame | null {
 export function mountLandscapeFrame(
   request: LandscapeFrame['requestGameLandscape'],
   splash: HTMLElement,
+  closeSplash: () => void,
 ) {
   const host = document.createElement('div');
   host.className = 'landscape-host';
@@ -22,7 +23,7 @@ export function mountLandscapeFrame(
   frame.title = document.title;
   frame.requestGameLandscape = request;
   frame.gameReady = () => {
-    splash.remove();
+    closeSplash();
     frame.inert = false;
   };
   frame.inert = true;
