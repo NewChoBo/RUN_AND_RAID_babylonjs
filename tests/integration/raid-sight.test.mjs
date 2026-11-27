@@ -41,6 +41,18 @@ test('the runner ground ring projects at about 70% for direction and placement a
     return edge(0.5) - edge(-0.5);
   }
   const running = ringWidth();
+  // The neutral footage places the foot ring near 72% of the screen height.
+  const transform = camera.getTransformationMatrix();
+  const foot = Vector3.Project(Vector3.Zero(), Matrix.IdentityReadOnly, transform, viewport);
+  const horizon = Vector3.Project(
+    new Vector3(0, 0, 1e5),
+    Matrix.IdentityReadOnly,
+    transform,
+    viewport,
+  );
+  assert.ok(Math.abs(foot.y / viewport.height - 0.72) < 0.015);
+  assert.ok(Math.abs(horizon.y / viewport.height - 0.31) < 0.015);
+  assert.ok(Math.abs((running * 0.9375) / viewport.height - 0.104) < 0.005);
   assert.equal(ringWidth('pulse'), running);
   for (const kind of ['direction', 'leap', 'field'])
     assert.ok(Math.abs(ringWidth(kind) / running - 0.7) < 0.04);

@@ -9,11 +9,11 @@ export function raidAimPullback(kind?: RaidAim['kind']) {
   switch (kind) {
     case 'target':
     case 'ward':
-      return 10.8;
+      return 9;
     case 'direction':
     case 'field':
     case 'leap':
-      return 5.8;
+      return 3.85;
     default:
       return 0;
   }
@@ -23,8 +23,8 @@ export function raidAimPullback(kind?: RaidAim['kind']) {
 export function raidCameraPose(runner: RaidPoint, pullback = 0) {
   const lift = pullback * 0.055;
   return {
-    eye: { x: runner.x, y: 6.3 + lift, z: runner.z - 10.5 - pullback },
-    look: { x: runner.x, y: 1.3 + lift, z: runner.z + 7.4 - pullback },
+    eye: { x: runner.x, y: 3.63 + lift, z: runner.z - 8.34 - pullback },
+    look: { x: runner.x, y: 1.43 + lift, z: runner.z + 3.07 - pullback },
   };
 }
 
