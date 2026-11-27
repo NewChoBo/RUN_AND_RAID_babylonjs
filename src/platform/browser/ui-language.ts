@@ -1,4 +1,4 @@
-import { getLocale, resolveLocale, setLocale, type Locale } from '../../content/locales/locale.ts';
+import { getLocale, resolveLocale, setLocale } from '../../content/locales/locale.ts';
 import { uiText, type UiMessage } from '../../content/locales/ui.ts';
 import { replaceGameUrl } from './game-navigation.ts';
 
@@ -40,15 +40,13 @@ export function initializeUiLanguage() {
   }
 }
 
-export function installLanguagePickers(pickers: NodeListOf<HTMLSelectElement>) {
-  let selected: Locale = getLocale();
+export function installLanguagePicker(picker: HTMLSelectElement) {
+  picker.value = getLocale();
   function applyWhenOutOfRoom() {
-    if (selected !== getLocale() && location.hash !== '#/ready') location.reload();
+    if (picker.value !== getLocale() && location.hash !== '#/ready') location.reload();
   }
-  function change(choice: Locale) {
-    if (choice === selected) return;
-    selected = choice;
-    for (const picker of pickers) picker.value = choice;
+  picker.onchange = () => {
+    const choice = resolveLocale(picker.value);
     const url = new URL(location.href);
     try {
       localStorage.setItem(storageKey, choice);
@@ -58,10 +56,6 @@ export function installLanguagePickers(pickers: NodeListOf<HTMLSelectElement>) {
     }
     replaceGameUrl(url);
     applyWhenOutOfRoom();
-  }
-  for (const picker of pickers) {
-    picker.value = selected;
-    picker.onchange = () => change(resolveLocale(picker.value));
-  }
+  };
   window.addEventListener('hashchange', applyWhenOutOfRoom);
 }

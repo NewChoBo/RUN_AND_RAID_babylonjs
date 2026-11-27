@@ -1,7 +1,7 @@
 import { startupText } from '../content/locales/startup.ts';
 import { uiText } from '../content/locales/ui.ts';
 import { landscapeFrame } from '../platform/browser/game-navigation.ts';
-import { installLanguagePickers } from '../platform/browser/ui-language.ts';
+import { installLanguagePicker } from '../platform/browser/ui-language.ts';
 
 const dialog = document.querySelector<HTMLDialogElement>('#game-settings')!;
 const toggle = dialog.querySelector<HTMLButtonElement>('#settings-fullscreen')!;
@@ -29,7 +29,7 @@ export function installSettings() {
   document.querySelector<HTMLButtonElement>(
     '.lobby-toolbar [aria-controls="game-settings"]',
   )!.onclick = openSettings;
-  installLanguagePickers(document.querySelectorAll<HTMLSelectElement>('[data-ui-language]'));
+  installLanguagePicker(dialog.querySelector<HTMLSelectElement>('#settings-language')!);
   toggle.onclick = async () => {
     switching = toggle.disabled = true;
     status.textContent = '';
