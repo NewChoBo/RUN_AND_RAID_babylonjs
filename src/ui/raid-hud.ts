@@ -1,4 +1,4 @@
-import { localOutfits } from '../content/raid/local-outfits.ts';
+import { raidOutfits } from '../content/raid/outfits.ts';
 import { raidSkill } from '../game/raid/heroes/hero-catalog.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import {
@@ -77,11 +77,11 @@ export function createRaidHud(
   for (const hero of HERO_IDS)
     select.add(new Option(t('runnerRange', { name: t(hero), range: HEROES[hero].reach }), hero));
   let outfit: HTMLSelectElement | undefined;
-  if (localOutfits.length) {
+  if (raidOutfits.length) {
     outfit = element('select', element('label', setup, '봇 연습 외형'));
     outfit.add(new Option('주자 기본 외형', ''));
     const groups = new Map<string, HTMLOptGroupElement>();
-    for (const { group, skin, model } of localOutfits) {
+    for (const { group, skin, model } of raidOutfits) {
       let options = groups.get(group);
       if (!options) {
         options = element('optgroup', outfit);

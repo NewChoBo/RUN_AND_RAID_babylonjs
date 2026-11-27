@@ -1,0 +1,532 @@
+[
+  {
+    "group": "abyss",
+    "skin": "death",
+    "model": "./assets/fighters/8c49692cbd53c98fb70f.glb"
+  },
+  {
+    "group": "abyss",
+    "skin": "default",
+    "model": "./assets/fighters/1656cd78cfa2f5df08b4.glb"
+  },
+  {
+    "group": "abyss",
+    "skin": "fire",
+    "model": "./assets/fighters/e2aed33d78da6852b794.glb"
+  },
+  {
+    "group": "abyss",
+    "skin": "judgement",
+    "model": "./assets/fighters/32aaf752a46516862a80.glb"
+  },
+  {
+    "group": "airi",
+    "skin": "default",
+    "model": "./assets/fighters/6d021a5c2af943a3c727.glb"
+  },
+  {
+    "group": "airi",
+    "skin": "skin2",
+    "model": "./assets/fighters/bf7321a7c58945e042b9.glb"
+  },
+  {
+    "group": "alice",
+    "skin": "bug",
+    "model": "./assets/fighters/be7fdce5d9ac58dd7d02.glb"
+  },
+  {
+    "group": "alice",
+    "skin": "dark",
+    "model": "./assets/fighters/fda370b577b5f58698c4.glb"
+  },
+  {
+    "group": "alice",
+    "skin": "default",
+    "model": "./assets/fighters/1962a0bea913175b9903.glb"
+  },
+  {
+    "group": "alice",
+    "skin": "dorothy",
+    "model": "./assets/fighters/b425ca2499603de92db9.glb"
+  },
+  {
+    "group": "alice",
+    "skin": "hanbok",
+    "model": "./assets/fighters/e094624d5792754cdb51.glb"
+  },
+  {
+    "group": "alice",
+    "skin": "skin3",
+    "model": "./assets/fighters/f618ceaf0c14a73074b4.glb"
+  },
+  {
+    "group": "alice",
+    "skin": "wonderland",
+    "model": "./assets/fighters/74045ee77c3afce31379.glb"
+  },
+  {
+    "group": "base",
+    "skin": "assassin",
+    "model": "./assets/fighters/b85eb502d8acfcccb2d5.glb"
+  },
+  {
+    "group": "base",
+    "skin": "beast",
+    "model": "./assets/fighters/d0494d16ee5ef57e2d50.glb"
+  },
+  {
+    "group": "base",
+    "skin": "beast_big",
+    "model": "./assets/fighters/b83b098c36daab4c2bc8.glb"
+  },
+  {
+    "group": "base",
+    "skin": "girl",
+    "model": "./assets/fighters/1c140a87b095a0eb90f5.glb"
+  },
+  {
+    "group": "base",
+    "skin": "kali#skin2",
+    "model": "./assets/fighters/4a8c5d57c5ab4d05feb0.glb"
+  },
+  {
+    "group": "base",
+    "skin": "man base#default",
+    "model": "./assets/fighters/1aa4bfdfd6deb1fb8934.glb"
+  },
+  {
+    "group": "base",
+    "skin": "witchdoctor",
+    "model": "./assets/fighters/068d0fb121f1ffe7f4d8.glb"
+  },
+  {
+    "group": "base",
+    "skin": "youngirl",
+    "model": "./assets/fighters/81535979fb241efd8355.glb"
+  },
+  {
+    "group": "bird",
+    "skin": "default",
+    "model": "./assets/fighters/d4a88e25e8c50babf555.glb"
+  },
+  {
+    "group": "bird",
+    "skin": "bigbird#default",
+    "model": "./assets/fighters/d4a88e25e8c50babf555.glb"
+  },
+  {
+    "group": "demon",
+    "skin": "default",
+    "model": "./assets/fighters/59668d62c9c463d0b67f.glb"
+  },
+  {
+    "group": "demonslayer",
+    "skin": "default",
+    "model": "./assets/fighters/3800585a33ced37ddc4a.glb"
+  },
+  {
+    "group": "drizz",
+    "skin": "default",
+    "model": "./assets/fighters/72418fa5e0c63e73c2a1.glb"
+  },
+  {
+    "group": "drizz",
+    "skin": "demon",
+    "model": "./assets/fighters/b7f1ba89ceeb8191379e.glb"
+  },
+  {
+    "group": "drizz",
+    "skin": "dragonarms",
+    "model": "./assets/fighters/d8f623b03dd6f981aefc.glb"
+  },
+  {
+    "group": "dwight",
+    "skin": "default",
+    "model": "./assets/fighters/2c249ffde7605fa2370e.glb"
+  },
+  {
+    "group": "dwight",
+    "skin": "suit",
+    "model": "./assets/fighters/5a4e8a20de2e9b4ff6f8.glb"
+  },
+  {
+    "group": "elfprince",
+    "skin": "default",
+    "model": "./assets/fighters/fcb29b0729903e462df3.glb"
+  },
+  {
+    "group": "elfprince",
+    "skin": "skin2",
+    "model": "./assets/fighters/0c4188011c46ab6e3817.glb"
+  },
+  {
+    "group": "ella",
+    "skin": "bigbird#default",
+    "model": "./assets/fighters/c60c2bed75d02de937b7.glb"
+  },
+  {
+    "group": "ella",
+    "skin": "bird#default",
+    "model": "./assets/fighters/d91bef44b25af42c73d2.glb"
+  },
+  {
+    "group": "ella",
+    "skin": "bird#goddessofvictory",
+    "model": "./assets/fighters/d6d461a39faea7f273e9.glb"
+  },
+  {
+    "group": "ella",
+    "skin": "default",
+    "model": "./assets/fighters/0b3d3c6f8f6c1a14f3b0.glb"
+  },
+  {
+    "group": "ella",
+    "skin": "goddessofvictory",
+    "model": "./assets/fighters/67c42c0369787083f6b9.glb"
+  },
+  {
+    "group": "ella",
+    "skin": "skin2",
+    "model": "./assets/fighters/e5a09c0630f7592fcaf9.glb"
+  },
+  {
+    "group": "ent",
+    "skin": "default",
+    "model": "./assets/fighters/90aa23a66794d8865081.glb"
+  },
+  {
+    "group": "flare",
+    "skin": "battlemage",
+    "model": "./assets/fighters/a0a0dcb3e330bed5591d.glb"
+  },
+  {
+    "group": "flare",
+    "skin": "default",
+    "model": "./assets/fighters/24d2c4bd2745f3b5ad09.glb"
+  },
+  {
+    "group": "flare",
+    "skin": "oriental",
+    "model": "./assets/fighters/fa92166411b02b796e94.glb"
+  },
+  {
+    "group": "flare",
+    "skin": "police",
+    "model": "./assets/fighters/f9e8162484d4e897b07d.glb"
+  },
+  {
+    "group": "freesia",
+    "skin": "bee",
+    "model": "./assets/fighters/f5981cac9070feb1a9d8.glb"
+  },
+  {
+    "group": "freesia",
+    "skin": "default",
+    "model": "./assets/fighters/602e9724925006a5b1bb.glb"
+  },
+  {
+    "group": "froze",
+    "skin": "citygirl",
+    "model": "./assets/fighters/915011be7e145d9ccc9e.glb"
+  },
+  {
+    "group": "froze",
+    "skin": "default",
+    "model": "./assets/fighters/d9b32ebc2e3aa988bfd4.glb"
+  },
+  {
+    "group": "froze",
+    "skin": "roadcat",
+    "model": "./assets/fighters/000e340e559a11f7ab06.glb"
+  },
+  {
+    "group": "froze",
+    "skin": "schoolgirl",
+    "model": "./assets/fighters/cf0c82d9afb44cbf0cde.glb"
+  },
+  {
+    "group": "general",
+    "skin": "default",
+    "model": "./assets/fighters/3bd8d2b0e8cc35e0aa84.glb"
+  },
+  {
+    "group": "goblin",
+    "skin": "default",
+    "model": "./assets/fighters/9a16364951021333a834.glb"
+  },
+  {
+    "group": "hammer",
+    "skin": "default",
+    "model": "./assets/fighters/79758b24db6d900c31f5.glb"
+  },
+  {
+    "group": "hammer",
+    "skin": "doomguard",
+    "model": "./assets/fighters/49e2f00ee52a2c65f532.glb"
+  },
+  {
+    "group": "hammer",
+    "skin": "royalguard",
+    "model": "./assets/fighters/45e7cbc06ea6aee8c7ea.glb"
+  },
+  {
+    "group": "hammer",
+    "skin": "warmachine",
+    "model": "./assets/fighters/98ed067e403486ea66dd.glb"
+  },
+  {
+    "group": "hof",
+    "skin": "astronaut",
+    "model": "./assets/fighters/42df9c26b3faddafd8e4.glb"
+  },
+  {
+    "group": "hof",
+    "skin": "default",
+    "model": "./assets/fighters/ac833d4a03902548a0f3.glb"
+  },
+  {
+    "group": "hof",
+    "skin": "western",
+    "model": "./assets/fighters/ecf998ea0eebc221a2fb.glb"
+  },
+  {
+    "group": "jade",
+    "skin": "assistant",
+    "model": "./assets/fighters/2e802e6812f13a9f09a7.glb"
+  },
+  {
+    "group": "jade",
+    "skin": "default",
+    "model": "./assets/fighters/1360542928d625e4810b.glb"
+  },
+  {
+    "group": "jade",
+    "skin": "masterwizard",
+    "model": "./assets/fighters/c50be1f7afcdad790860.glb"
+  },
+  {
+    "group": "kaiken",
+    "skin": "default",
+    "model": "./assets/fighters/4fb7906a7712e8dd009c.glb"
+  },
+  {
+    "group": "kaiken",
+    "skin": "onimusha",
+    "model": "./assets/fighters/8ca2ad8f4d8aceb804a0.glb"
+  },
+  {
+    "group": "kaiken",
+    "skin": "sin",
+    "model": "./assets/fighters/c8e9d579e7b6f0d068cf.glb"
+  },
+  {
+    "group": "kaiken",
+    "skin": "suit",
+    "model": "./assets/fighters/20a16daabf1745f100e9.glb"
+  },
+  {
+    "group": "kali",
+    "skin": "default",
+    "model": "./assets/fighters/431f3baf34a3f640bbf8.glb"
+  },
+  {
+    "group": "kali",
+    "skin": "may",
+    "model": "./assets/fighters/d5fbb172d25182950ea2.glb"
+  },
+  {
+    "group": "kali",
+    "skin": "nun",
+    "model": "./assets/fighters/aaa52a2609e8097723e5.glb"
+  },
+  {
+    "group": "kali",
+    "skin": "nurse",
+    "model": "./assets/fighters/eb1acbe48834baf723f0.glb"
+  },
+  {
+    "group": "kali",
+    "skin": "thiefguild",
+    "model": "./assets/fighters/b840eac4b0003ab14da1.glb"
+  },
+  {
+    "group": "longshot",
+    "skin": "default",
+    "model": "./assets/fighters/290927287fdcb687eb94.glb"
+  },
+  {
+    "group": "longshot",
+    "skin": "default2",
+    "model": "./assets/fighters/049184aa5c65a8a38b31.glb"
+  },
+  {
+    "group": "longshot",
+    "skin": "hitman",
+    "model": "./assets/fighters/4287492ca9f0765346e1.glb"
+  },
+  {
+    "group": "longshot",
+    "skin": "hitman2",
+    "model": "./assets/fighters/c6b367c69d9f10660546.glb"
+  },
+  {
+    "group": "longshot",
+    "skin": "royalguard",
+    "model": "./assets/fighters/32959662ad9591e4ffe8.glb"
+  },
+  {
+    "group": "longshot",
+    "skin": "royalguard2",
+    "model": "./assets/fighters/411bb99531a466fb8120.glb"
+  },
+  {
+    "group": "longshot",
+    "skin": "thiefguild",
+    "model": "./assets/fighters/f1e002cad0cfcdf23ab2.glb"
+  },
+  {
+    "group": "magnus",
+    "skin": "armoredforces",
+    "model": "./assets/fighters/bd04f7d9c81deb0d35dc.glb"
+  },
+  {
+    "group": "magnus",
+    "skin": "default",
+    "model": "./assets/fighters/5b15fa1e0bea65b84a74.glb"
+  },
+  {
+    "group": "magnus",
+    "skin": "oz",
+    "model": "./assets/fighters/4926a533ee728fdaa111.glb"
+  },
+  {
+    "group": "orc",
+    "skin": "default",
+    "model": "./assets/fighters/dce2e2cc3146e4530f66.glb"
+  },
+  {
+    "group": "rildin",
+    "skin": "default",
+    "model": "./assets/fighters/0bdfbc9bea20a249fcfe.glb"
+  },
+  {
+    "group": "rildin",
+    "skin": "fallen",
+    "model": "./assets/fighters/245a445cbc9b56b53823.glb"
+  },
+  {
+    "group": "rildin",
+    "skin": "party",
+    "model": "./assets/fighters/6c7134e5ae96d20b4498.glb"
+  },
+  {
+    "group": "rildin",
+    "skin": "rugged",
+    "model": "./assets/fighters/09bc0e7bb08989b64c93.glb"
+  },
+  {
+    "group": "rildin",
+    "skin": "skin2",
+    "model": "./assets/fighters/779a9bc36668108d640c.glb"
+  },
+  {
+    "group": "rildin",
+    "skin": "skin3",
+    "model": "./assets/fighters/7d4ebfd1562861f1594f.glb"
+  },
+  {
+    "group": "shaman",
+    "skin": "default",
+    "model": "./assets/fighters/164f777ae64c8924f956.glb"
+  },
+  {
+    "group": "silurian",
+    "skin": "china",
+    "model": "./assets/fighters/16ef03a60228eb7e0cff.glb"
+  },
+  {
+    "group": "silurian",
+    "skin": "default",
+    "model": "./assets/fighters/d87ef262f48350c115da.glb"
+  },
+  {
+    "group": "swift",
+    "skin": "bunny",
+    "model": "./assets/fighters/eed01ed25e52ca5b18e5.glb"
+  },
+  {
+    "group": "swift",
+    "skin": "default",
+    "model": "./assets/fighters/c03b8c569d35db3d8c6d.glb"
+  },
+  {
+    "group": "swift",
+    "skin": "musician",
+    "model": "./assets/fighters/e8e4c9a3aa831815140d.glb"
+  },
+  {
+    "group": "swift",
+    "skin": "secretary",
+    "model": "./assets/fighters/34179698e5a365033e15.glb"
+  },
+  {
+    "group": "swift",
+    "skin": "skin2",
+    "model": "./assets/fighters/971937f095fb072314a8.glb"
+  },
+  {
+    "group": "swift",
+    "skin": "skin3",
+    "model": "./assets/fighters/e8e4c9a3aa831815140d.glb"
+  },
+  {
+    "group": "theresa",
+    "skin": "default",
+    "model": "./assets/fighters/9d3b59964914a2815cf0.glb"
+  },
+  {
+    "group": "theresa",
+    "skin": "retinue",
+    "model": "./assets/fighters/da7bd11c06398223ff7a.glb"
+  },
+  {
+    "group": "theresa",
+    "skin": "skin2",
+    "model": "./assets/fighters/dd53a139bb610a76986a.glb"
+  },
+  {
+    "group": "theresa",
+    "skin": "skin3",
+    "model": "./assets/fighters/45770ffbab1983b8e288.glb"
+  },
+  {
+    "group": "theresa",
+    "skin": "skin4",
+    "model": "./assets/fighters/3e5cfe633ef5b3703ffd.glb"
+  },
+  {
+    "group": "theresa",
+    "skin": "varlet",
+    "model": "./assets/fighters/0b8e68fd22a9aa52050f.glb"
+  },
+  {
+    "group": "vallet",
+    "skin": "default",
+    "model": "./assets/fighters/b690b5375e857518a97e.glb"
+  },
+  {
+    "group": "vallet",
+    "skin": "lady",
+    "model": "./assets/fighters/a03f4cdb76ac0a6adc54.glb"
+  },
+  {
+    "group": "vallet",
+    "skin": "navy",
+    "model": "./assets/fighters/7e20295bda30dfcc9a9d.glb"
+  },
+  {
+    "group": "vallet",
+    "skin": "skin1",
+    "model": "./assets/fighters/b9f711e0a23bea57bb4c.glb"
+  }
+]

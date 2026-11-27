@@ -1,4 +1,4 @@
-import { localOutfits } from '../../../content/raid/local-outfits.ts';
+import { raidOutfits } from '../../../content/raid/outfits.ts';
 import type { RaidHero } from '../../../game/raid/heroes/hero-id.ts';
 
 const installed = import.meta.glob<{ file: string }>('../../../content/raid/ready-heroes/*.json', {
@@ -17,7 +17,7 @@ export function heroModelSource(hero: RaidHero, outfit?: string) {
     return { url: './player-assets/' + local.file, authored: true, still: false };
   }
   const original =
-    outfit ?? localOutfits.find((o) => o.group === hero && o.skin === 'default')?.model;
-  if (original) return { url: './player-assets/' + original, authored: true, still: true };
+    outfit ?? raidOutfits.find((o) => o.group === hero && o.skin === 'default')?.model;
+  if (original) return { url: original, authored: true, still: true };
   return { url: './assets/raid/' + hero + '.glb', authored: false, still: false };
 }
