@@ -2,9 +2,18 @@ import { characterName, illustrations } from '../content/raid/gallery.ts';
 import outfits from '../content/raid/published-outfits.json' with { type: 'json' };
 import type { AssetContainer } from '@babylonjs/core';
 import type { createView } from '../platform/babylon/model-preview.ts';
+import { choiceCard, touchPicker } from '../ui/touch-picker.ts';
 const root = document.querySelector<HTMLElement>('#shop-gallery')!;
-const hero = root.querySelector<HTMLSelectElement>('#gallery-hero')!;
-const items = root.querySelector<HTMLSelectElement>('#gallery-item')!;
+const hero = root.querySelector<HTMLButtonElement>('#gallery-hero')!;
+const items = root.querySelector<HTMLElement>('#gallery-item')!;
+let currentHero = '해머';
+const picker = touchPicker(hero, '캐릭터', (value) => {
+  currentHero = value;
+  list();
+});
+window.addEventListener('hashchange', () => {
+  if (location.hash !== '#/shop') picker.close();
+});
 const image = root.querySelector<HTMLImageElement>('img')!;
 const canvas = root.querySelector('canvas')!;
 const caption = root.querySelector('strong')!;
@@ -19,12 +28,12 @@ let catalog = art;
 let request = 0;
 let model: AssetContainer | undefined;
 let view: ReturnType<typeof createView> | undefined;
-async function select() {
+async function select(item: (typeof art)[number]) {
   const id = ++request;
-  const item = catalog.find((i) => i.url === items.value);
   model?.dispose();
   model = undefined;
-  if (!item) return;
+  for (const b of items.querySelectorAll('button'))
+    b.setAttribute('aria-pressed', String(b.value === item.url));
   caption.textContent = catalog === art ? item.title : item.group + ' · ' + item.title;
   canvas.hidden = catalog === art;
   image.hidden = !canvas.hidden;
@@ -58,23 +67,33 @@ image.onerror = () => {
   if (catalog === art) status.textContent = '일러스트를 불러올 수 없습니다.';
 };
 function list() {
-  const rows = catalog.filter((i) => i.group === hero.value);
-  items.replaceChildren(...rows.map((i) => new Option(i.title, i.url)));
-  items.value = (rows.find((i) => i.title === '기본') ?? rows[0])!.url;
-  void select();
+  const rows = catalog.filter((i) => i.group === currentHero);
+  items.replaceChildren(
+    ...rows.map((i) => {
+      const card = choiceCard(
+        { label: i.title, value: i.url, image: catalog === art ? i.url : undefined },
+        false,
+        () => void select(i),
+      );
+      card.value = i.url;
+      return card;
+    }),
+  );
+  items.scrollTop = 0;
+  void select((rows.find((i) => i.title === '기본') ?? rows[0])!);
 }
 function mode(next: typeof catalog) {
-  const previous = hero.value;
   catalog = next;
   const groups = [...new Set(catalog.map((i) => i.group))];
-  hero.replaceChildren(...groups.map((g) => new Option(g, g)));
-  hero.value = groups.includes(previous) ? previous : '해머';
+  if (!groups.includes(currentHero)) currentHero = '해머';
+  picker.set(
+    groups.map((g) => ({ label: g, value: g, image: art.find((i) => i.group === g)?.url })),
+    currentHero,
+  );
   for (const b of root.querySelectorAll<HTMLButtonElement>('[data-mode]'))
     b.setAttribute('aria-pressed', String((b.dataset.mode === 'art') === (catalog === art)));
   list();
 }
-hero.onchange = list;
-items.onchange = () => void select();
 for (const b of root.querySelectorAll<HTMLButtonElement>('[data-mode]'))
   b.onclick = () => mode(b.dataset.mode === 'art' ? art : models);
 mode(art);

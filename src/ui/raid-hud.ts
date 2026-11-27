@@ -1,4 +1,6 @@
 import { raidOutfits } from '../content/raid/outfits.ts';
+import { characterName } from '../content/raid/gallery.ts';
+import { touchPicker } from './touch-picker.ts';
 import { raidSkill } from '../game/raid/heroes/hero-catalog.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import {
@@ -75,27 +77,37 @@ export function createRaidHud(
   solo.className = 'solo-setup';
   element('h2', solo, t('solo'));
   element('p', solo, t('rules'));
-  const label = element('label', solo, t('hero'));
-  const select = element('select', label);
-  for (const hero of HERO_IDS)
-    select.add(new Option(t('runnerRange', { name: t(hero), range: HEROES[hero].reach }), hero));
-  let outfit: HTMLSelectElement | undefined;
+  const select = button(solo, '');
+  let runner: RaidHero = HERO_IDS[0];
+  const runners = HERO_IDS.map((hero) => ({
+    value: hero,
+    label: t(hero),
+    image: './assets/raid/portraits/' + hero + '.webp',
+  }));
+  const runnerPicker = touchPicker(select, t('hero'), (value) => {
+    runner = value as RaidHero;
+    showHero();
+  });
+  let outfit: string | undefined;
+  let outfitPicker: ReturnType<typeof touchPicker> | undefined;
   if (raidOutfits.length) {
-    outfit = element('select', element('label', solo, '봇 연습 외형'));
-    outfit.add(new Option('주자 기본 외형', ''));
-    const groups = new Map<string, HTMLOptGroupElement>();
-    for (const { group, skin, model } of raidOutfits) {
-      let options = groups.get(group);
-      if (!options) {
-        options = element('optgroup', outfit);
-        options.label = group;
-        groups.set(group, options);
-      }
-      options.append(new Option(group + ' · ' + skin, model));
-    }
+    outfitPicker = touchPicker(button(solo, ''), '연습 외형', (value) => {
+      outfit = value || undefined;
+    });
+    outfitPicker.set(
+      [
+        { label: '주자 기본 외형', group: '주자 기본 외형', value: '' },
+        ...raidOutfits.map((o) => ({
+          value: o.model,
+          group: characterName(o.group),
+          label: characterName(o.group) + ' · ' + (o.skin === 'default' ? '기본' : o.skin),
+        })),
+      ],
+      '',
+    );
   }
   const profile = document.querySelector<HTMLElement>('#solo-profile')!;
-  const selected = () => select.value as RaidHero;
+  const selected = () => runner;
   const heroInfo = {
     hammer: 'hammerInfo',
     abyss: 'abyssInfo',
@@ -111,11 +123,14 @@ export function createRaidHud(
   } as const;
   function showHero() {
     const hero = selected();
+    runnerPicker.set(runners, hero);
     profile.querySelector('img')!.src = './assets/raid/portraits/' + hero + '.webp';
-    profile.querySelector('strong')!.textContent = t(hero);
+    profile.querySelector('strong')!.textContent = t('runnerRange', {
+      name: t(hero),
+      range: HEROES[hero].reach,
+    });
     profile.querySelector('p')!.textContent = t(heroInfo[hero]);
   }
-  select.onchange = showHero;
   showHero();
   solo.append(start);
   const guide = element('details', solo);
@@ -484,14 +499,16 @@ export function createRaidHud(
     aimPad,
     drawCombatNumbers,
     selected,
-    outfit: () => outfit?.value || undefined,
+    outfit: () => outfit,
     setup,
     select,
     selectHero(hero: RaidHero) {
-      select.value = hero;
+      runner = hero;
       showHero();
     },
     reset() {
+      runnerPicker.close();
+      outfitPicker?.close();
       root.hidden = panel.hidden = true;
       aimPad.close();
       stick.reset();

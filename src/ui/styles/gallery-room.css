@@ -42,20 +42,6 @@
   border-right: 2px ridge #837761;
   background: #342f2b;
 }
-.gallery-body label,
-.gallery-body select {
-  display: block;
-  width: 100%;
-}
-.gallery-body label + label {
-  margin-top: 0.7rem;
-}
-.gallery-body select {
-  background: #241f1c;
-  color: #fff0d5;
-  border: 1px solid #837761;
-  font: inherit;
-}
 .gallery-body figure {
   margin: 0;
   display: grid;
@@ -274,7 +260,125 @@
   #overlay .runner-picker .raid-pick-profile p {
     font-size: 0.7rem;
   }
-  .gallery-body select {
-    font-size: 0.85rem;
+}
+
+.touch-picker {
+  width: min(94vw, 780px);
+  max-height: 90dvh;
+  padding: 0;
+  color: #fff1d4;
+  background: #2a2724;
+  border: 3px ridge #a89878;
+}
+.touch-picker::backdrop {
+  background: #15110dd9;
+}
+.touch-picker[open] {
+  display: flex;
+  flex-direction: column;
+}
+.touch-picker header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 8px;
+  background: linear-gradient(#564d40, #312b25);
+}
+.touch-picker > div {
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+.touch-picker nav {
+  width: clamp(115px, 23vw, 180px);
+  flex: none;
+  overflow: auto;
+  padding: 5px;
+}
+.touch-picker nav button {
+  display: block;
+  width: 100%;
+  margin-bottom: 3px;
+}
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  flex: 1;
+  align-content: start;
+  gap: 4px;
+  overflow: auto;
+  padding: 5px;
+}
+.choice-card,
+.touch-picker header button {
+  color: #312b21;
+  background: linear-gradient(#f8eed8, #b7a78f);
+  border: 1px solid #86765d;
+}
+.choice-card {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  padding: 4px;
+  overflow-wrap: anywhere;
+}
+.choice-card img {
+  height: clamp(40px, 12dvh, 82px);
+  width: 100%;
+  object-fit: contain;
+}
+.choice-card[aria-pressed='true'] {
+  background: linear-gradient(#758d2a, #3c5117);
+  color: white;
+}
+.touch-picker button,
+#shop-gallery button,
+#overlay .raid-lobby button,
+#overlay .solo-setup button,
+.runner-picker button,
+#overlay .room-heading a,
+#overlay summary {
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+#overlay .room-heading a,
+#overlay summary {
+  align-content: center;
+}
+#overlay .solo-setup > button[aria-haspopup] {
+  width: calc(100% - 1.3rem);
+  text-align: left;
+}
+#shop-gallery aside {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+}
+#gallery-item {
+  display: grid;
+  gap: 4px;
+  overflow: auto;
+  align-content: start;
+}
+#gallery-item .choice-card img {
+  height: clamp(42px, 11dvh, 95px);
+  object-fit: cover;
+}
+#gallery-hero {
+  flex: none;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  #items button,
+  #details,
+  #message button,
+  #overlay .raid-lobby input {
+    min-height: 44px;
+  }
+  .lobby-toolbar nav button,
+  .play {
+    min-height: 44px;
   }
 }
