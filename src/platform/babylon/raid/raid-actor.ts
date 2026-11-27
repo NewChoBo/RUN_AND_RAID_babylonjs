@@ -39,9 +39,26 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
     model.addAllToScene();
     const root = model.meshes[0]!;
     if (source.still) {
-      root.normalizeToUnitCube(true);
-      root.scaling.scaleInPlace(2);
-      root.position.y -= root.getHierarchyBoundingVectors().min.y;
+      if (source.bodyHeight !== undefined) {
+        // Kaiken's first body primitive contains the head and boots; the sword is separate.
+        const bodyMesh = model.meshes.find((mesh) =>
+          /^Kaiken_body(?:_primitive0)?$/i.test(mesh.name),
+        );
+        if (!bodyMesh) throw new Error('Missing Kaiken body mesh');
+        const bounds = root.getHierarchyBoundingVectors(true, (mesh) => mesh === bodyMesh);
+        const height = bounds.max.y - bounds.min.y;
+        if (!(height > 0)) throw new Error('Empty Kaiken body bounds');
+        const worldScale = RAID_RUNNER_SCALE * rig.scaling.y;
+        root.scaling.scaleInPlace(source.bodyHeight / (height * worldScale));
+        root.position.y -= root.getHierarchyBoundingVectors(
+          true,
+          (mesh) => mesh === bodyMesh,
+        ).min.y;
+      } else {
+        root.normalizeToUnitCube(true);
+        root.scaling.scaleInPlace(2);
+        root.position.y -= root.getHierarchyBoundingVectors().min.y;
+      }
     }
     root.parent = rig;
     if (!source.authored) {
@@ -54,7 +71,7 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
       model.materials.push(...scene.materials.slice(materialCount));
     }
     for (const mesh of rig.getChildMeshes()) mesh.isPickable = false;
-    return { model, motion };
+    return { model, motion, bodyHeight: source.bodyHeight };
   } catch (error) {
     model.dispose();
     throw error;
@@ -109,6 +126,7 @@ export function createRaidActor(
         }
         current = loaded;
         motion = loaded.motion;
+        bar.position.y = Math.max(defaultBarHeight, (loaded.bodyHeight ?? 0) + 0.26);
         loading = false;
         if (art.empoweredMesh)
           greatsword = rig.getChildMeshes().find((mesh) => mesh.name === art.empoweredMesh);
@@ -155,7 +173,8 @@ export function createRaidActor(
     scene,
   );
   bar.parent = root;
-  bar.position.y = (art.barHeight ?? 2.2) * RAID_RUNNER_SCALE;
+  const defaultBarHeight = (art.barHeight ?? 2.2) * RAID_RUNNER_SCALE;
+  bar.position.y = defaultBarHeight;
   bar.material = raidMaterial(scene, hero + ' health surround', '#303341');
   const life = MeshBuilder.CreateBox(
     hero + ' health',

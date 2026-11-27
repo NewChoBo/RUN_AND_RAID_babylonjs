@@ -16,8 +16,15 @@ export function heroModelSource(hero: RaidHero, outfit?: string) {
   ) {
     return { url: './player-assets/' + local.file, authored: true, still: false };
   }
-  const original =
-    outfit ?? raidOutfits.find((o) => o.group === hero && o.skin === 'default')?.model;
-  if (original) return { url: original, authored: true, still: true };
+  const original = outfit
+    ? raidOutfits.find((o) => o.model === outfit)
+    : raidOutfits.find((o) => o.group === hero && o.skin === 'default');
+  if (original)
+    return {
+      url: original.model,
+      authored: true,
+      still: true,
+      bodyHeight: original.group === 'kaiken' ? 1.9 : undefined,
+    };
   return { url: './assets/raid/' + hero + '.glb', authored: false, still: false };
 }
