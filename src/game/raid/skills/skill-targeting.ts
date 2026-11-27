@@ -3,7 +3,7 @@ import { attackArea } from './attack-rule.ts';
 import { measureSkill } from './skill-range.ts';
 import { areaTargets } from './attack-area.ts';
 import { distance } from '../raid-rules.ts';
-import { limitRaidDash, limitRaidPlacement, raidGroundPointAfter } from '../runner-motion.ts';
+import { limitRaidDash, limitRaidLeap, raidGroundPointAfter } from '../runner-motion.ts';
 import type { RaidAim, RaidPoint, RaidTarget, Skill } from '../raid-view.ts';
 import type { CombatRead } from '../heroes/hero-definition.ts';
 import type { ResolvedCast, SkillInfo } from './skill-rule.ts';
@@ -30,7 +30,8 @@ export function resolveSkill(
   const target = kind === 'target' || kind === 'ward' ? id : undefined;
   const requested =
     kind === 'pulse' ? combat.self : target === undefined ? ground : combat.targetPoint(target);
-  const point = kind === 'leap' && requested ? limitRaidPlacement(requested) : requested;
+  const point =
+    kind === 'leap' && requested ? limitRaidLeap(combat.self, requested, range) : requested;
   const metres = point ? distance(combat.self, point) : null;
   let status: RaidAim['status'] = 'ready';
   const direction =

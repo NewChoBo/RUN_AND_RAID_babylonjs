@@ -1,6 +1,12 @@
 import { Color3, MeshBuilder, StandardMaterial, Vector3, type Scene } from '@babylonjs/core';
 import { raidLeapHeight, type RaidAim } from '../../../game/raid/raid-match.ts';
-import { RAID_FRONT_Z, raidGroundPointAfter } from '../../../game/raid/runner-motion.ts';
+import { RAID_LEAP_TICKS } from '../../../game/raid/raid-rules.ts';
+import {
+  RAID_FRONT_Z,
+  RAID_REAR_Z,
+  raidRoadTravel,
+  raidGroundPointAfter,
+} from '../../../game/raid/runner-motion.ts';
 
 import { createRaidFlightGuide } from './raid-flight-guide.ts';
 
@@ -33,6 +39,7 @@ export function createRaidAimGuide(scene: Scene) {
   });
   const rim = points.map((point) => point.clone());
   let frontFraction = 1;
+  let rearFraction = -1;
   const boundary = MeshBuilder.CreateLines(
     'skill cast range',
     { points: rim, updatable: true },
@@ -73,10 +80,20 @@ export function createRaidAimGuide(scene: Scene) {
         (kind === 'leap' || aim.dash) && range > 0
           ? Math.min(1, (RAID_FRONT_Z - center.z) / range)
           : 1;
-      if (front !== frontFraction) {
-        for (let i = 0; i < rim.length; i++) rim[i]!.z = Math.min(points[i]!.z, front);
+      const rearEdge = RAID_REAR_Z + (kind === 'leap' ? raidRoadTravel(RAID_LEAP_TICKS) : 0);
+      const rear =
+        (kind === 'leap' || aim.dash) && range > 0
+          ? Math.max(-1, (rearEdge - center.z) / range)
+          : -1;
+      if (front !== frontFraction || rear !== rearFraction) {
+        const halfWidth = rear > 0 ? Math.sqrt(Math.max(0, 1 - rear * rear)) : 1;
+        for (let i = 0; i < rim.length; i++) {
+          rim[i]!.z = Math.max(rear, Math.min(points[i]!.z, front));
+          rim[i]!.x = Math.max(-halfWidth, Math.min(points[i]!.x, halfWidth));
+        }
         MeshBuilder.CreateLines('skill cast range', { points: rim, instance: boundary }, scene);
         frontFraction = front;
+        rearFraction = rear;
       }
       boundary.position.set(center.x, 0.09, center.z);
       boundary.scaling.set(range, 1, range);

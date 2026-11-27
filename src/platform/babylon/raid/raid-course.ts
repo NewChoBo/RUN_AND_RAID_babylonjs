@@ -123,7 +123,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     return mesh;
   }
   // Keep two extra rear spans under the wider aiming camera, including after a backward leap.
-  const roadLength = 120;
+  const roadLength = 144;
   const roadWidth = 18;
   const pavingTilesPerMetre = 24 / 104;
   const ground = MeshBuilder.CreateGround(
@@ -149,7 +149,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   }
   const pieces = span.getChildMeshes();
   const spans = [span];
-  for (let i = 1; i < 14; i++) {
+  for (let i = 1; i < 17; i++) {
     const next = new TransformNode('bridge span ' + i, scene);
     for (const mesh of pieces) {
       const part = mesh as ReturnType<typeof MeshBuilder.CreateBox>;
@@ -309,7 +309,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     const runnerPosition = positions[player.slot]!;
     // Recycle whole paving tiles and bridge spans around the camera runner without sliding the road.
     ground.position.z =
-      20 + Math.floor(runnerPosition.z * pavingTilesPerMetre) / pavingTilesPerMetre;
+      32 + Math.floor(runnerPosition.z * pavingTilesPerMetre) / pavingTilesPerMetre;
     paving.vOffset = scroll * pavingTilesPerMetre;
     const spanOrigin = Math.floor((runnerPosition.z + scroll) / 8) * 8 - scroll;
     spans.forEach((s, i) => {
@@ -396,8 +396,10 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
         ? goal
         : goal + (pullback - goal) * Math.exp(-dt / 0.1);
     const pose = raidCameraPose(runnerPosition, pullback);
-    scene.fogStart = 19 + pullback;
-    scene.fogEnd = 66 + pullback;
+    // Keep the wagon readable when the runner brakes far behind it.
+    const fogOffset = pullback + Math.max(0, WAGON.z - runnerPosition.z - 36);
+    scene.fogStart = 19 + fogOffset;
+    scene.fogEnd = 66 + fogOffset;
     camera.position.copyFromFloats(pose.eye.x, pose.eye.y, pose.eye.z);
     look.set(pose.look.x, pose.look.y, pose.look.z);
     camera.setTarget(look);

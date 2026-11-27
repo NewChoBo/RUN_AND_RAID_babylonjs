@@ -99,10 +99,13 @@ export function driveRaidBots(
         (partner.hp <= HEROES[partner.hero].hp - 15 && view.canShield(r.slot, partner.slot)));
     const distance = Math.hypot(point.x - r.x, point.z - r.z);
     // The marker is a road tile. Lead the moving formation by the road travel during the jump.
-    const leapAim = limitRaidPlacement({
-      x: point.x,
-      z: point.z + raidRoadTravel(RAID_LEAP_TICKS),
-    });
+    const leapAim = limitRaidPlacement(
+      {
+        x: point.x,
+        z: point.z + raidRoadTravel(RAID_LEAP_TICKS),
+      },
+      RAID_LEAP_TICKS,
+    );
     const landing = raidGroundPointAfter(leapAim, RAID_LEAP_TICKS);
     const landingGap = Math.hypot(point.x - landing.x, point.z - landing.z);
     const canLeap =

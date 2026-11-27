@@ -650,18 +650,42 @@ test('Bolt requires its own target and never changes the basic attack target', (
   assert.equal(match.runners[3].hp, HEROES.jade.hp);
   assert.equal(match.damage[0], 0);
 });
-test('a runner can hold a 36 m rear gap, then close with the wagon and attack it automatically', () => {
+test('a runner can hold a 56 m rear gap, then close with the wagon and attack it automatically', () => {
   const { match, send } = battle();
   send(0, 'move', { side: -1, walk: true });
-  advance(match, 300);
-  assert.equal(WAGON.z - match.runners[0].z, 36);
+  advance(match, 600);
+  assert.equal(WAGON.z - match.runners[0].z, 56);
   assert.ok(match.runners[0].x < -1.6);
   send(0, 'move', { side: 1, walk: false });
   advance(match, 30);
   send(0, 'move', { side: 0, walk: false });
-  advance(match, 450);
+  advance(match, 750);
   assert.ok(match.runners[0].z > 7);
   assert.ok(match.damage[0] > 0);
+});
+test('leaps and backward dashes stop at the rear edge as the wagon moves', () => {
+  const rear = WAGON.z - 56;
+  for (const hero of ['hammer', 'rildin']) {
+    const { match } = battle(hero);
+    const r = match.runners[0];
+    r.z = rear;
+    if (hero === 'hammer') {
+      // A lateral rim pick needs room for the wagon travel during the leap.
+      const requested = { x: r.x + 10, z: rear };
+      const preview = match.previewSkill(0, 0, requested);
+      assert.equal(preview.status, 'ready');
+      assert.ok(match.cast(0, 0, preview.point));
+    } else {
+      r.z += 1;
+      assert.ok(match.cast(0, 2, { dx: 0, dz: -1 }));
+    }
+    const ticks = r.dash?.ticks ?? RAID_LEAP_TICKS;
+    for (let i = 0; i < ticks; i++) {
+      match.step();
+      assert.ok(r.z >= rear - 1e-8);
+    }
+    assert.ok(Math.abs(r.z - rear) < 1e-8);
+  }
 });
 test('each runner opens fire as the wagon crosses the radius of their basic attack', () => {
   for (const [hero, metres] of Object.entries({ hammer: 3.1, abyss: 8, jade: 9, longshot: 12 })) {

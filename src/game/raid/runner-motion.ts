@@ -10,21 +10,33 @@ export const raidLeapHeight = (fraction: number) => 2.2 * 4 * fraction * (1 - fr
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 // Metres per second relative to the wagon, from a free run to full braking.
 const forwardSpeed = (brake: number) => 2.25 * (1 - brake) - 3.1 * brake;
-// Longitudinal separation from the objective during ordinary running, in metres.
-const rearGap = 36;
+// Wagon-relative rear boundary estimated from the distant chase frames in docs/CAMERA.md.
+export const RAID_REAR_Z = WAGON.z - 56;
 export const RAID_FRONT_Z = WAGON.z - 1.6;
 
 /** A picked road tile or instantaneous placement, in the current wagon frame. */
-export function limitRaidPlacement(point: RaidPoint): RaidPoint {
-  return point.z > RAID_FRONT_Z ? { x: point.x, z: RAID_FRONT_Z } : point;
+export function limitRaidPlacement(point: RaidPoint, travelTicks = 0): RaidPoint {
+  const z = clamp(point.z, RAID_REAR_Z + raidRoadTravel(travelTicks), RAID_FRONT_Z);
+  return z === point.z ? point : { x: point.x, z };
 }
 
-/** Intersect the dash segment with the moving front limit. Return a road endpoint at cast time. */
+/** Keep a clipped leap within its cast disc even when the rear edge moves past the caster. */
+export function limitRaidLeap(caster: RaidPoint, requested: RaidPoint, range: number): RaidPoint {
+  const point = limitRaidPlacement(requested, RAID_LEAP_TICKS);
+  if (point === requested || point.z <= caster.z || point.z <= requested.z) return point;
+  const halfWidth = Math.sqrt(Math.max(0, range * range - (point.z - caster.z) ** 2));
+  const x = clamp(point.x, caster.x - halfWidth, caster.x + halfWidth);
+  return { x, z: point.z };
+}
+
+/** Intersect the dash segment with either longitudinal limit. Return a road endpoint at cast time. */
 export function limitRaidDash(from: RaidPoint, to: RaidPoint, ticks: number): RaidPoint {
   const travel = raidRoadTravel(ticks);
-  if (to.z <= RAID_FRONT_Z + travel) return to;
-  const fraction = (RAID_FRONT_Z - from.z) / (to.z - travel - from.z);
-  return { x: from.x + (to.x - from.x) * fraction, z: RAID_FRONT_Z + travel };
+  const arrivalZ = to.z - travel;
+  if (arrivalZ >= RAID_REAR_Z && arrivalZ <= RAID_FRONT_Z) return to;
+  const edge = clamp(arrivalZ, RAID_REAR_Z, RAID_FRONT_Z);
+  const fraction = (edge - from.z) / (arrivalZ - from.z);
+  return { x: from.x + (to.x - from.x) * fraction, z: edge + travel };
 }
 // Outside the running corridor after a leap, return at running speed without snapping to its edge.
 function runAxis(position: number, delta: number, low: number, high: number, recovery: number) {
@@ -41,7 +53,8 @@ export function raidRunnerHeight(r: RaidRunner, subtick = 0) {
 }
 /** Predict up to one tick from the current ground position for both the match and the camera. */
 export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint {
-  if (r.heroView.rootedTicks) return raidGroundPointAfter(r, ticks);
+  if (r.heroView.rootedTicks)
+    return { x: r.x, z: Math.max(RAID_REAR_Z, r.z - raidRoadTravel(ticks)) };
   const dash = r.staggered ? null : r.dash;
   const motion = dash ?? r.leap;
   if (motion) {
@@ -60,13 +73,7 @@ export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint
   const seconds = r.respawn || r.staggered ? 0 : (ticks / RAID_HZ) * (r.slowed ? 0.55 : 1);
   return {
     x: runAxis(r.x, r.side * 4.8 * seconds, -5, 5, 4.8 * seconds),
-    z: runAxis(
-      r.z,
-      forwardSpeed(r.brake) * seconds,
-      WAGON.z - rearGap,
-      RAID_FRONT_Z,
-      3.1 * seconds,
-    ),
+    z: runAxis(r.z, forwardSpeed(r.brake) * seconds, RAID_REAR_Z, RAID_FRONT_Z, 3.1 * seconds),
   };
 }
 export const jumpHeight = (ticks: number) =>
