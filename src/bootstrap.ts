@@ -1,6 +1,9 @@
 import { landscapeFrame, mountLandscapeFrame } from './platform/browser/game-navigation.ts';
 import { installLandscapeRecovery, requestLandscape } from './platform/browser/landscape.ts';
+import { initializeUiLanguage } from './platform/browser/ui-language.ts';
+import { uiText } from './content/locales/ui.ts';
 
+initializeUiLanguage();
 const frame = landscapeFrame();
 const splash = document.querySelector<HTMLElement>('#launch-splash')!;
 if (!frame && document.documentElement.hasAttribute('data-mobile')) {
@@ -16,9 +19,9 @@ if (!frame && document.documentElement.hasAttribute('data-mobile')) {
     .catch(() => {
       frame?.gameReady();
       splash.classList.add('launch-error');
-      splash.querySelector('p')!.textContent = '게임 화면을 불러오지 못했습니다.';
+      splash.querySelector('p')!.textContent = uiText('launchError');
       const retry = document.createElement('button');
-      retry.textContent = '다시 불러오기';
+      retry.textContent = uiText('reload');
       retry.onclick = () => location.reload();
       splash.append(retry);
     });

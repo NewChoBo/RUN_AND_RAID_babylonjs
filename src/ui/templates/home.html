@@ -1,27 +1,32 @@
 <section class="banner">
   <img
+    data-i18n-alt="bannerAlt"
     class="banner-art"
     alt="성문 앞에서 다시 만난 릴딘, 롱샷, 칼리"
     src="./assets/raid/lobby/returning-runners.webp"
   />
-  <h1>환영합니다!</h1>
-  <p>저도 그리움에 사무쳐 돌아오신 여러분들이 그리웠습니다.</p>
-  <small>- 팬 복각 버전입니다 -</small>
+  <h1 data-i18n="welcome">환영합니다!</h1>
+  <p data-i18n="welcomeMessage">저도 그리움에 사무쳐 돌아오신 여러분들이 그리웠습니다.</p>
+  <small data-i18n="fanEdition">- 팬 복각 버전입니다 -</small>
+  <select id="ui-language" data-i18n-aria="language" aria-label="언어">
+    <option value="ko" lang="ko">한국어</option>
+    <option value="en" lang="en">English</option>
+  </select>
 </section>
 <section class="board">
   <div class="list">
-    <h2>개발일지</h2>
-    <div class="columns">구분 <span>제목</span></div>
+    <h2 data-i18n="devLog">개발일지</h2>
+    <div data-i18n="category" class="columns">구분 <span data-i18n="postTitle">제목</span></div>
     <div id="items"></div>
   </div>
   <article>
-    <h2>내용</h2>
+    <h2 data-i18n="post">내용</h2>
     <div class="article-body">
       <div class="article-title">
-        <h3 id="subject"></h3>
-        <button id="details">자세히 보러가기</button>
+        <h3 id="subject" lang="ko"></h3>
+        <button data-i18n="details" id="details">자세히 보러가기</button>
       </div>
-      <p id="body" aria-live="polite"></p>
+      <p id="body" lang="ko" aria-live="polite"></p>
     </div>
   </article>
 </section>

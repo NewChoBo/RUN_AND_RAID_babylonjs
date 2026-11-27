@@ -1,19 +1,28 @@
-<section id="shop-gallery" aria-label="상점 감상실" hidden>
+<section data-i18n-aria="shopGallery" id="shop-gallery" aria-label="상점 감상실" hidden>
   <header>
-    <h1>상점</h1>
-    <div aria-label="감상 종류">
-      <button type="button" data-mode="art" aria-pressed="true">일러스트</button
-      ><button type="button" data-mode="model" aria-pressed="false">캐릭터 모델</button>
+    <h1 data-i18n="shop">상점</h1>
+    <div data-i18n-aria="galleryMode" aria-label="감상 종류">
+      <button data-i18n="illustrations" type="button" data-mode="art" aria-pressed="true">
+        일러스트</button
+      ><button data-i18n="characterModels" type="button" data-mode="model" aria-pressed="false">
+        캐릭터 모델
+      </button>
     </div>
   </header>
   <div class="gallery-body">
     <aside>
-      <button type="button" id="gallery-hero">캐릭터 선택</button>
-      <div id="gallery-item" aria-label="작품 · 외형" role="group"></div>
+      <button data-i18n="chooseCharacter" type="button" id="gallery-hero">캐릭터 선택</button>
+      <div
+        data-i18n-aria="artAndOutfits"
+        id="gallery-item"
+        aria-label="작품 · 외형"
+        role="group"
+      ></div>
     </aside>
     <figure>
       <div class="gallery-stage">
         <img id="gallery-art" alt="" referrerpolicy="no-referrer" /><canvas
+          data-i18n-aria="modelCanvas"
           id="gallery-model"
           aria-label="회전 및 확대 가능한 캐릭터 모델"
           hidden

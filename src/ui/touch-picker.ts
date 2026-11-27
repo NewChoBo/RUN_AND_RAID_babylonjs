@@ -1,3 +1,4 @@
+import { uiText } from '../content/locales/ui.ts';
 export type TouchChoice = { value: string; label: string; image?: string; group?: string };
 
 export function choiceCard(choice: TouchChoice, active: boolean, choose: () => void) {
@@ -30,12 +31,12 @@ export function touchPicker(
   const heading = document.createElement('strong');
   heading.textContent = title;
   const close = document.createElement('button');
-  close.textContent = '닫기';
+  close.textContent = uiText('close');
   close.onclick = () => dialog.close();
   header.append(heading, close);
   const body = document.createElement('div');
   const groups = document.createElement('nav');
-  groups.setAttribute('aria-label', '캐릭터');
+  groups.setAttribute('aria-label', uiText('character'));
   const cards = document.createElement('div');
   cards.className = 'choice-grid';
   body.append(groups, cards);

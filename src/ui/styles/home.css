@@ -180,6 +180,18 @@ a:focus-visible {
 .lobby :is(h1, h2, h3, p) {
   margin: 0;
 }
+#ui-language {
+  position: absolute;
+  inset: 4px 4px auto auto;
+  min-height: 44px;
+  max-width: 25%;
+  padding: 0 0.45em;
+  border: 1px solid #ae9874;
+  border-radius: 4px;
+  background: #28251f;
+  color: #fff2df;
+  font: 600 clamp(12px, 1.55cqw, 16px) var(--font-ui);
+}
 .banner h1 {
   font-size: calc(5.3 * var(--unit));
   letter-spacing: -0.075em;
@@ -266,10 +278,10 @@ a:focus-visible {
   color: white;
   background: #599153;
 }
-#items [data-kind='조작'] {
+#items [data-kind='controls'] {
   background: #328a8b;
 }
-#items [data-kind='주자'] {
+#items [data-kind='runner'] {
   background: #a54538;
 }
 .article-body {

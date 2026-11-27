@@ -50,8 +50,11 @@ export function mountLandscapeFrame(
 export function syncGameUrl() {
   // Frame navigations already participate in the tab's back/forward history.
   // Mirror the active URL for sharing and reload without inserting a second entry.
-  if (!landscapeFrame()) return;
+  const frame = landscapeFrame();
+  if (!frame) return;
+  frame.title = document.title;
   window.parent.document.title = document.title;
+  window.parent.document.documentElement.lang = document.documentElement.lang;
   if (window.parent.location.href !== location.href)
     window.parent.history.replaceState(window.parent.history.state, '', location.href);
 }

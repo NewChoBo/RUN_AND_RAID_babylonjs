@@ -13,7 +13,7 @@
       )
         document.documentElement.dataset.mobile = '';
     </script>
-    <title>런앤레이드 · 로비</title>
+    <title data-i18n="homeTitle">런앤레이드 · 로비</title>
     <link rel="icon" href="./favicon.ico" />
     <link rel="stylesheet" href="./src/ui/styles/shell.css" />
     <link rel="stylesheet" href="./src/ui/styles/home.css" />
@@ -22,31 +22,39 @@
   </head>
   <body>
     <!-- ui: toolbar-icons -->
-    <main class="lobby" aria-label="런앤레이드 로비">
+    <main data-i18n-aria="lobbyArea" class="lobby" aria-label="런앤레이드 로비">
       <!-- ui: toolbar -->
       <!-- ui: home -->
       <!-- ui: shop -->
       <!-- ui: ready -->
       <!-- ui: asset-library -->
     </main>
-    <canvas id="game" tabindex="0" inert aria-label="런앤레이드 경기장"></canvas>
+    <canvas
+      data-i18n-aria="arenaCanvas"
+      id="game"
+      tabindex="0"
+      inert
+      aria-label="런앤레이드 경기장"
+    ></canvas>
     <dialog id="viewport-limit" aria-labelledby="viewport-heading">
-      <h2 id="viewport-heading" tabindex="-1">화면 크기를 확인하세요</h2>
-      <p id="viewport-instructions">가로 화면으로 돌려 주세요.</p>
+      <h2 data-i18n="viewportHeading" id="viewport-heading" tabindex="-1">
+        화면 크기를 확인하세요
+      </h2>
+      <p data-i18n="rotateDevice" id="viewport-instructions">가로 화면으로 돌려 주세요.</p>
       <p id="viewport-minimum"></p>
-      <button id="viewport-expand" type="button" hidden>전체 화면</button
-      ><button id="viewport-rotate" type="button" hidden>화면 회전</button>
+      <button data-i18n="fullscreen" id="viewport-expand" type="button" hidden>전체 화면</button
+      ><button data-i18n="rotate" id="viewport-rotate" type="button" hidden>화면 회전</button>
       <p id="viewport-orientation-status" role="status"></p>
     </dialog>
 
-    <section id="launch-splash" aria-label="게임 시작 화면">
+    <section data-i18n-aria="launchScreen" id="launch-splash" aria-label="게임 시작 화면">
       <img src="./assets/raid/lobby/returning-runners.webp" alt="" />
-      <h1>런앤레이드</h1>
-      <p role="status">게임 불러오는 중…</p>
+      <h1 data-i18n="gameName">런앤레이드</h1>
+      <p data-i18n="loadingGame" role="status">게임 불러오는 중…</p>
     </section>
     <dialog id="message" aria-labelledby="message-text">
       <p id="message-text"></p>
-      <form method="dialog"><button autofocus>확인</button></form>
+      <form method="dialog"><button data-i18n="ok" autofocus>확인</button></form>
     </dialog>
     <script type="module" src="./src/bootstrap.ts"></script>
   </body>

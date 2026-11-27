@@ -3,11 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>런앤레이드</title>
+    <title data-i18n="gameName">런앤레이드</title>
   </head>
   <body>
-    <a href="./#/ready">런앤레이드 열기</a>
+    <a data-i18n="openGame" href="./#/ready">런앤레이드 열기</a>
     <script type="module">
+      import { initializeUiLanguage } from './src/platform/browser/ui-language.ts';
+      initializeUiLanguage();
       location.replace('./' + location.search + '#/ready');
     </script>
   </body>

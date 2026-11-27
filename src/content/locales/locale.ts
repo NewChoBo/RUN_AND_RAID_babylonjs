@@ -3,13 +3,12 @@ export const DEFAULT_LOCALE: Locale = 'ko';
 let locale: Locale = DEFAULT_LOCALE;
 
 export function resolveLocale(value: string | null | undefined): Locale {
-  if (!value) return DEFAULT_LOCALE;
   try {
-    if (new Intl.Locale(value).language === 'ko') return 'ko';
+    if (value && new Intl.Locale(value).language === 'en') return 'en';
   } catch {
-    /* Invalid locale tags use the source language. */
+    /* Invalid or unsupported preferences use the default UI language. */
   }
-  return 'en';
+  return DEFAULT_LOCALE;
 }
 
 export const getLocale = (): Locale => locale;

@@ -1,3 +1,4 @@
+import { uiText } from '../content/locales/ui.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { characterArt } from '../content/raid/gallery.ts';
 import { isRaidRoster, type DraftSeat } from '../game/raid/raid-draft.ts';
@@ -60,13 +61,15 @@ export function createRaidLobby(
   teams.className = 'team-seats';
   const versus = document.createElement('div');
   versus.className = 'team-versus';
-  versus.innerHTML =
-    '<strong><b>BLUE</b> <b>RED</b></strong><span>준비 완료</span><output></output>';
+  versus.innerHTML = '<strong><b></b> <b></b></strong><span></span><output></output>';
+  versus.querySelector('b:first-child')!.textContent = uiText('blueTeam');
+  versus.querySelector('b:last-child')!.textContent = uiText('redTeam');
+  versus.querySelector('span')!.textContent = uiText('lockedPicks');
   const picker = document.createElement('dialog');
   picker.className = 'runner-picker';
-  picker.setAttribute('aria-label', '캐릭터 선택');
+  picker.setAttribute('aria-label', uiText('chooseCharacter'));
   const confirm = document.createElement('button');
-  confirm.textContent = '확인';
+  confirm.textContent = uiText('ok');
   confirm.onclick = () => picker.close();
   const draft = document.createElement('div');
   draft.className = 'raid-draft';
@@ -148,7 +151,7 @@ export function createRaidLobby(
   }
   lock.onclick = () => actions.pick(seats.find((s) => s.actor === self)?.hero ? null : preview);
   const choose = document.createElement('button');
-  choose.textContent = '캐릭터 선택';
+  choose.textContent = uiText('chooseCharacter');
   choose.onclick = () => picker.showModal();
   const selection = document.createElement('section');
   selection.append(title, cards);
@@ -164,7 +167,7 @@ export function createRaidLobby(
   }
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const quick = button(t('quickMatch'), () => actions.connect('', 'quick'));
-  const privateRooms = button('사설방', () => menu('private'));
+  const privateRooms = button(uiText('privateRoom'), () => menu('private'));
   const host = button(t('hostRoom'), () =>
     actions.connect(
       Array.from(
@@ -174,7 +177,7 @@ export function createRaidLobby(
       'host',
     ),
   );
-  const enterCode = button('참가하기', () => menu('code'));
+  const enterCode = button(uiText('joinByCode'), () => menu('code'));
   const join = button(t('joinRoom'), () => actions.connect(code.value, 'join'));
   code.oninput = () => {
     code.value = code.value.toUpperCase().replace(/[^A-Z2-9]/g, '');
@@ -185,8 +188,8 @@ export function createRaidLobby(
   };
   const start = button(t('startRound'), actions.start);
   const leave = button(t('leaveRoom'), actions.leave);
-  const back = button('뒤로', () => menu(page === 'code' ? 'private' : 'entry'));
-  const practice = button('오프라인 봇 연습', actions.practice);
+  const back = button(uiText('back'), () => menu(page === 'code' ? 'private' : 'entry'));
+  const practice = button(uiText('offlinePractice'), actions.practice);
   options.append(quick, privateRooms, host, enterCode, code, join, practice, back);
   controls.append(start, leave);
   let page: 'entry' | 'private' | 'code' = 'entry';
@@ -210,10 +213,10 @@ export function createRaidLobby(
       stage === 'connecting'
         ? t('connecting')
         : page === 'entry'
-          ? '게임 모드 선택'
+          ? uiText('chooseMode')
           : page === 'private'
-            ? '사설방'
-            : '방 코드 입력';
+            ? uiText('privateRoom')
+            : uiText('enterCode');
     if (stage !== 'draft') start.hidden = true;
     teams.replaceChildren();
     draft.hidden = versus.hidden = stage !== 'draft';
@@ -260,7 +263,7 @@ export function createRaidLobby(
       show('draft');
       paint();
       status.textContent = offline
-        ? '오프라인 봇 연습'
+        ? uiText('offlinePractice')
         : roomCode
           ? t('roomStatus', { code: roomCode, count: seats.length })
           : t('quickRoomStatus', { count: seats.length });
@@ -273,7 +276,7 @@ export function createRaidLobby(
         if (seat?.actor === self) item.classList.add('own-seat');
         const name = document.createElement('span');
         name.textContent =
-          (i % 2 ? 'RED' : 'BLUE') +
+          uiText(i % 2 ? 'redTeam' : 'blueTeam') +
           ' ' +
           (Math.floor(i / 2) + 1) +
           (seat?.actor === self ? ' · ' + t('you') : '');
@@ -288,7 +291,7 @@ export function createRaidLobby(
         item.append(name, runner);
         if (seat?.hero) {
           const ready = document.createElement('b');
-          ready.textContent = '준비완료';
+          ready.textContent = uiText('seatReady');
           item.append(ready);
         }
         teams.append(item);

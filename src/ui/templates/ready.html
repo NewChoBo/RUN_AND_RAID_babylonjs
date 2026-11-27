@@ -1,17 +1,17 @@
 <section id="overlay" aria-labelledby="title-name" hidden>
   <div class="room-heading">
-    <h1 id="title-name" tabindex="-1">경기 대기실</h1>
-    <a href="#/shop">상점 감상실</a>
+    <h1 data-i18n="waitingRoom" id="title-name" tabindex="-1">경기 대기실</h1>
+    <a data-i18n="shopGallery" href="#/shop">상점 감상실</a>
   </div>
   <div class="room-layout">
     <div id="menu-actions" class="raid-setup"></div>
   </div>
   <dialog id="match-menu" aria-labelledby="match-heading">
     <header>
-      <h2 id="match-heading" tabindex="-1">게임 모드 선택</h2>
-      <button type="button" aria-label="닫기">×</button>
+      <h2 data-i18n="chooseMode" id="match-heading" tabindex="-1">게임 모드 선택</h2>
+      <button data-i18n-aria="close" type="button" aria-label="닫기">×</button>
     </header>
-    <p id="startup-progress" role="status" hidden>경기장 불러오는 중…</p>
+    <p data-i18n="arenaLoading" id="startup-progress" role="status" hidden>경기장 불러오는 중…</p>
     <p id="startup-error" role="alert" hidden></p>
     <output aria-live="polite"></output>
     <div class="match-options"></div>

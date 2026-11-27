@@ -1,4 +1,5 @@
-﻿import './app/home.ts';
+﻿import { uiText } from './content/locales/ui.ts';
+import './app/home.ts';
 import { prepareRaid } from './app/run-and-raid.ts';
 import { landscapeFrame, syncGameUrl } from './platform/browser/game-navigation.ts';
 import { installViewportLimit } from './ui/viewport-limit.ts';
@@ -29,9 +30,8 @@ function route() {
   overlay.hidden = screen !== 'ready';
   library.hidden = screen !== 'assets';
   gallery.hidden = screen !== 'shop';
-  document.title =
-    '런앤레이드 · ' +
-    { home: '로비', ready: '경기 대기실', assets: '원작 에셋', shop: '상점' }[screen];
+  const titleKey = { home: 'lobby', ready: 'waitingRoom', assets: 'assets', shop: 'shop' } as const;
+  document.title = uiText('gameName') + ' · ' + uiText(titleKey[screen]);
   shop.classList.toggle('current', screen === 'shop');
   syncGameUrl();
   if (screen === 'shop') shop.setAttribute('aria-current', 'page');
@@ -39,12 +39,12 @@ function route() {
   home.classList.toggle('current', screen === 'home');
   if (screen === 'home') home.setAttribute('aria-current', 'page');
   else home.removeAttribute('aria-current');
-  play.textContent = screen === 'ready' ? '대기실' : '게임시작';
+  play.textContent = uiText(screen === 'ready' ? 'room' : 'play');
   if (screen === 'ready') {
     raid ??= prepareRaid((error) => {
       console.error(error);
       const message = document.querySelector<HTMLElement>('#startup-error')!;
-      message.textContent = '경기장을 열지 못했습니다. 다시 시도해 주세요.';
+      message.textContent = uiText('arenaError');
       message.hidden = false;
     });
     raid.enter();

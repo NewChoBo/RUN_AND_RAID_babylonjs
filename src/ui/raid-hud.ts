@@ -1,5 +1,6 @@
+import { uiText } from '../content/locales/ui.ts';
 import { raidOutfits } from '../content/raid/outfits.ts';
-import { characterName } from '../content/raid/gallery.ts';
+import { characterLabel, characterName } from '../content/raid/gallery.ts';
 import { touchPicker } from './touch-picker.ts';
 import { raidSkill } from '../game/raid/heroes/hero-catalog.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
@@ -71,16 +72,19 @@ export function createRaidHud(
   let outfit: string | undefined;
   let outfitPicker: ReturnType<typeof touchPicker> | undefined;
   if (raidOutfits.length) {
-    outfitPicker = touchPicker(outfitButton, '연습 외형', (value) => {
+    outfitPicker = touchPicker(outfitButton, uiText('practiceOutfit'), (value) => {
       outfit = value || undefined;
     });
     outfitPicker.set(
       [
-        { label: '주자 기본 외형', group: '주자 기본 외형', value: '' },
+        { label: uiText('runnerOutfit'), group: uiText('runnerOutfit'), value: '' },
         ...raidOutfits.map((o) => ({
           value: o.model,
-          group: characterName(o.group),
-          label: characterName(o.group) + ' · ' + (o.skin === 'default' ? '기본' : o.skin),
+          group: characterLabel(characterName(o.group)),
+          label:
+            characterLabel(characterName(o.group)) +
+            ' · ' +
+            (o.skin === 'default' ? uiText('defaultOutfit') : o.skin),
         })),
       ],
       '',

@@ -1,3 +1,4 @@
+import { uiText } from '../content/locales/ui.ts';
 import '../ui/styles/library.css';
 import {
   createView,
@@ -44,7 +45,7 @@ async function choose() {
   const item = source.find((r) => r.id === entries.value);
   canvas.hidden = picture.hidden = download.hidden = true;
   status.textContent = info.textContent = '';
-  el('name').textContent = item?.path ?? '검색 결과 없음';
+  el('name').textContent = item?.path ?? uiText('noResults');
   if (!item) return;
   const image = item.texture ?? item.thumbnail;
   const showImage = () => {
@@ -57,10 +58,10 @@ async function choose() {
     download.href = base + (item.model ?? item.texture ?? item.hierarchy);
     download.hidden = false;
     download.textContent = item.model
-      ? 'GLB 다운로드'
+      ? uiText('downloadGlb')
       : item.hierarchy
-        ? '본 계층 JSON 다운로드'
-        : 'PNG 다운로드';
+        ? uiText('downloadBones')
+        : uiText('downloadPng');
     download.download = (item.path.split('/').pop() ?? item.id).replace(
       /\.[^.]+$/,
       item.model ? '.glb' : item.hierarchy ? '.json' : '.png',
@@ -71,11 +72,11 @@ async function choose() {
     status.textContent = item.texture
       ? item.width + ' × ' + item.height + ' PNG'
       : item.hierarchy
-        ? '원본 본·헬퍼 계층 · 노드 ' + item.nodes + '개 (포즈·가중치 미포함)'
-        : '원본 MAX 장면 · 변환된 메시 없음';
+        ? uiText('hierarchy', { count: item.nodes ?? 0 })
+        : uiText('noMesh');
     return;
   }
-  status.textContent = '3D 모델 불러오는 중…';
+  status.textContent = uiText('loading3d');
   canvas.hidden = false;
   try {
     const v = (view ??= createView(canvas, () => !canvas.hidden && !el('library').hidden));
@@ -89,17 +90,17 @@ async function choose() {
     model.addAllToScene();
     frameModel(v, model);
     status.textContent = item.clips?.length
-      ? '애니메이션 ' + item.clips.length + '개'
-      : '정적 3D 모델';
+      ? uiText('clipCount', { count: item.clips.length })
+      : uiText('staticModel');
     if (model.animationGroups[0]) model.animationGroups[0].start(true);
     const details = [
-      item.kind === 'motion' && !item.clips?.length ? '모션 원본에서 가져온 한 자세입니다.' : '',
+      item.kind === 'motion' && !item.clips?.length ? uiText('singlePose') : '',
       Object.values(item.materialMatches ?? {}).some((reason) => reason.startsWith('skin-name'))
-        ? '같은 영웅·스킨 이름으로 텍스처를 연결했습니다.'
+        ? uiText('matchedTextures')
         : '',
-      item.embeddedImages === 0 ? '이 GLB에는 텍스처가 없습니다.' : '',
+      item.embeddedImages === 0 ? uiText('noTextures') : '',
       item.missingBitmaps?.length
-        ? '원본이 참조한 미동봉 파일 ' + item.missingBitmaps.length + '개'
+        ? uiText('missingFiles', { count: item.missingBitmaps.length })
         : '',
     ];
     info.textContent = details.filter(Boolean).join(' · ');
@@ -107,7 +108,7 @@ async function choose() {
     if (id !== generation) return;
     canvas.hidden = true;
     showImage();
-    status.textContent = '3D 미리보기를 열 수 없습니다. 아래에서 변환 파일을 받을 수 있습니다.';
+    status.textContent = uiText('previewError');
   }
 }
 function list() {
@@ -127,7 +128,7 @@ async function start() {
   const payload = await data.json();
   if (payload.version !== 1 || !Array.isArray(payload.files)) throw Error('catalog version');
   source = payload.files;
-  group.add(new Option('전체', ''));
+  group.add(new Option(uiText('all'), ''));
   for (const key of [...new Set(source.map((r) => r.group))].sort())
     group.add(new Option(key, key));
   group.addEventListener('change', list);
@@ -136,7 +137,7 @@ async function start() {
   list();
 }
 void start().catch(() => {
-  el('name').textContent = '원작 에셋을 준비해 주세요';
-  status.textContent = 'README의 에셋 준비 명령으로 개발진 제공 ZIP을 연결할 수 있습니다.';
+  el('name').textContent = uiText('prepareAssets');
+  status.textContent = uiText('assetInstructions');
   canvas.hidden = true;
 });

@@ -166,13 +166,12 @@ export function rebind(settings: InputSettings, action: string, code: string) {
   return { value: { ...settings, bindings: { ...settings.bindings, [action]: code } } };
 }
 
-export function createPreferences(
-  storage: Pick<Storage, 'getItem' | 'setItem'> = window.localStorage,
-) {
+export function createPreferences(storage?: Pick<Storage, 'getItem' | 'setItem'>) {
   let value = sanitizePreferences(null),
     saved = true;
   try {
-    value = sanitizePreferences(JSON.parse(storage.getItem(STORAGE_KEY) ?? 'null'));
+    const raw = (storage ?? window.localStorage).getItem(STORAGE_KEY);
+    value = sanitizePreferences(JSON.parse(raw ?? 'null'));
   } catch {}
   const listeners = new Set<(value: InputSettings) => void>();
   return {
@@ -182,7 +181,7 @@ export function createPreferences(
     set(next: unknown) {
       value = sanitizePreferences(next);
       try {
-        storage.setItem(STORAGE_KEY, JSON.stringify(value));
+        (storage ?? window.localStorage).setItem(STORAGE_KEY, JSON.stringify(value));
         saved = true;
       } catch {
         saved = false;
