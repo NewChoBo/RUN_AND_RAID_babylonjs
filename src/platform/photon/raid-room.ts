@@ -21,6 +21,7 @@ export type RaidEntry = 'host' | 'join' | 'quick';
 interface Callbacks {
   lobby(seats: DraftSeat[], self: number, host: boolean): void;
   start(seats: RaidSeat[], self: number, host: boolean): void;
+  solo(hero: RaidHero): void;
   intent(sender: number, data: unknown): void;
   frames(data: unknown): void;
   closed(reason: RoomError): void;
@@ -28,6 +29,7 @@ interface Callbacks {
 export class RaidRoom {
   readonly #client: InstanceType<typeof Client>;
   readonly #callbacks: Callbacks;
+  readonly #entry: RaidEntry;
   #closed = false;
   #joined = false;
   #host = 0;
@@ -37,6 +39,7 @@ export class RaidRoom {
   #timer: ReturnType<typeof setTimeout> | undefined;
   constructor(appId: string, code: string, entry: RaidEntry, callbacks: Callbacks) {
     this.#callbacks = callbacks;
+    this.#entry = entry;
     const client = new Client(Photon.ConnectionProtocol.Wss, appId, version);
     this.#client = client;
     client.setLogLevel(0);
@@ -172,6 +175,13 @@ export class RaidRoom {
     )
       return;
     const seats = this.#members();
+    const only = seats[0];
+    if (this.#entry !== 'quick' && seats.length === 1 && only?.actor === this.self && only.hero) {
+      this.#client.myRoom().setIsOpen(false);
+      this.close();
+      this.#callbacks.solo(only.hero);
+      return;
+    }
     if (!isRaidRoster(seats)) return;
     this.#client.myRoom().setIsOpen(false);
     this.#client.raiseEvent(event.start, JSON.stringify(seats));

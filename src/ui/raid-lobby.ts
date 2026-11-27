@@ -53,6 +53,7 @@ export function createRaidLobby(
   let preview: RaidHero = actions.selected();
   let seats: DraftSeat[] = [];
   let self = 0;
+  let soloRoom = false;
   const choices = HERO_IDS.map((hero) => {
     const card = document.createElement('button');
     card.type = 'button';
@@ -96,7 +97,9 @@ export function createRaidLobby(
       lock.disabled
         ? 'pickConflict'
         : seats.length < 2
-          ? 'pickPlayers'
+          ? soloRoom
+            ? 'pickSolo'
+            : 'pickPlayers'
           : isRaidRoster(seats)
             ? 'pickReady'
             : 'pickWait',
@@ -160,6 +163,7 @@ export function createRaidLobby(
     room(roomCode: string, members: DraftSeat[], actor: number, isHost: boolean) {
       seats = members;
       self = actor;
+      soloRoom = !!roomCode && isHost && seats.length === 1;
       show('draft');
       paint();
       status.textContent = roomCode
@@ -176,7 +180,8 @@ export function createRaidLobby(
         teams.append(item);
       }
       start.hidden = !isHost;
-      start.disabled = !isRaidRoster(seats);
+      start.textContent = t(soloRoom ? 'startSoloRoom' : 'startRound');
+      start.disabled = soloRoom ? !seats[0]?.hero : !isRaidRoster(seats);
     },
   };
 }

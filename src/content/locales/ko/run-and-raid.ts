@@ -63,6 +63,8 @@ export const korean = {
   pickWait: '모두 선택을 확정하면 방장이 시작할 수 있습니다.',
   pickConflict: '다른 참가자가 먼저 확정했습니다. 다른 주자를 골라 주세요.',
   pickReady: '모두 선택을 확정했습니다.',
+  pickSolo: '주자를 확정하면 혼자서 봇과 경기할 수 있습니다.',
+  startSoloRoom: '봇전 시작',
   pickPlayers: '다른 참가자를 기다리는 중입니다.',
   reach: '평타 사거리 {range}m',
   solo: '봇과 연습',

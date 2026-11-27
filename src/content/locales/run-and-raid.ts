@@ -66,6 +66,8 @@ export const raidText = defineMessages(
     pickWait: 'Every player must lock in before the host can start.',
     pickConflict: 'Another player locked this runner. Choose a different runner.',
     pickReady: 'All picks locked.',
+    pickSolo: 'Lock in your runner to play with bots.',
+    startSoloRoom: 'Start bot match',
     pickPlayers: 'Waiting for another player.',
     reach: 'Basic range {range} m',
     solo: 'Practice with bots',

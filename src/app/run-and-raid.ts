@@ -192,6 +192,9 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     if (room || !playableViewport.matches || (state !== 'setup' && state !== 'finished')) return;
     const token = attempt;
     if (!(await prepareCourse()) || token !== attempt) return;
+    launchSolo();
+  }
+  function launchSolo() {
     slot = 0;
     match = new RaidMatch(hud.selected(), course.viewAspect);
     solo = new RaidSimulation(match, new Set([slot]));
@@ -351,6 +354,11 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       room = new RaidRoom(id, code, entry, {
         lobby(seats, self, host) {
           lobby.room(code, seats, self, host);
+        },
+        solo(hero) {
+          room = undefined;
+          hud.selectHero(hero);
+          launchSolo();
         },
         start(seats, self, host) {
           round = new RaidRound(seats);
@@ -522,7 +530,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     if (!playableViewport.matches) pause();
   });
   function renderCourse(dt: number, subtick: number) {
-    course.render(match, dt, subtick, slot, room ? undefined : hud.outfit());
+    course.render(match, dt, subtick, slot, hud.select.disabled ? undefined : hud.outfit());
     hud.drawCombatNumbers(
       match.healthChanges,
       match.tick + subtick,
