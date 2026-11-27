@@ -26,30 +26,35 @@ import {
 
 const clips = ['pulse', 'bolt', 'field', 'fury'] as const;
 
-async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode) {
-  const source = heroModelSource(hero);
+async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfit?: string) {
+  const source = heroModelSource(hero, outfit);
   const model = await LoadAssetContainerAsync(source.url, scene, {
     pluginOptions: { gltf: { animationStartMode: 0 } },
   });
   try {
     if (scene.isDisposed) throw new Error('Raid scene disposed');
-    const motion = new ModelMotion(model.animationGroups, [
-      'run',
-      'walk',
-      'jump',
-      'fall',
-      'basic',
-      ...clips,
-    ]);
+    const motion = source.still
+      ? undefined
+      : new ModelMotion(model.animationGroups, ['run', 'walk', 'jump', 'fall', 'basic', ...clips]);
     model.addAllToScene();
-    model.meshes[0]!.parent = rig;
+    const root = model.meshes[0]!;
+    if (source.still) {
+      root.normalizeToUnitCube(true);
+      root.scaling.scaleInPlace(2);
+      root.position.y -= root.getHierarchyBoundingVectors().min.y;
+    }
+    root.parent = rig;
     if (!source.authored) {
+      const meshCount = scene.meshes.length;
+      const materialCount = scene.materials.length;
       const cape = model.meshes.find((m) => m.name.endsWith('_Cape') || m.name.endsWith('_Cloak'));
       if (cape) cape.material = raidMaterial(scene, hero + ' mantle', appearance[hero].cape, 0.12);
       equipRaidGear(scene, hero, model.transformNodes, cape ?? rig);
+      model.meshes.push(...scene.meshes.slice(meshCount));
+      model.materials.push(...scene.materials.slice(materialCount));
     }
     for (const mesh of rig.getChildMeshes()) mesh.isPickable = false;
-    return motion;
+    return { model, motion };
   } catch (error) {
     model.dispose();
     throw error;
@@ -81,19 +86,36 @@ export function createRaidActor(
   hit.position.y = 0.93;
   let motion: ModelMotion | undefined;
   let greatsword: TransformNode | undefined;
+  let current: Awaited<ReturnType<typeof loadModel>> | undefined;
+  let requested: string | undefined;
+  let generation = 0;
   let loading = false;
-  // The team-colored body remains visible and pickable until its animated model is ready.
-  function prepareModel() {
-    if (motion || loading) return;
+  // The team-colored body remains visible and pickable until its model is ready.
+  function prepareModel(outfit?: string) {
+    if ((current || loading) && requested === outfit) return;
+    const version = ++generation;
+    current?.model.dispose();
+    current = undefined;
+    motion = undefined;
+    greatsword = undefined;
+    hit.visibility = 1;
+    requested = outfit;
     loading = true;
-    return loadModel(scene, hero, rig).then(
+    return loadModel(scene, hero, rig, outfit).then(
       (loaded) => {
-        motion = loaded;
+        if (version !== generation) {
+          loaded.model.dispose();
+          return;
+        }
+        current = loaded;
+        motion = loaded.motion;
+        loading = false;
         if (art.empoweredMesh)
           greatsword = rig.getChildMeshes().find((mesh) => mesh.name === art.empoweredMesh);
         hit.visibility = 0;
       },
       (error: unknown) => {
+        if (version !== generation) return;
         loading = false;
         if (!scene.isDisposed) console.warn('Could not load raid model', hero, error);
       },
@@ -193,14 +215,14 @@ export function createRaidActor(
     life.scaling.x = r.hp / HEROES[hero].hp;
     life.position.x = -0.39 * (1 - life.scaling.x);
     rig.rotation.z = r.staggered ? 0.26 * Math.min(1, r.staggered / 4) : 0;
-    if (!motion) return;
+    if (!current) return;
     if (greatsword) greatsword.scaling.setAll((r.heroView.empoweredUntil ?? 0) > tick ? 1.45 : 1);
     if (r.respawn) {
-      motion.seek('fall', (fallAge + subtick) / 17, dt);
+      motion?.seek('fall', (fallAge + subtick) / 17, dt);
       return;
     }
     if (r.staggered && !r.leap && !r.jumping) {
-      motion.seek('fall', 0.13, dt);
+      motion?.seek('fall', 0.13, dt);
       return;
     }
     const active = raidActiveAction(actions, r.slot, now);
@@ -208,27 +230,27 @@ export function createRaidActor(
     if (r.leap) {
       const { elapsed } = r.leap;
       const progress = (elapsed + subtick) / RAID_LEAP_TICKS;
-      if (progress < 0.5) motion.seek('jump', progress * 2, dt);
-      else motion.seek('bolt', progress - 0.5, dt);
+      if (progress < 0.5) motion?.seek('jump', progress * 2, dt);
+      else motion?.seek('bolt', progress - 0.5, dt);
     } else if (art.dashClip && r.dash) {
-      motion.seek(art.dashClip, (r.dash.elapsed + subtick) / r.dash.ticks, dt);
+      motion?.seek(art.dashClip, (r.dash.elapsed + subtick) / r.dash.ticks, dt);
     } else if (r.heroView.rootedTicks && r.heroView.rootDuration) {
-      motion.seek('fury', 1 - (r.heroView.rootedTicks - subtick) / r.heroView.rootDuration, dt);
+      motion?.seek('fury', 1 - (r.heroView.rootedTicks - subtick) / r.heroView.rootDuration, dt);
     } else if (r.spinTicks) {
-      motion.seek(art.spinClip ?? 'fury', ((75 - r.spinTicks + subtick) % 15) / 15, dt);
+      motion?.seek(art.spinClip ?? 'fury', ((75 - r.spinTicks + subtick) % 15) / 15, dt);
     } else if (active?.phase === 'ground' && active.skill === 0 && art.landingChop) {
       // Finish the overhead chop from its contact pose, facing the landing direction.
       facing = rig.rotation.y;
-      motion.seek('bolt', 0.5 + (0.5 * (now - active.tick)) / raidActionTicks(active), dt);
+      motion?.seek('bolt', 0.5 + (0.5 * (now - active.tick)) / raidActionTicks(active), dt);
     } else if (active) {
-      motion.seek(
+      motion?.seek(
         active.skill === 'basic' ? 'basic' : clips[active.skill],
         (now - active.tick) / raidActionTicks(active),
         dt,
       );
-    } else if (r.jumping) motion.loop('jump', now / RAID_HZ, dt);
+    } else if (r.jumping) motion?.loop('jump', now / RAID_HZ, dt);
     else
-      motion.loop(r.slowed || r.brake >= 0.5 ? 'walk' : 'run', now / RAID_HZ + r.slot * 0.13, dt);
+      motion?.loop(r.slowed || r.brake >= 0.5 ? 'walk' : 'run', now / RAID_HZ + r.slot * 0.13, dt);
     const turn = facing - rig.rotation.y;
     rig.rotation.y += Math.atan2(Math.sin(turn), Math.cos(turn)) * Math.min(1, dt * 20);
   }

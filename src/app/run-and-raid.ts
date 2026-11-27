@@ -511,7 +511,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     if (!playableViewport.matches) pause();
   });
   function renderCourse(dt: number, subtick: number) {
-    course.render(match, dt, subtick, slot);
+    course.render(match, dt, subtick, slot, room ? undefined : hud.outfit());
     hud.drawCombatNumbers(
       match.healthChanges,
       match.tick + subtick,

@@ -10,3 +10,4 @@ __pycache__/
 *.blend1
 asset-sources/baked-fbx/
 src/content/raid/ready-heroes/
+src/content/raid/local-outfits.json

@@ -1,3 +1,4 @@
+import { localOutfits } from '../content/raid/local-outfits.ts';
 import { raidSkill } from '../game/raid/heroes/hero-catalog.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import {
@@ -75,6 +76,21 @@ export function createRaidHud(
   const select = element('select', label);
   for (const hero of HERO_IDS)
     select.add(new Option(t('runnerRange', { name: t(hero), range: HEROES[hero].reach }), hero));
+  let outfit: HTMLSelectElement | undefined;
+  if (localOutfits.length) {
+    outfit = element('select', element('label', setup, '봇 연습 외형'));
+    outfit.add(new Option('주자 기본 외형', ''));
+    const groups = new Map<string, HTMLOptGroupElement>();
+    for (const { group, skin, model } of localOutfits) {
+      let options = groups.get(group);
+      if (!options) {
+        options = element('optgroup', outfit);
+        options.label = group;
+        groups.set(group, options);
+      }
+      options.append(new Option(group + ' · ' + skin, model));
+    }
+  }
   const detail = element('small', setup);
   const selected = () => select.value as RaidHero;
   const heroInfo = {
@@ -468,6 +484,7 @@ export function createRaidHud(
     aimPad,
     drawCombatNumbers,
     selected,
+    outfit: () => outfit?.value || undefined,
     setup,
     select,
     selectHero(hero: RaidHero) {

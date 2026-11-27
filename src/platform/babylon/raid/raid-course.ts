@@ -299,7 +299,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   let displayedMatch: RaidView | undefined;
   let pullback = 0;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  function render(view: RaidView, dt: number, subtick: number, slot = 0) {
+  function render(view: RaidView, dt: number, subtick: number, slot = 0, outfit?: string) {
     const player = view.runners[slot]!;
     const localTeam = player.team;
     const scroll = raidRoadTravel(view.tick + subtick);
@@ -331,7 +331,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
           actor = createRaidActor(scene, hero, blue, red, shadowMat);
           actors.set(hero, actor);
         }
-        actor.prepareModel();
+        actor.prepareModel(target === slot ? outfit : undefined);
         (team === localTeam ? alliedBodies : rivalBodies).push({ target, meshes: [actor.hit] });
       }
       displayedMatch = view;
