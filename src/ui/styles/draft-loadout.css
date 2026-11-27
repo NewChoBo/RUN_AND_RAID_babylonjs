@@ -1,0 +1,197 @@
+#overlay .runner-picker .raid-pick-grid img.guide-face {
+  object-position: var(--face-x, 6%) center;
+  transform: scale(1.12);
+}
+.raid-pick-grid img[data-hero='kaiken'] {
+  --face-x: 11%;
+}
+.raid-pick-grid
+  img:is([data-hero='alice'], [data-hero='kali'], [data-hero='swift'], [data-hero='froze']) {
+  --face-x: 4%;
+}
+#overlay .runner-picker .raid-pick-grid img.freesia-face {
+  object-position: 62% center;
+}
+#overlay .runner-picker .raid-pick-grid img.model-face {
+  transform: scale(1.45);
+  transform-origin: 50% 25%;
+}
+#overlay .runner-picker .raid-pick-profile {
+  position: relative;
+}
+#overlay .runner-picker .raid-pick-profile > img {
+  height: clamp(65px, 27dvh, 176px);
+  width: 100%;
+  object-fit: cover;
+  object-position: var(--portrait-x, 50%) 32%;
+}
+.runner-picker .raid-pick-profile figcaption > strong {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  padding: 1px 5px;
+  color: white;
+  background: #16120ec9;
+}
+.draft-ranks header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  background: #403a34;
+  padding: 2px 4px;
+}
+.draft-ranks header span {
+  margin-left: auto;
+}
+.draft-ranks,
+.draft-loadout {
+  font-size: clamp(10px, 2.5dvh, 14px);
+}
+#overlay .draft-ranks header button {
+  min-width: 36px;
+  min-height: 24px;
+  padding: 0 3px;
+}
+.rank-slots {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px;
+  padding: 2px;
+  background: #292724;
+}
+.rank-slots > div {
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  grid-template-rows: 1fr auto 1fr;
+}
+.rank-icon {
+  grid-row: 2;
+  width: min(100%, clamp(24px, 8.2dvh, 46px));
+  aspect-ratio: 1;
+  position: relative;
+  border: 1px solid #ac976d;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #27221e;
+}
+.rank-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.rank-icon b {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  color: #fff;
+  font: bold clamp(16px, 4dvh, 24px)/1 var(--font-ui);
+  text-shadow:
+    0 1px 3px black,
+    1px 1px 2px black,
+    -1px -1px 2px black;
+}
+#overlay .runner-picker .rank-slots button:not(.rank-icon) {
+  width: min(92%, 44px);
+  min-width: 0;
+  min-height: clamp(26px, 6.8dvh, 36px);
+  padding: 0;
+  border: 1px solid #766957;
+  background: linear-gradient(#595045, #3c372f);
+  color: #fff0cf;
+  line-height: 1;
+  font-size: 1rem;
+}
+#overlay .runner-picker .rank-slots button:disabled {
+  opacity: 0.56;
+}
+.draft-skin-note {
+  display: block;
+  padding-inline: 3px;
+  color: #d3dca6;
+}
+#overlay .draft-loadout label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px;
+  align-items: center;
+  padding: 1px 3px;
+}
+#overlay .draft-loadout select {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  min-height: 26px;
+  padding: 1px;
+  font: inherit;
+  color: #f5e9d1;
+  background: #3c372e;
+}
+.draft-gear {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px;
+  align-items: start;
+  background: #262321;
+  padding: 3px;
+}
+#overlay .draft-gear ul {
+  display: block;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#overlay .draft-gear li {
+  border: 0;
+  padding: 0;
+  color: #b2e59c;
+  line-height: 1.3;
+}
+.draft-gear-items {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+}
+.draft-gear-items span {
+  width: clamp(24px, 7.3dvh, 41px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  background: #332e27;
+  color: #b9aa91;
+}
+.draft-gear-items img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.draft-loadout > small {
+  display: block;
+  color: #d1c2a8;
+  padding-inline: 3px;
+}
+.draft-character-details {
+  padding: 0 3px;
+}
+@media (max-height: 345px) {
+  .runner-picker > section {
+    grid-template-rows: auto minmax(60px, 1fr) auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+#overlay .rank-slots button.rank-icon {
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+  width: min(100%, clamp(24px, 8.2dvh, 46px));
+  border-radius: 50%;
+}
+#overlay .draft-ranks > output {
+  margin: 0;
+  padding: 1px 4px;
+  color: #efd9a2;
+}

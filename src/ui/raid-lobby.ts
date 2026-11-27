@@ -1,5 +1,7 @@
 import { uiText } from '../content/locales/ui.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
+import { createDraftLoadout } from './raid-draft-loadout.ts';
+import { draftCatalog, hasDraftCatalog } from '../content/raid/draft-loadout.ts';
 import { characterArt } from '../content/raid/gallery.ts';
 import { officialGuides } from '../content/raid/official-guides.ts';
 import { battleIconIndex, skillLabel } from './raid-skill-icon.ts';
@@ -15,12 +17,17 @@ import {
 } from '../content/raid/draft-profiles.ts';
 import type { RaidEntry, RoomError } from '../platform/photon/raid-room.ts';
 
-function setDraftArt(image: HTMLImageElement, hero: DraftProfile, thumbnail = false) {
-  if (image.dataset.hero === hero) return;
+function setDraftArt(
+  image: HTMLImageElement,
+  hero: DraftProfile,
+  thumbnail = false,
+  source = characterArt(hero),
+) {
+  if (image.dataset.hero === hero && image.dataset.art === source) return;
+  image.dataset.art = source;
   image.dataset.hero = hero;
   image.referrerPolicy = 'no-referrer';
   const fallback = './assets/raid/portraits/' + hero + '.webp';
-  const source = characterArt(hero);
   image.style.background =
     source === fallback ? '' : `url("${fallback}") center / contain no-repeat`;
   image.onload = () => {
@@ -31,6 +38,8 @@ function setDraftArt(image: HTMLImageElement, hero: DraftProfile, thumbnail = fa
       ? null
       : () => {
           image.onerror = null;
+          image.classList.remove('guide-face', 'freesia-face');
+          image.classList.add('model-face');
           image.src = fallback;
         };
   if (thumbnail && source.startsWith('https://cafeptthumb-phinf.pstatic.net/')) {
@@ -121,7 +130,13 @@ export function createRaidLobby(
   source.target = '_blank';
   source.rel = 'noopener noreferrer';
   guide.append(guideTitle, originalSkills, source);
-  caption.append(heroName, range, detail, skills, guide);
+  const loadout = createDraftLoadout((hero, url) => setDraftArt(portrait, hero, false, url));
+  const more = document.createElement('details');
+  more.className = 'draft-character-details';
+  const moreTitle = document.createElement('summary');
+  moreTitle.textContent = uiText('championDetails');
+  more.append(moreTitle, range, detail, skills, guide);
+  caption.append(heroName, loadout.settings, more);
   profile.append(portrait, caption);
   const notice = document.createElement('p');
   notice.className = 'draft-notice';
@@ -139,13 +154,14 @@ export function createRaidLobby(
     image.alt = '';
     image.width = image.height = 80;
     image.loading = 'lazy';
-    setDraftArt(image, hero, true);
-    const name = document.createElement('span');
-    name.textContent = t(hero);
+    const face = hasDraftCatalog(hero) ? draftCatalog[hero].face : undefined;
+    image.className = face ? (hero === 'freesia' ? 'freesia-face' : 'guide-face') : 'model-face';
+    setDraftArt(image, hero, false, face);
+    card.title = t(hero);
     const taken = document.createElement('small');
     taken.textContent = t(pendingProfile(hero) ? 'notImplemented' : 'pickTaken');
     card.classList.toggle('pending-profile', pendingProfile(hero));
-    card.append(image, name, taken);
+    card.append(image, taken);
     card.onclick = () => {
       preview = hero;
       paint();
@@ -160,9 +176,12 @@ export function createRaidLobby(
       const occupied = seats.some((s) => s.hero === hero && s.actor !== self);
       card.disabled = occupied || (!!mine && hero !== mine);
       taken.hidden = !occupied && !pendingProfile(hero);
+      card.setAttribute('aria-label', taken.hidden ? t(hero) : t(hero) + ' · ' + taken.textContent);
       card.setAttribute('aria-pressed', String(hero === preview));
     }
-    setDraftArt(portrait, preview);
+    loadout.show(preview);
+    if (!hasDraftCatalog(preview)) setDraftArt(portrait, preview);
+    if (guide.dataset.hero !== preview) more.open = pendingProfile(preview);
     heroName.textContent = t(preview);
     if (guide.dataset.hero !== preview) {
       guide.dataset.hero = preview;
@@ -237,7 +256,7 @@ export function createRaidLobby(
   choose.textContent = uiText('chooseCharacter');
   choose.onclick = () => picker.showModal();
   const selection = document.createElement('section');
-  selection.append(title, cards);
+  selection.append(title, cards, loadout.skills);
   const pickerTools = document.createElement('footer');
   pickerTools.append(chat.open, outfitButton, confirm);
   picker.append(selection, profile, pickerTools);

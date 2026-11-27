@@ -249,7 +249,7 @@
 .runner-picker > section {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 #overlay .runner-picker h3 {
   margin: 0;

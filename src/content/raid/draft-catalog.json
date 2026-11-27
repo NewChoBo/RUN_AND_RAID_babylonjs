@@ -1,0 +1,405 @@
+{
+  "hammer": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_59/chivalrykgt_13980663116355wqCP_JPEG/%C7%D8%B8%D3.jpg?type=w800",
+    "article": 3292,
+    "skins": [
+      {
+        "art": "해머 기본",
+        "en": "Default",
+        "effect": "hp"
+      },
+      {
+        "art": "근위대 해머",
+        "en": "Royal Guard",
+        "effect": "resist"
+      },
+      {
+        "art": "워머신 해머",
+        "en": "War Machine",
+        "effect": "armor"
+      },
+      {
+        "art": "둠가드 기본",
+        "en": "Doomguard",
+        "effect": "attack"
+      }
+    ],
+    "cooldownSeconds": [
+      [8, 7, 6, 5],
+      [16, 14, 12, 10],
+      [14, 13, 12, 11]
+    ]
+  },
+  "longshot": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140516_158/chivalrykgt_1400204160695Aohoc_JPEG/B7A61.JPG?type=w800",
+    "article": 3294,
+    "skins": [
+      {
+        "art": "롱샷 기본",
+        "en": "Default",
+        "effect": "pierce"
+      },
+      {
+        "art": "근위대 롱샷",
+        "en": "Royal Guard",
+        "effect": "attack"
+      },
+      {
+        "art": "히트맨 롱샷",
+        "en": "Hitman",
+        "effect": "speed"
+      },
+      {
+        "art": "용병 길드 롱샷과 칼리",
+        "en": "Mercenary Guild",
+        "effect": null
+      }
+    ],
+    "cooldownSeconds": [[13, 11, 9, 7], [14], [16, 15, 14, 13]]
+  },
+  "flare": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_269/chivalrykgt_139806635196961oDV_JPEG/%C7%C3%B7%B9%BE%EE.jpg?type=w800",
+    "article": 3297,
+    "skins": [
+      {
+        "art": "플레어 기본",
+        "en": "Default",
+        "effect": "hp"
+      },
+      {
+        "art": "동양의 플레어",
+        "en": "Eastern",
+        "effect": "magicPierce"
+      },
+      {
+        "art": "경관 플레어",
+        "en": "Police Officer",
+        "effect": "power"
+      }
+    ],
+    "cooldownSeconds": [[8, 7.5, 7, 6.5], [10, 9, 8, 7], [12]]
+  },
+  "alice": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_282/chivalrykgt_1398066400915cCwOh_JPEG/%BE%D9%B8%AE%BD%BA.jpg?type=w800",
+    "article": 3301,
+    "skins": [
+      {
+        "art": "앨리스 기본",
+        "en": "Default",
+        "effect": "hp"
+      },
+      {
+        "art": "이상한 나라의 앨리스",
+        "en": "Wonderland",
+        "effect": "cooldown"
+      },
+      {
+        "art": "오즈의 앨리스",
+        "en": "Oz",
+        "effect": "power"
+      },
+      {
+        "art": "무당벌레 앨리스",
+        "en": "Ladybug",
+        "effect": null
+      }
+    ],
+    "cooldownSeconds": [[12, 11, 10, 9], [11], [12, 11, 10, 9]]
+  },
+  "hof": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_285/chivalrykgt_1398066375978wwpIY_JPEG/%C8%A3%C7%C1.jpg?type=w800",
+    "article": 3305,
+    "skins": [
+      {
+        "art": "호프 기본",
+        "en": "Default",
+        "effect": "hp"
+      },
+      {
+        "art": "우주 비행사 호프",
+        "en": "Astronaut",
+        "effect": "pierce"
+      },
+      {
+        "art": "보안관 호프",
+        "en": "Sheriff",
+        "effect": "magicPierce"
+      }
+    ],
+    "cooldownSeconds": [[15], [15], [16]]
+  },
+  "kali": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_158/chivalrykgt_1398066516278etsKy_JPEG/%C4%AE%B8%AE.jpg?type=w800",
+    "article": 2880,
+    "skins": [
+      {
+        "art": "칼리 기본",
+        "en": "Default",
+        "effect": "move"
+      },
+      {
+        "art": "5월의 신부 칼리",
+        "en": "May Bride",
+        "effect": "pierce"
+      },
+      {
+        "art": "수녀 칼리",
+        "en": "Nun",
+        "effect": "attack"
+      },
+      {
+        "art": "간호사 칼리",
+        "en": "Nurse",
+        "effect": "speed"
+      },
+      {
+        "art": "용병 길드 롱샷과 칼리",
+        "en": "Mercenary Guild",
+        "effect": null
+      }
+    ],
+    "cooldownSeconds": [[4], [11, 10, 9, 8], [13, 12, 11, 10]]
+  },
+  "kaiken": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_89/chivalrykgt_1398066540514zn1Wk_JPEG/%C4%AB%C0%CC%C4%CB.jpg?type=w800",
+    "article": 3312,
+    "skins": [
+      {
+        "art": "카이켄 기본",
+        "en": "Default",
+        "effect": "cooldown"
+      },
+      {
+        "art": "정장 카이켄",
+        "en": "Suit",
+        "effect": "magicPierce"
+      },
+      {
+        "art": "군인 카이켄",
+        "en": "Soldier",
+        "effect": "hp"
+      }
+    ],
+    "cooldownSeconds": [[6], [7], [16, 14, 12, 10]]
+  },
+  "abyss": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_291/chivalrykgt_1398066556191y7tn1_JPEG/%BE%EE%BA%F1%BD%BA.jpg?type=w800",
+    "article": 3319,
+    "skins": [
+      {
+        "art": "어비스 기본",
+        "en": "Default",
+        "effect": "hp"
+      },
+      {
+        "art": "심판관 어비스",
+        "en": "Inquisitor",
+        "effect": "power"
+      },
+      {
+        "art": "홍염의 어비스",
+        "en": "Crimson Flame",
+        "effect": "drain"
+      }
+    ],
+    "cooldownSeconds": [[9], [12, 11, 10, 9], [23, 20, 17, 14]]
+  },
+  "froze": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_22/chivalrykgt_1398066568233UW6Jh_JPEG/%C7%C1%B7%CE%C1%EE.jpg?type=w800",
+    "article": 3322,
+    "skins": [
+      {
+        "art": "프로즈 기본",
+        "en": "Default",
+        "effect": "hp"
+      },
+      {
+        "art": "캣 우먼 프로즈",
+        "en": "Catwoman",
+        "effect": "speed"
+      },
+      {
+        "art": "도시 여자 프로즈",
+        "en": "City Girl",
+        "effect": "power"
+      }
+    ],
+    "cooldownSeconds": [[], [], [10, 9, 8, 7]]
+  },
+  "magnus": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_110/chivalrykgt_1398066580451F8nc6_JPEG/%B8%C5%B1%D7%B3%CA%BD%BA.jpg?type=w800",
+    "article": 3324,
+    "skins": [
+      {
+        "art": "매그너스 기본",
+        "en": "Default",
+        "effect": "hp"
+      },
+      {
+        "art": "양철 나무꾼 매그너스",
+        "en": "Tin Woodman",
+        "effect": "resist"
+      },
+      {
+        "art": "기갑부대 매그너스",
+        "en": "Armored Division",
+        "effect": "armor"
+      }
+    ],
+    "cooldownSeconds": [
+      [18, 17, 16, 15],
+      [18, 17, 16, 15],
+      [17, 16, 15, 14]
+    ]
+  },
+  "swift": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_139/chivalrykgt_1398066592857fHyP7_JPEG/%BD%BA%C0%A7%C7%C1%C6%AE.jpg?type=w800",
+    "article": 3325,
+    "skins": [
+      {
+        "art": "스위프트 기본",
+        "en": "Default",
+        "effect": "speed"
+      },
+      {
+        "art": "비서 스위프트",
+        "en": "Secretary",
+        "effect": "pierce"
+      },
+      {
+        "art": "궁중 악사 스위프트",
+        "en": "Court Musician",
+        "effect": "move"
+      },
+      {
+        "art": "바니걸 스위프트",
+        "en": "Bunny Girl",
+        "effect": "rage"
+      }
+    ],
+    "cooldownSeconds": [
+      [12, 11, 10, 9],
+      [13, 12, 11, 10],
+      [14, 13, 12, 11]
+    ]
+  },
+  "rildin": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_99/chivalrykgt_13980666120068UbWg_JPEG/%B8%B1%B5%F2.jpg?type=w800",
+    "article": 3327,
+    "skins": [
+      {
+        "art": "릴딘 기본",
+        "en": "Default",
+        "effect": "resist"
+      },
+      {
+        "art": "방랑자 릴딘",
+        "en": "Wanderer",
+        "effect": "armor"
+      }
+    ],
+    "cooldownSeconds": [[7], [15, 14, 13, 12], [7, 6, 5, 4]]
+  },
+  "jade": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_241/chivalrykgt_1398066624329CxHpg_JPEG/%C1%A6%C0%CC%B5%E5.jpg?type=w800",
+    "article": 3328,
+    "skins": [
+      {
+        "art": "제이드 기본",
+        "en": "Default",
+        "effect": "armor"
+      },
+      {
+        "art": "마스터 위자드 제이드",
+        "en": "Master Wizard",
+        "effect": "power"
+      }
+    ],
+    "cooldownSeconds": [
+      [11, 10, 9, 8],
+      [11, 10, 9, 8],
+      [14, 13, 12, 11]
+    ]
+  },
+  "theresa": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140421_217/chivalrykgt_1398066640064S2yvD_JPEG/%C5%D7%B7%B9%BB%E7.jpg?type=w800",
+    "article": 3332,
+    "skins": [
+      {
+        "art": "테레사 기본",
+        "en": "Default",
+        "effect": "hp"
+      },
+      {
+        "art": "견습 기사 테레사",
+        "en": "Squire",
+        "effect": "armor"
+      },
+      {
+        "art": "가디언 테레사",
+        "en": "Guardian",
+        "effect": "resist"
+      }
+    ],
+    "cooldownSeconds": [
+      [12, 11, 10, 9],
+      [13, 12, 11, 10],
+      [10, 9, 8, 7]
+    ]
+  },
+  "drizz": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140516_106/chivalrykgt_14002041786496rz2a_JPEG/%B5%E5%B8%AE%C1%EE.jpg?type=w800",
+    "article": 9887,
+    "skins": [
+      {
+        "art": "드리즈 기본",
+        "en": "Default",
+        "effect": "hp"
+      },
+      {
+        "art": "폭주화 드리즈",
+        "en": "Berserk",
+        "effect": "attack"
+      }
+    ],
+    "cooldownSeconds": [[15, 14, 13, 12], [8], [8, 7, 6, 5]]
+  },
+  "vallet": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140516_297/chivalrykgt_14002041952411rGCP_JPEG/%B9%DF%B7%BF.jpg?type=w800",
+    "article": 17866,
+    "skins": [
+      {
+        "art": "발렛 기본",
+        "en": "Default",
+        "effect": "pierce"
+      },
+      {
+        "art": "레이디 발렛",
+        "en": "Lady",
+        "effect": "attack"
+      }
+    ],
+    "cooldownSeconds": [
+      [7, 6, 5, 4],
+      [9, 8, 7, 6],
+      [21, 19, 17, 15]
+    ]
+  },
+  "freesia": {
+    "face": "https://cafeptthumb-phinf.pstatic.net/20140609_232/chivalrykgt_14022988888292FQA5_PNG/thumnail_freesia.png?type=w800",
+    "article": 29349,
+    "skins": [
+      {
+        "art": "프리지아 기본",
+        "en": "Default",
+        "effect": null
+      },
+      {
+        "art": "꿀벌 프리지아",
+        "en": "Honeybee",
+        "effect": null
+      }
+    ],
+    "cooldownSeconds": [[12, 11, 10, 9], [9], [18, 16, 14, 12]]
+  }
+}

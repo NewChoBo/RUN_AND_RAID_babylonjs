@@ -1,0 +1,272 @@
+import { uiText as t, type UiMessage } from '../content/locales/ui.ts';
+import { getLocale } from '../content/locales/locale.ts';
+import type { DraftProfile } from '../content/raid/draft-profiles.ts';
+import {
+  draftCatalog,
+  draftPreset,
+  effectFor,
+  equipmentPages,
+  gearIcon,
+  hasDraftCatalog,
+  remainingPoints,
+  skinArt,
+  type CatalogHero,
+  type DraftPreset,
+  type GearPage,
+} from '../content/raid/draft-loadout.ts';
+import { officialGuides } from '../content/raid/official-guides.ts';
+import './styles/draft-loadout.css';
+import { setSkillIcon } from './raid-skill-icon.ts';
+
+function selectField(parent: HTMLElement, label: UiMessage) {
+  const row = document.createElement('label');
+  const select = document.createElement('select');
+  row.append(t(label), select);
+  parent.append(row);
+  return select;
+}
+
+export function createDraftLoadout(previewArt: (hero: CatalogHero, url: string) => void) {
+  const skills = document.createElement('section');
+  skills.className = 'draft-ranks';
+  const header = document.createElement('header');
+  const title = document.createElement('strong');
+  title.textContent = t('skillAllocation');
+  title.title = t('pointsRule');
+  const remaining = document.createElement('span');
+  remaining.setAttribute('aria-live', 'polite');
+  const reset = document.createElement('button');
+  reset.type = 'button';
+  reset.textContent = t('resetRanks');
+  header.append(title, remaining, reset);
+  const row = document.createElement('div');
+  row.className = 'rank-slots';
+  const info = document.createElement('output');
+  info.hidden = true;
+  skills.append(header, row, info);
+  const settings = document.createElement('section');
+  settings.className = 'draft-loadout';
+  const art = selectField(settings, 'skinPreview');
+  const intrinsic = document.createElement('small');
+  intrinsic.className = 'draft-skin-note';
+  settings.append(intrinsic);
+  const option = selectField(settings, 'skinEffect');
+  const gear = selectField(settings, 'equippedGear');
+  for (const key of ['empty', 'darkKnight', 'kaikenSet'] as const)
+    gear.add(new Option(t(key), key));
+  const equipped = document.createElement('div');
+  equipped.className = 'draft-gear';
+  const bonuses = document.createElement('ul');
+  bonuses.setAttribute('aria-label', t('gearSummary'));
+  const items = document.createElement('div');
+  items.className = 'draft-gear-items';
+  equipped.append(bonuses, items);
+  const note = document.createElement('small');
+  note.textContent = t('draftPreview');
+  const reference = document.createElement('a');
+  reference.textContent = t('skinReference');
+  reference.target = '_blank';
+  reference.rel = 'noopener noreferrer';
+  note.append(' · ', reference);
+  settings.append(equipped, note);
+
+  const presets = new Map<CatalogHero, DraftPreset>();
+  let selected: CatalogHero | undefined;
+  let preset: DraftPreset;
+  const keyFor = (hero: CatalogHero) => 'run-and-raid.draft.v1.' + hero;
+  function save() {
+    if (!selected) return;
+    try {
+      localStorage.setItem(keyFor(selected), JSON.stringify(preset));
+    } catch {
+      /* Session copy remains usable. */
+    }
+  }
+  function read(hero: CatalogHero) {
+    const cached = presets.get(hero);
+    if (cached) return cached;
+    let value;
+    try {
+      value = JSON.parse(localStorage.getItem(keyFor(hero)) ?? 'null');
+    } catch {
+      /* Use defaults. */
+    }
+    const result = draftPreset(hero, value);
+    presets.set(hero, result);
+    return result;
+  }
+  const slots = Array.from({ length: 5 }, (_, index) => {
+    const cell = document.createElement('div');
+    const adjustable = index > 0 && index < 4;
+    const icon = document.createElement(adjustable ? 'button' : 'div');
+    if (icon instanceof HTMLButtonElement) {
+      icon.type = 'button';
+      icon.onclick = () => explainRank(index - 1);
+    } else icon.setAttribute('role', 'img');
+    const image = document.createElement('img');
+    const level = document.createElement('b');
+    icon.className = 'rank-icon';
+    icon.append(image, level);
+    const step = (delta: number) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = delta > 0 ? '+' : '−';
+      button.onclick = () => {
+        const i = index - 1;
+        const n = preset.ranks[i];
+        if (
+          n === undefined ||
+          n + delta < 1 ||
+          n + delta > 4 ||
+          (delta > 0 && !remainingPoints(preset))
+        )
+          return;
+        preset.ranks[i] = n + delta;
+        updateRanks();
+        explainRank(i);
+        save();
+      };
+      return button;
+    };
+    const up = step(1),
+      down = step(-1);
+    if (adjustable) cell.append(up, icon, down);
+    else cell.append(icon);
+    row.append(cell);
+    return { up, down, icon, image, level };
+  });
+  function explainRank(i: number) {
+    if (!selected) return;
+    const rank = preset.ranks[i]!;
+    const name = officialGuides[selected]!.skills[i]!;
+    const times = draftCatalog[selected].cooldownSeconds[i]!;
+    const seconds = times.length === 1 ? times[0] : times[rank - 1];
+    info.textContent =
+      t('rankValue', { skill: name, n: rank }) +
+      (seconds === undefined ? '' : ' · ' + t('originalCooldown', { seconds }));
+    info.hidden = false;
+  }
+  function updateRanks() {
+    const left = remainingPoints(preset);
+    remaining.textContent = t('pointsLeft', { n: left });
+    reset.disabled = left === 3;
+    for (let i = 0; i < 3; i++) {
+      const slot = slots[i + 1]!;
+      slot.level.textContent = String(preset.ranks[i]);
+      slot.up.disabled = !left || preset.ranks[i] === 4;
+      slot.down.disabled = preset.ranks[i] === 1;
+      slot.icon.setAttribute(
+        'aria-label',
+        t('rankValue', { skill: slot.icon.title, n: preset.ranks[i]! }),
+      );
+    }
+  }
+  reset.onclick = () => {
+    info.hidden = true;
+    preset.ranks = [1, 1, 1];
+    updateRanks();
+    save();
+  };
+  function updateGear() {
+    bonuses.replaceChildren();
+    items.replaceChildren();
+    const page = equipmentPages[preset.gear];
+    for (let i = 0; i < 4; i++) {
+      const piece = page[i];
+      const slot = document.createElement('span');
+      if (piece) {
+        const image = document.createElement('img');
+        image.alt = t(piece.item);
+        image.referrerPolicy = 'no-referrer';
+        image.src = gearIcon(piece.item);
+        slot.append(image);
+        const lines = piece.stats.map(([stat, value]) => t(stat) + ' ' + value);
+        slot.title = t(piece.item) + ' · ' + lines.join(', ');
+        for (const line of lines) {
+          const li = document.createElement('li');
+          li.textContent = line;
+          bonuses.append(li);
+        }
+      } else {
+        slot.textContent = '—';
+        slot.setAttribute('aria-label', t('emptySlot'));
+      }
+      items.append(slot);
+    }
+  }
+  function paintArt() {
+    const url = skinArt(preset.art);
+    if (!selected || !url) return;
+    previewArt(selected, url);
+    intrinsic.hidden = preset.option === preset.art;
+    const skin = draftCatalog[selected].skins.find((s) => s.art === preset.art);
+    const effect = effectFor(skin?.effect ?? null);
+    intrinsic.textContent = t('intrinsicBonus', {
+      bonus: effect ? t(effect[0]) + ' ' + effect[1] : t('unconfirmedEffect'),
+    });
+  }
+  art.onchange = () => {
+    preset.art = art.value;
+    paintArt();
+    save();
+  };
+  option.onchange = () => {
+    preset.option = option.value;
+    paintArt();
+    save();
+  };
+  gear.onchange = () => {
+    preset.gear = gear.value as GearPage;
+    updateGear();
+    save();
+  };
+  return {
+    skills,
+    settings,
+    show(hero: DraftProfile) {
+      const active = hasDraftCatalog(hero);
+      skills.hidden = settings.hidden = !active;
+      if (!active) {
+        selected = undefined;
+        return;
+      }
+      if (selected === hero) return;
+      selected = hero;
+      preset = read(hero);
+      info.hidden = true;
+      reference.href = 'https://cafe.naver.com/runandraid/' + draftCatalog[hero].article;
+      const guide = officialGuides[hero]!;
+      slots.forEach(({ up, down, icon, image }, i) => {
+        const name = i ? guide.skills[i - 1]! : guide.passive;
+        icon.title =
+          i === 0
+            ? t('passiveSlot') + ' · ' + name
+            : i === 4
+              ? t('ultimateSlot') + ' · ' + name
+              : name;
+        icon.setAttribute('aria-label', icon.title);
+        up.setAttribute('aria-label', t('rankUp', { skill: name }));
+        down.setAttribute('aria-label', t('rankDown', { skill: name }));
+        setSkillIcon(image, hero, i);
+      });
+      updateRanks();
+      art.replaceChildren();
+      option.replaceChildren();
+      for (const skin of draftCatalog[hero].skins) {
+        const effect = effectFor(skin.effect);
+        const bonus = effect ? t(effect[0]) + ' ' + effect[1] : t('unconfirmedEffect');
+        const name =
+          getLocale() === 'ko' ? skin.art.replace('둠가드 기본', '둠가드 해머') : skin.en;
+        art.add(new Option(name, skin.art));
+        if (effect) option.add(new Option(name + ' · ' + bonus, skin.art));
+      }
+      option.disabled = !option.length;
+      if (option.disabled) option.add(new Option(t('unconfirmedEffect'), preset.option));
+      art.value = preset.art;
+      option.value = preset.option;
+      gear.value = preset.gear;
+      updateGear();
+      paintArt();
+    },
+  };
+}
