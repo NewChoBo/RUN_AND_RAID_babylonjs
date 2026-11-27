@@ -348,14 +348,11 @@ a:focus-visible {
 body > #launch-splash:not(.launch-error) {
   display: none;
 }
-@media (any-pointer: coarse), (max-width: 600px) and (orientation: portrait) {
-  body > #launch-splash:not(.launch-error) {
-    display: grid;
-  }
+html[data-mobile] body > #launch-splash:not(.launch-error) {
+  display: grid;
 }
-@media (orientation: portrait) and (any-pointer: coarse),
-  (orientation: portrait) and (max-width: 600px) {
-  body > #launch-splash:not(.launch-error) {
+@media (orientation: portrait) {
+  html[data-mobile] body > #launch-splash:not(.launch-error) {
     width: 100dvh;
     height: 100dvw;
     left: 100%;

@@ -9,7 +9,7 @@ let pending: { gesture: boolean; promise: Promise<boolean> } | null = null;
 
 export function canRequestLandscape() {
   return (
-    matchMedia('(any-pointer: coarse)').matches &&
+    document.documentElement.hasAttribute('data-mobile') &&
     typeof (screen.orientation as LockableOrientation | undefined)?.lock === 'function'
   );
 }

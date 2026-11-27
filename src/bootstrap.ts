@@ -3,10 +3,7 @@ import { installLandscapeRecovery, requestLandscape } from './platform/browser/l
 
 const frame = landscapeFrame();
 const splash = document.querySelector<HTMLElement>('#launch-splash')!;
-if (
-  !frame &&
-  matchMedia('(any-pointer: coarse), (max-width: 600px) and (orientation: portrait)').matches
-) {
+if (!frame && document.documentElement.hasAttribute('data-mobile')) {
   installLandscapeRecovery();
   void requestLandscape(false);
   mountLandscapeFrame(requestLandscape, splash);

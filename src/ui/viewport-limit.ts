@@ -4,7 +4,7 @@ import { landscapeFrame } from '../platform/browser/game-navigation.ts';
 
 const regular = { width: 568, height: 320 };
 const compact = { width: 480, height: 216 };
-const touch = matchMedia('(any-pointer: coarse)');
+const mobile = document.documentElement.hasAttribute('data-mobile');
 const portrait = matchMedia('(orientation: portrait)');
 const sizeQuery = ({ width, height }: typeof regular) =>
   `(min-width: ${width}px) and (min-height: ${height}px)`;
@@ -34,8 +34,8 @@ export function installViewportLimit(dialog: HTMLDialogElement) {
       message.textContent = '';
       return;
     }
-    const mobilePortrait = touch.matches && portrait.matches;
-    const target = touch.matches ? compact : regular;
+    const mobilePortrait = mobile && portrait.matches;
+    const target = mobile ? compact : regular;
     minimum.textContent = startupText('viewportMinimum', {
       width: innerWidth,
       height: innerHeight,
@@ -45,13 +45,10 @@ export function installViewportLimit(dialog: HTMLDialogElement) {
     heading.textContent = mobilePortrait ? startupText('turnToPlay') : regularHeading;
     instructions.textContent = mobilePortrait
       ? portraitHelp
-      : startupText(touch.matches ? 'landscapeRoom' : 'windowRoom');
+      : startupText(mobile ? 'landscapeRoom' : 'windowRoom');
     rotate.hidden = !mobilePortrait || !canRequestLandscape();
     expand.hidden =
-      !touch.matches ||
-      portrait.matches ||
-      !display.fullscreenEnabled ||
-      !!display.fullscreenElement;
+      !mobile || portrait.matches || !display.fullscreenEnabled || !!display.fullscreenElement;
     if (!dialog.open) dialog.showModal();
   };
 
@@ -81,7 +78,7 @@ export function installViewportLimit(dialog: HTMLDialogElement) {
     message.textContent = '';
     update();
   });
-  touch.addEventListener('change', update);
+
   // The outer document outlives this game. Release its listener when the frame navigates.
   window.addEventListener('pageshow', () => {
     display.addEventListener('fullscreenchange', update);
@@ -95,6 +92,5 @@ export function installViewportLimit(dialog: HTMLDialogElement) {
   window.addEventListener('hashchange', update);
   update();
   // Installed apps and some tabs can rotate on launch without a fullscreen gesture.
-  if (location.hash === '#/ready' && portrait.matches && touch.matches)
-    void requestLandscape(false);
+  if (location.hash === '#/ready' && portrait.matches && mobile) void requestLandscape(false);
 }
