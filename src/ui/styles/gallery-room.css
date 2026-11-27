@@ -302,6 +302,7 @@
 }
 .choice-grid {
   display: grid;
+  grid-auto-rows: max-content;
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   flex: 1;
   align-content: start;
@@ -359,6 +360,7 @@
 }
 #gallery-item {
   display: grid;
+  grid-auto-rows: max-content;
   gap: 4px;
   overflow: auto;
   align-content: start;
