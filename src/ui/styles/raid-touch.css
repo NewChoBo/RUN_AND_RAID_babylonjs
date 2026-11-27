@@ -143,6 +143,9 @@
 .raid-aim[data-kind='direction'][data-state='ready'] .raid-aim-pad strong {
   color: #d9e6ff;
 }
+body.raid-mode #overlay[data-screen='title'] {
+  padding: 0;
+}
 body.raid-mode #overlay[data-screen='title'] .menu-folio {
   display: grid;
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);

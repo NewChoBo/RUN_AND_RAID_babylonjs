@@ -12,7 +12,7 @@ const sizeQuery = ({ width, height }: typeof regular) =>
 // Browser chrome can leave landscape phones with less than 320 CSS pixels of height.
 // Gate gameplay on the layout viewport, the same space used by the canvas and HUD.
 export const playableViewport = matchMedia(
-  `${sizeQuery(regular)}, (any-pointer: coarse) and (orientation: landscape) and ${sizeQuery(compact)}`,
+  `(pointer: fine) and ${sizeQuery(regular)}, (orientation: landscape) and ${sizeQuery(regular)}, (any-pointer: coarse) and (orientation: landscape) and ${sizeQuery(compact)}`,
 );
 
 export function installViewportLimit(dialog: HTMLDialogElement) {

@@ -1,10 +1,9 @@
 import { prepareRaid } from './app/run-and-raid.ts';
-import { installLandscapeRecovery, requestLandscape } from './platform/browser/landscape.ts';
+import { installLandscapeRecovery } from './platform/browser/landscape.ts';
 import { installViewportLimit } from './ui/viewport-limit.ts';
 
 installLandscapeRecovery();
 installViewportLimit(document.querySelector<HTMLDialogElement>('#viewport-limit')!);
-document.querySelector('#start')!.addEventListener('click', () => void requestLandscape(true));
 prepareRaid((error) => {
   console.error(error);
   document.querySelector<HTMLElement>('#startup-progress')!.hidden = true;
