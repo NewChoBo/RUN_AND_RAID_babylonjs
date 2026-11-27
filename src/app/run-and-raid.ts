@@ -47,7 +47,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   let attempt = 0;
   let timer: number | undefined;
   let onlineStart = 0;
-  let receivedAt = 0;
+  let lastFrameAt = 0;
   let onlineRespawning = false;
   let state: 'setup' | 'loading' | 'countdown' | 'playing' | 'paused' | 'finished' = 'setup';
   let countdownMs = 0;
@@ -411,7 +411,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
           slot = round.slot(self)!;
           match = round.match;
           onlineStart = performance.now() + 3000;
-          receivedAt = onlineStart;
+          lastFrameAt = onlineStart;
           onlineRespawning = false;
           launch();
           // Keep the authoritative clock independent of rendering, focus and local menus.
@@ -426,7 +426,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
             }
             const now = performance.now();
             if (!host) {
-              if (now - receivedAt > 20000) room.fail('connectError');
+              if (now - lastFrameAt > 20000) room.fail('connectError');
               return;
             }
             const due = Math.floor(((now - onlineStart) * RAID_HZ) / 1000) - match.tick;
@@ -436,13 +436,14 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
               room.frames(round.advance(n));
               ticks -= n;
             }
+            lastFrameAt = onlineStart + (match.tick * 1000) / RAID_HZ;
           }, 1000 / RAID_HZ);
         },
         intent(sender, data) {
           if (performance.now() >= onlineStart) round?.enqueue(sender, data);
         },
         frames(data) {
-          receivedAt = performance.now();
+          lastFrameAt = performance.now();
           if (!round?.replay(data)) room?.fail('syncError');
         },
         closed(reason) {
@@ -622,7 +623,11 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       aiming = null;
       course.showAim(null);
     }
-    renderCourse(Math.min(dt, 0.1), match.result ? 0 : carry);
+    // The network owns whole ticks. Sample only the fraction before its next tick.
+    const subtick = round
+      ? Math.min(1, Math.max(0, ((now - lastFrameAt) * RAID_HZ) / 1000))
+      : carry;
+    renderCourse(Math.min(dt, 0.1), match.result ? 0 : subtick);
     if (Math.floor(match.tick / 3) !== lastHud || wasRespawning !== respawning) {
       hud.update(match, aiming, slot);
       lastHud = Math.floor(match.tick / 3);

@@ -7,7 +7,12 @@ export const raidActionTicks = (a: RaidAction) =>
 export function raidActiveAction(actions: readonly RaidAction[], slot: number, tick: number) {
   let active: RaidAction | undefined;
   for (const cue of actions) {
-    if (cue.slot !== slot || tick - cue.tick >= raidActionTicks(cue)) continue;
+    if (
+      cue.slot !== slot ||
+      tick >= (cue.cancelledAt ?? Infinity) ||
+      tick - cue.tick >= raidActionTicks(cue)
+    )
+      continue;
     if (
       !active ||
       cue.skill === 3 ||

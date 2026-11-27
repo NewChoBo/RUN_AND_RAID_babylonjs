@@ -1,7 +1,11 @@
 import { RAID_BASIC_HALF_ANGLE } from './raid-sight.ts';
 import { RAID_RUN_LIMIT_X } from './raid-rules.ts';
 import { RAID_COUNTERS, inRaidCounter } from './raid-boss.ts';
-import { limitRaidPlacement, raidGroundPointAfter } from './runner-motion.ts';
+import {
+  limitRaidPlacement,
+  raidGroundPointAfter,
+  raidRunnerPositionAfter,
+} from './runner-motion.ts';
 import { canUseRaidSkill, raidProjectileProfile, raidSkill } from './heroes/hero-catalog.ts';
 import {
   HEROES,
@@ -13,6 +17,7 @@ import {
   WAGON,
   WAGON_HP,
   type Skill,
+  type RaidPoint,
   type RaidMatch,
   type RaidRunner,
 } from './raid-match.ts';
@@ -132,11 +137,11 @@ export function driveRaidBots(
     const repositionOrb =
       r.hero === 'jade' && orbGap > 6 && (distance <= 6 || (passOrb && partnerGap <= 6));
     const usePulse = opener === 'ward' ? needsHealing || repositionOrb : distance <= pulseRange;
-    const canRoll =
-      r.hero !== 'longshot' ||
-      (!!nearest &&
-        nearestDistance < 4 &&
-        (r.hp < HEROES[r.hero].hp * 0.55 || (!!counter && inRaidCounter(counter, r))));
+    const needsEvasion =
+      !!nearest &&
+      nearestDistance < 4 &&
+      (r.hp < HEROES[r.hero].hp * 0.55 || (!!counter && inRaidCounter(counter, r)));
+    const canRoll = r.hero !== 'longshot' || needsEvasion;
     const canDischarge = r.hero !== 'jade' || orbGap <= 6;
     const inSlamRange = leap.kind !== 'leap' || distance <= HEROES[r.hero].radius;
     const wounded = [r, partner]
@@ -160,7 +165,11 @@ export function driveRaidBots(
       send(r.slot, 'cast', { skill: supportSkill, target: wounded.slot });
       continue;
     }
-    if (canUseRaidSkill(r, 3) && (r.hero !== 'jade' || orbGap <= 8)) skill = 3;
+    const ultimate = raidSkill(r.hero, 3).attack;
+    const windup = ultimate.kind === 'projectile' && ultimate.windupTicks;
+    const unsafeCharge =
+      windup && (needsEvasion || (counter && counter.ticks <= windup && inRaidCounter(counter, r)));
+    if (!unsafeCharge && canUseRaidSkill(r, 3) && (r.hero !== 'jade' || orbGap <= 8)) skill = 3;
     else if (canLeap && canUseRaidSkill(r, 1) && distance > HEROES[r.hero].radius) skill = 1;
     else if (
       r.heroView.iceCrystals !== undefined &&
@@ -188,9 +197,21 @@ export function driveRaidBots(
         dx: r.x - nearest.x || (r.team ? 1 : -1),
         dz: r.z - nearest.z,
       });
-    else if (kind === 'direction')
-      send(r.slot, 'cast', { skill, dx: point.x - r.x, dz: point.z - r.z });
-    else if (kind === 'ward') {
+    else if (kind === 'direction') {
+      const attack = raidSkill(r.hero, skill).attack;
+      let origin: RaidPoint = r,
+        aim: RaidPoint = point;
+      if (attack.kind === 'projectile' && attack.windupTicks) {
+        origin = raidRunnerPositionAfter(r, attack.windupTicks);
+        // The bot stops steering once it reaches its chosen lane during the draw.
+        origin.x = Math.max(Math.min(goalX, r.x), Math.min(origin.x, Math.max(goalX, r.x)));
+        if (target) {
+          const flightTicks = (distance / attack.flight.speed) * RAID_HZ;
+          aim = raidRunnerPositionAfter(target, attack.windupTicks + flightTicks);
+        }
+      }
+      send(r.slot, 'cast', { skill, dx: aim.x - origin.x, dz: aim.z - origin.z });
+    } else if (kind === 'ward') {
       const healPartner =
         view.canShield(r.slot, partner.slot) &&
         partner.hp / HEROES[partner.hero].hp < r.hp / HEROES[r.hero].hp;

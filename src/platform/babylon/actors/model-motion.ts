@@ -21,6 +21,9 @@ export class ModelMotion {
   private readonly clips = new Map<string, Clip>();
   private playing?: Clip;
   private blendTime = 0;
+  private lastGait?: Clip;
+  private gaitTime = 0;
+  private gaitPhase = 0;
 
   constructor(groups: readonly AnimationGroup[], names: readonly string[], locomotion = 'run') {
     for (const name of names) {
@@ -62,6 +65,20 @@ export class ModelMotion {
     const clip = this.clips.get(name) ?? this.clips.get('run');
     if (!clip) return;
     this.sample(clip, (seconds % clip.seconds) / clip.seconds, dt);
+  }
+
+  gait(name: string, seconds: number, dt: number, cycleSeconds?: number) {
+    const clip = this.clips.get(name) ?? this.clips.get('run');
+    if (!clip) return;
+    const cycle = cycleSeconds ?? clip.seconds;
+    // Keep the supporting foot in phase when braking changes the cycle or the take.
+    this.gaitPhase =
+      this.lastGait && this.playing === this.lastGait && seconds >= this.gaitTime
+        ? (this.gaitPhase + (seconds - this.gaitTime) / cycle) % 1
+        : (seconds % cycle) / cycle;
+    this.gaitTime = seconds;
+    this.lastGait = clip;
+    this.sample(clip, this.gaitPhase, dt);
   }
 
   seek(name: string, fraction: number, dt: number, blend = true) {

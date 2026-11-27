@@ -53,6 +53,7 @@ export interface ProjectileProfile {
 }
 export interface ProjectileAttack {
   readonly kind: 'projectile';
+  readonly windupTicks?: number;
   readonly flight: ProjectileProfile;
   readonly hit: HitRule;
 }

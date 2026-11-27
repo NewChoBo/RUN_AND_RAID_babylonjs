@@ -11,7 +11,7 @@ export const scatter = {
   contact: standardContact,
 } as const;
 export const piercing = {
-  reach: 16,
+  reach: 20,
   speed: 21,
   angles: [0],
   pierces: true,

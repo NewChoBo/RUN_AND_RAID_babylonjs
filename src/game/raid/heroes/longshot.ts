@@ -21,6 +21,6 @@ export const longshot = defineHero(
       },
     ),
     { kind: 'direction', range: 5, travelTicks: 12, attack: noAttack },
-    projectile(piercing, { powerScale: 7, piercesShield: true }),
+    projectile(piercing, { powerScale: 7, piercesShield: true }, RAID_HZ),
   ],
 );

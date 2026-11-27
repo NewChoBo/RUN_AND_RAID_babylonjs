@@ -17,7 +17,7 @@
 
 ## 2. 새 Photon Realtime 앱 연결
 
-사용자가 [Photon 대시보드](https://dashboard.photonengine.com/en-US/Applications)에서 **Realtime** 앱을 만든다. 리전 허용 목록을 사용한다면 `asia`를 허용한다. 현재 클라이언트는 `src/platform/photon/raid-room.ts`에서 이 리전에 접속하며 앱 버전은 `run-and-raid-10`이다. 방 연결과 이벤트 전송은 Photon이 담당하고 경기 상태는 호스트 클라이언트가 진행한다.
+사용자가 [Photon 대시보드](https://dashboard.photonengine.com/en-US/Applications)에서 **Realtime** 앱을 만든다. 리전 허용 목록을 사용한다면 `asia`를 허용한다. 현재 클라이언트는 `src/platform/photon/raid-room.ts`에서 이 리전에 접속하며 앱 버전은 `run-and-raid-11`이다. 방 연결과 이벤트 전송은 Photon이 담당하고 경기 상태는 호스트 클라이언트가 진행한다.
 
 1. 공개 빌드에는 [저장소 Actions 변수](https://github.com/NewChoBo/RUN_AND_RAID_babylonjs/settings/variables/actions)에 `VITE_PHOTON_APP_ID`를 등록한다. 로컬 개발에는 프로젝트 루트의 `.env.local`에 같은 이름을 사용한다. Vite가 웹 클라이언트에 포함하는 값은 Realtime **App ID**다.
 2. 변수 등록 후 Pages 워크플로를 다시 실행한다. 이미 배포된 JavaScript에는 새 값이 자동으로 반영되지 않는다.
@@ -43,7 +43,7 @@ Pages 배포 소스를 GitHub Actions로 전환했다. [검증 커밋 74d4f0d의
 
 ## Photon 임시 공용 앱 및 전용 앱 교체
 
-2026-11-27부터 기존 oblivion-archive 웹판과 같은 Photon Realtime 앱을 임시 사용한다. 공개판은 저장소 Actions 변수 `VITE_PHOTON_APP_ID`, 로컬판은 Git에서 제외한 `.env.local`에서 읽는다. 리전은 양쪽 모두 `asia`다. 이 프로젝트의 매칭 버전은 `run-and-raid-10`, 기존 웹판은 `oa-raid-12`여서 매칭 풀은 분리된다.
+2026-11-27부터 기존 oblivion-archive 웹판과 같은 Photon Realtime 앱을 임시 사용한다. 공개판은 저장소 Actions 변수 `VITE_PHOTON_APP_ID`, 로컬판은 Git에서 제외한 `.env.local`에서 읽는다. 리전은 양쪽 모두 `asia`다. 이 프로젝트의 매칭 버전은 `run-and-raid-11`, 기존 웹판은 `oa-raid-12`여서 매칭 풀은 분리된다.
 
 **남은 작업** — 전용 Realtime 앱을 만든 뒤 이 프로젝트의 Actions 변수와 로컬 값을 새 App ID로 교체한다. Pages 워크플로를 다시 실행하고 독립 브라우저 두 개에서 코드 방 참가, 경기 시작, 이동과 스킬 동기화를 재검증한다.
 

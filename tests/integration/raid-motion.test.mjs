@@ -35,6 +35,26 @@ test('a take samples its authored time and clamps at its last key', (t) => {
   assert.equal(archive.duration('run'), 2);
   archive.loop('walk', 2.5, 1);
   assert.equal(node.position.x, 3);
+  archive.gait('run', 0.35, 1, 0.7);
+  assert.equal(node.position.x, 6);
+  // Apply braking halfway through the stride, then continue at the source clip's speed.
+  archive.gait('walk', 0.35, 1);
+  assert.equal(node.position.x, 6);
+  archive.gait('walk', 0.85, 1);
+  assert.equal(node.position.x, 9);
+});
+
+test('attack speed modifies only the affected take and a cancelled charge stops between frames', () => {
+  const player = new RaidActionPlayback();
+  const resolve = (cue) => ({ clip: String(cue.skill), duration: 1, start: cue.tick });
+  const buffed = { id: 1, slot: 0, tick: 0, skill: 'basic', basicSpeed: 2 };
+  assert.equal(player.update([buffed], 0, 0, resolve).end, 15);
+  const normal = { id: 2, slot: 0, tick: 15, skill: 'basic' };
+  assert.equal(player.update([normal], 0, 15, resolve).end, 45);
+  const charge = { id: 3, slot: 0, tick: 22, skill: 3 };
+  assert.equal(player.update([charge], 0, 23, resolve).cue, charge);
+  charge.cancelledAt = 26;
+  assert.equal(player.update([], 0, 28, resolve), undefined);
 });
 
 test('a take survives action-history expiry and a new cast can interrupt recovery', () => {

@@ -15,7 +15,11 @@ export class RaidActionPlayback {
       this.current = this.pending;
       this.pending = undefined;
     }
-    if (this.current && tick >= this.current.end) this.current = undefined;
+    if (
+      this.current &&
+      tick >= Math.min(this.current.end, this.current.cue.cancelledAt ?? Infinity)
+    )
+      this.current = undefined;
   }
 
   update(
@@ -36,13 +40,14 @@ export class RaidActionPlayback {
       this.advance(cue.tick);
       if (cue.skill === 'basic' && this.current && this.current.cue.skill !== 'basic') continue;
       const { clip, duration, start } = resolve(cue);
+      const ticks = (duration * RAID_HZ) / (cue.basicSpeed ?? 1);
       if (cue.skill === 'basic' && this.current) {
         const next = this.current.end;
-        this.pending = { cue, clip, start: next, end: next + duration * RAID_HZ };
+        this.pending = { cue, clip, start: next, end: next + ticks };
         continue;
       }
       this.pending = undefined;
-      this.current = { cue, clip, start, end: start + duration * RAID_HZ };
+      this.current = { cue, clip, start, end: start + ticks };
     }
     this.advance(now);
     return this.current;

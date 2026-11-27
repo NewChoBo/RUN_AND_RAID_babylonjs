@@ -75,7 +75,12 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
       model.materials.push(...scene.materials.slice(materialCount));
     }
     for (const mesh of rig.getChildMeshes()) mesh.isPickable = false;
-    return { model, motion, bodyHeight };
+    // Rildin's default run repeats in about 0.70 s in match footage (see ORIGINAL-ROSTER).
+    const runCycle =
+      hero === 'rildin' && (!outfit || outfit === './assets/fighters/rildin-default.glb')
+        ? 0.7
+        : undefined;
+    return { model, motion, bodyHeight, runCycle };
   } catch (error) {
     model.dispose();
     throw error;
@@ -307,7 +312,7 @@ export function createRaidActor(
         dt,
       );
     } else if (pose) {
-      motion?.once(pose.clip, (now - pose.start) / RAID_HZ, dt);
+      motion?.once(pose.clip, ((now - pose.start) / RAID_HZ) * (pose.cue.basicSpeed ?? 1), dt);
     } else if (r.jumping)
       motion?.once(
         modeClip('shieldJump', 'jump'),
@@ -317,12 +322,18 @@ export function createRaidActor(
     else if (r.heroView.orbTicks && motion?.has('orbLoop')) {
       const elapsed = (5 * RAID_HZ - r.heroView.orbTicks + subtick) / RAID_HZ;
       motion.loop('orbLoop', Math.max(0, elapsed - motion.duration('fury')), dt);
-    } else
-      motion?.loop(
-        modeClip('shieldRun', r.slowed || r.lightningSlow || r.brake >= 0.5 ? 'walk' : 'run'),
+    } else {
+      const gait = modeClip(
+        'shieldRun',
+        r.slowed || r.lightningSlow || r.appliedBrake >= 0.5 ? 'walk' : 'run',
+      );
+      motion?.gait(
+        gait,
         now / RAID_HZ + r.slot * 0.13,
         dt,
+        gait === 'run' ? current.runCycle : undefined,
       );
+    }
     const turn = facing - rig.rotation.y;
     rig.rotation.y += Math.atan2(Math.sin(turn), Math.cos(turn)) * Math.min(1, dt * 20);
   }

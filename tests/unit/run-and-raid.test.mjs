@@ -366,6 +366,8 @@ test('Swift designates a quarry, closes over time and blinks behind a visible ta
   r.basic = 0;
   match.step();
   assert.ok(r.basic < HEROES.swift.cooldown);
+  const basic = match.actions.findLast((cue) => cue.slot === r.slot && cue.skill === 'basic');
+  assert.equal(basic.basicSpeed, HEROES.swift.cooldown / r.basic);
   r.rage = 100;
   victim.z = r.z + 9;
   assert.equal(send(0, 'cast', { skill: 3, target: 2 }), false);
@@ -556,7 +558,7 @@ test('each charged ultimate applies its hero effect to the selected formation', 
           : { skill: 3, target: 3 },
       ),
     );
-    advance(match, hero === 'longshot' ? 10 : 1);
+    advance(match, hero === 'longshot' ? RAID_HZ + 10 : 1);
     assert.equal(caster.rage, 0);
     assert.equal(rear.hp, beforeRear - 7 * HEROES[hero].power);
     if (hero === 'hammer') assert.equal(flank.hp, beforeFlank - 24);
@@ -569,6 +571,50 @@ test('each charged ultimate applies its hero effect to the selected formation', 
         Math.min(HEROES.rend.hp, beforeCaster + Math.ceil((7 * HEROES.rend.power) / 3)),
       );
     if (hero === 'longshot') assert.ok(rear.shield);
+  }
+});
+
+test('Piercing Shot draws for one second, then launches once from the moving archer', () => {
+  const { match } = battle('longshot');
+  const caster = match.runners[0];
+  for (const r of match.runners) r.basic = 90;
+  caster.rage = 100;
+  assert.ok(match.cast(0, 3, { dx: 1, dz: 0 }));
+  const cue = match.actions.at(-1);
+  assert.equal(cue.skill, 3);
+  assert.equal(match.projectiles.length, 0);
+  advance(match, RAID_HZ - 1);
+  assert.equal(match.projectiles.length, 0);
+  match.step();
+  const [shot] = match.projectiles;
+  assert.equal(match.projectiles.length, 1);
+  assert.equal(shot.x, caster.x);
+  assert.equal(shot.z, caster.z);
+  assert.equal(shot.dx, 1);
+  assert.equal(match.actions.filter((a) => a.slot === 0 && a.skill === 3).length, 1);
+  assert.notEqual(shot.z, cue.from.z);
+  match.step();
+  assert.ok(shot.x > caster.x);
+});
+
+test('an interrupted Piercing Shot ends its pose without firing later', () => {
+  for (const interrupt of ['cast', 'stagger', 'death']) {
+    const { match } = battle('longshot');
+    const caster = match.runners[0];
+    caster.rage = 100;
+    assert.ok(match.cast(0, 3, { dx: 1, dz: 0 }));
+    const cue = match.actions.at(-1);
+    advance(match, 4);
+    if (interrupt === 'cast') assert.ok(match.cast(0, 2, { dx: -1, dz: 0 }));
+    if (interrupt === 'stagger') caster.staggered = 1;
+    if (interrupt === 'death') caster.respawn = 120;
+    match.step();
+    assert.ok(cue.cancelledAt <= match.tick);
+    advance(match, RAID_HZ);
+    assert.equal(
+      match.projectiles.some((shot) => shot.caster === 0 && shot.skill === 3),
+      false,
+    );
   }
 });
 test('Longshot lands separate arrows up close, slows with W and rolls through a hit with E', () => {

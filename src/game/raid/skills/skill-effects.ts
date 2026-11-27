@@ -47,8 +47,9 @@ export function bolt(
 export function projectile(
   flight: ProjectileProfile,
   hit: HitRule,
+  windupTicks?: number,
 ): HeroSkill<unknown, 'direction'> {
-  return { kind: 'direction', attack: { kind: 'projectile', flight, hit } };
+  return { kind: 'direction', attack: { kind: 'projectile', flight, hit, windupTicks } };
 }
 export function spin(ticks: number, attack: AreaAttack<'spinPulse'>): HeroSkill<unknown, 'pulse'> {
   return {

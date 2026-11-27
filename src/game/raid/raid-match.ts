@@ -2,7 +2,12 @@ import { triggerAttack } from './skills/skill-execution.ts';
 import { measureSkill } from './skills/skill-range.ts';
 import { strikeAlongDash } from './skills/dash-path.ts';
 import { areaRadius } from './skills/attack-area.ts';
-import { attackArea, type HitRule, type AreaAttack } from './skills/attack-rule.ts';
+import {
+  attackArea,
+  type HitRule,
+  type AreaAttack,
+  type ProjectileAttack,
+} from './skills/attack-rule.ts';
 import { RaidProjectiles, type RaidDirection } from './raid-projectiles.ts';
 import { RaidFields } from './combat/active-fields.ts';
 import { RaidHitResolution, gainRage } from './combat/hit-resolution.ts';
@@ -152,6 +157,16 @@ export class RaidMatch implements RaidView {
   };
   readonly #hits: RaidHitResolution;
   readonly #projectiles = new RaidProjectiles();
+  readonly #charging = new Map<
+    number,
+    {
+      release: number;
+      skill: Skill;
+      direction: RaidDirection;
+      attack: ProjectileAttack;
+      cue: RaidAction & { cancelledAt?: number };
+    }
+  >();
   get projectiles() {
     return this.#projectiles.active;
   }
@@ -323,12 +338,15 @@ export class RaidMatch implements RaidView {
         target === 'wagon'
           ? 0
           : raidFacing(this.#runners[target]!, raidActiveAction(this.#actions, target, this.tick)),
-      record: (skill, p, phase, detail) => this.#record(r, skill, p, phase, detail),
+      record: (skill, p, phase, detail) => {
+        this.#record(r, skill, p, phase, detail);
+      },
       haste: (id, ticks) => {
         this.#runners[id]!.hasteTicks = ticks;
       },
-      strike: (id, hit, skill, designated) =>
-        this.#strike(r, id, HEROES[r.hero].power * hit.powerScale, skill, designated, hit),
+      strike: (id, hit, skill, designated) => {
+        this.#strike(r, id, HEROES[r.hero].power * hit.powerScale, skill, designated, hit);
+      },
       placeField: (skill, point, radius, pulse) =>
         this.#fields.place(r.slot, skill, this.tick, point, radius, pulse),
       dash: (skill, to, ticks, target) => this.#startDash(r, skill, to, ticks, target),
@@ -341,11 +359,19 @@ export class RaidMatch implements RaidView {
       counter: (skill) => this.#impact(r, skill, 'counter'),
       fire: (skill, direction, attack) => {
         const profile = attack.flight;
-        this.#projectiles.launch(r, skill, direction, attack, RAID_HZ);
-        this.#record(r, skill, {
+        const cue = this.#record(r, skill, {
           x: r.x + direction.dx * profile.reach,
           z: r.z + direction.dz * profile.reach,
         });
+        if (attack.windupTicks)
+          this.#charging.set(r.slot, {
+            release: this.tick + attack.windupTicks,
+            skill,
+            direction,
+            attack,
+            cue,
+          });
+        else this.#projectiles.launch(r, skill, direction, attack, RAID_HZ);
       },
       gainRage: (amount) => gainRage(r, amount),
       heal: (id, amount, mode) => this.#hits.heal(this.tick, r, id, amount, mode),
@@ -407,14 +433,14 @@ export class RaidMatch implements RaidView {
     const point = this.#position(r, target);
     if (!point) return;
     this.#hits.enqueue({ from: r.slot, target, amount, skill, designated, rule });
-    if (skill === undefined) this.#record(r, 'basic', point);
+    return point;
   }
   #record(
     r: Runner,
     skill: RaidAction['skill'],
     point: RaidPoint,
     phase?: RaidAction['phase'],
-    detail?: Pick<RaidAction, 'lines' | 'comboStep'>,
+    detail?: Pick<RaidAction, 'lines' | 'comboStep' | 'basicSpeed'>,
   ) {
     const target = this.#runners.find((other) => other === point);
     const attack = skill === 'basic' ? undefined : raidSkill(r.hero, skill).attack;
@@ -443,6 +469,14 @@ export class RaidMatch implements RaidView {
         phase === 'ground' || phase === 'spin' ? 0.08 : target ? 1 + raidRunnerHeight(target) : 1.9,
     };
     this.#actions.push(action);
+    return action;
+  }
+  #cancelCharge(slot: number) {
+    const shot = this.#charging.get(slot);
+    if (shot) {
+      shot.cue.cancelledAt = this.tick;
+      this.#charging.delete(slot);
+    }
   }
   #startDash(r: Runner, skill: Skill, desired: RaidPoint, ticks: number, target?: RaidTarget) {
     const to = limitRaidDash(r, desired, ticks);
@@ -469,6 +503,7 @@ export class RaidMatch implements RaidView {
     if (!resolved) return false;
     const hero = this.#heroes[slot]!;
     const spendRage = skill === 3 && !rule.noRageCost && !r.heroView.ultimateRecasts;
+    this.#cancelCharge(slot);
     const cooldown = hero.cast(c, resolved) ?? rule.cooldownTicks ?? SKILL_COOLDOWNS[skill];
     if (spendRage) r.rage = 0;
     hero.events.onCast?.(c, skill);
@@ -509,8 +544,16 @@ export class RaidMatch implements RaidView {
       target = found;
     }
     const attack = this.#heroes[r.slot]!.events.onBasicAttack?.(this.#contexts[r.slot]!);
-    this.#strike(r, target, attack?.amount ?? stats.power);
+    const hitPoint = this.#strike(r, target, attack?.amount ?? stats.power);
     r.basic = attack?.cooldown ?? stats.cooldown;
+    if (hitPoint)
+      this.#record(
+        r,
+        'basic',
+        hitPoint,
+        undefined,
+        r.basic === stats.cooldown ? undefined : { basicSpeed: stats.cooldown / r.basic },
+      );
   }
   step() {
     if (this.#result) return;
@@ -533,7 +576,10 @@ export class RaidMatch implements RaidView {
         }
         continue;
       }
-      if (r.staggered) r.dash = null;
+      if (r.staggered) {
+        r.dash = null;
+        this.#cancelCharge(r.slot);
+      }
       if (r.spinTicks) {
         r.slowed = 0;
         r.lightningSlow = 0;
@@ -571,7 +617,14 @@ export class RaidMatch implements RaidView {
         r.leap = null;
         this.#record(r, skill, r, 'ground');
         this.#impact(r, skill, 'land');
-      } else if (!r.respawn && !r.leap && !r.basic && !r.staggered && !r.spinTicks)
+      } else if (
+        !r.respawn &&
+        !r.leap &&
+        !r.basic &&
+        !r.staggered &&
+        !r.spinTicks &&
+        !this.#charging.has(r.slot)
+      )
         this.#autoAttack(r);
       if (r.staggered) r.staggered--;
       if (r.staggerGuard) r.staggerGuard--;
@@ -592,6 +645,16 @@ export class RaidMatch implements RaidView {
       );
     this.#fields.step(this.tick, this.#contexts);
     this.#hits.resolve(this.tick);
+    // Release at the end of the charge tick, from the caster's current position.
+    // The first flight step always belongs to the next tick, even when other bolts are in flight.
+    for (const [slot, shot] of this.#charging) {
+      const caster = this.#runners[slot]!;
+      if (caster.respawn || caster.staggered) this.#cancelCharge(slot);
+      else if (this.tick >= shot.release) {
+        this.#projectiles.launch(caster, shot.skill, shot.direction, shot.attack, RAID_HZ);
+        this.#charging.delete(slot);
+      }
+    }
     for (const r of this.#runners) {
       // A remembered target belongs to this life, even if the same slot later respawns.
       if (r.respawn || (typeof r.lastStrike === 'number' && this.#runners[r.lastStrike]!.respawn))
