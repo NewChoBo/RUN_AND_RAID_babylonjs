@@ -52,7 +52,7 @@ def convert(item, textures):
     src = SOURCE / item["path"]
     baked = fbx_for(item)
     if baked.exists():
-        bpy.ops.import_scene.fbx(filepath=str(baked))
+        bpy.ops.wm.fbx_import(filepath=str(baked))
     else:
         bpy.ops.import_scene.max(filepath=str(src), directory=str(src.parent), files=[{"name": src.name}],
                                  object_filter={"MATERIAL", "UV", "ARMATURE", "EMPTY"}, use_image_search=True)

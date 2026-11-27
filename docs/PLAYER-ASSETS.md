@@ -41,7 +41,9 @@ Blender에서 새 모션을 제작할 때는 `Model` 장면에서 리그를 만�
 
 ## 원작 모션 내보내기
 
-해머의 기본·달리기·스킬 장면을 직접 시험했다. 사용한 Blender MAX 임포터는 해머의 메시와 UV를 읽지만 원작 스킨 가중치와 키프레임은 가져오지 못했다. 네이티브 내보내기에는 해당 MAX 장면을 열 수 있는 3ds Max와 FBX 플러그인이 필요하다. 현재 작업 PC에서 이 단계는 실행 검증하지 못했다. [Blender MAX 임포터](https://extensions.blender.org/add-ons/io-scene-max/) · [Autodesk FBX 애니메이션 베이크](https://help.autodesk.com/cloudhelp/2023/ENU/3DSMax-Data-Exchange/files/GUID-31EA2A4F-A126-498B-96E8-31811522738A.htm)
+Player 원본 31개 그룹의 MAX 장면 876개를 `asset-sources/baked-fbx/`에 같은 폴더 구조로 추출했다. Blender 5.3에서 876개를 모두 열었고, 프레임을 샘플링한 결과 744개에서 본이 움직였다. 로컬 `.asset-work/max2027/fbx-index.csv`에 장면별 재생 구간, 가중치 정점 수, 움직임을 확인한 본과 메시 수, 다시 연결할 텍스처 이름을 기록했다.
+
+3ds Max 2027.3에서 원본 장면을 FBX로 내보내고 Blender 5.3에서 다시 열었다. 해머 달리기는 30fps, 0~24프레임이며 본 58개와 가중치가 있는 정점 1,037개의 움직임을 확인했다. 로컬 작업본 `.asset-work/blender/hammer-native.blend`를 열면 달리기가 재생 준비된 상태다. 상단 Scene 선택기에서 기본 모델과 원본 모션 28개를 열 수 있다. 각 장면은 원래 리그와 재생 구간을 유지한다. [Autodesk FBX 애니메이션 베이크](https://help.autodesk.com/cloudhelp/2023/ENU/3DSMax-Data-Exchange/files/GUID-31EA2A4F-A126-498B-96E8-31811522738A.htm)
 
 ```powershell
 python tools/assets/bake_fbx.py --maxbatch "C:/Program Files/Autodesk/3ds Max 2025/3dsmaxbatch.exe" --group hammer

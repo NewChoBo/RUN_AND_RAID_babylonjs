@@ -15,7 +15,7 @@ def import_scene(item):
     original = SOURCE / item["path"]
     baked = fbx_for(item)
     if baked.is_file():
-        bpy.ops.import_scene.fbx(filepath=str(baked))
+        bpy.ops.wm.fbx_import(filepath=str(baked))
         return baked
     bpy.ops.import_scene.max(
         filepath=str(original), directory=str(original.parent), files=[{"name": original.name}],
@@ -104,8 +104,18 @@ def main():
                   "게임에 내보낼 때 Model 장면만 GLB로 내보낸 뒤 activate.py로 검사합니다.", "",
                   "원본 모션 목록"])
     notes.extend(sorted(item["path"] for item in sources if item["kind"] == "motion"))
+    missing_images = set()
+    for image in bpy.data.images:
+        if image.source != "FILE" or image.packed_file:
+            continue
+        path = Path(bpy.path.abspath(image.filepath))
+        if path.is_file():
+            image.pack()
+        else:
+            missing_images.add(str(path))
+    if missing_images:
+        notes.extend(["", "원본 경로에서 찾을 수 없는 텍스처", *sorted(missing_images)])
     bpy.data.texts.new("PORTING.txt").write("\n".join(notes) + "\n")
-    bpy.ops.file.pack_all()
     output.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(output))
     print(output)

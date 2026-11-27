@@ -12,9 +12,15 @@ def main():
     parser.add_argument("--group")
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
-    if not args.maxbatch.is_file():
+    maxbatch = args.maxbatch.resolve()
+    if not maxbatch.is_file():
         parser.error("3dsmaxbatch.exe was not found")
-    files = [r for r in read_json(INDEX)["files"] if r["kind"] in ("scene", "motion")
+    manifest = read_json(INDEX)["files"]
+    texture_dirs = {}
+    for record in manifest:
+        if record["kind"] == "texture":
+            texture_dirs.setdefault(record["group"], set()).add((SOURCE / record["path"]).parent)
+    files = [r for r in manifest if r["kind"] in ("scene", "motion")
              and (not args.group or args.group.casefold() == r["group"].casefold())]
     if not files:
         parser.error("No matching scenes")
@@ -26,8 +32,11 @@ def main():
         dest.parent.mkdir(parents=True, exist_ok=True)
         temporary = dest.with_suffix(".partial.fbx")
         temporary.unlink(missing_ok=True)
-        env = {**os.environ, "RUN_RAID_MAX_INPUT": str(source), "RUN_RAID_FBX_OUTPUT": str(temporary)}
-        subprocess.run([str(args.maxbatch), str(Path(__file__).with_name("bake-fbx.ms"))], env=env, check=True)
+        folders = texture_dirs.get(r["group"], set())
+        env = {**os.environ, "RUN_RAID_MAX_INPUT": str(source), "RUN_RAID_FBX_OUTPUT": str(temporary),
+               "RUN_RAID_TEXTURE_DIR": str(next(iter(folders))) if len(folders) == 1 else ""}
+        subprocess.run([str(maxbatch), str(Path(__file__).resolve().with_name("bake-fbx.ms"))],
+                       env=env, cwd=maxbatch.parent, check=True)
         if not temporary.is_file() or temporary.stat().st_size < 32:
             raise RuntimeError(f"3ds Max produced no FBX for {r['path']}")
         temporary.replace(dest)

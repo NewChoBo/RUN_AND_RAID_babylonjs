@@ -19,7 +19,9 @@ def fbx_for(item):
 
 def stamp(item, archive):
     fbx = fbx_for(item)
-    return [archive, REVISION, digest(fbx.read_bytes()) if fbx.is_file() else "static", 1]
+    if fbx.is_file():
+        return [archive, REVISION, digest(fbx.read_bytes()), 2]
+    return [archive, REVISION, "static", 1]
 
 
 def pending(item, archive):

@@ -1,9 +1,16 @@
 -- Run in Autodesk 3ds Max Batch. The Python launcher scopes input and output to one scene.
 (
-    local sourceFile = getEnvVariable "RUN_RAID_MAX_INPUT"
-    local targetFile = getEnvVariable "RUN_RAID_FBX_OUTPUT"
+    local sourceFile = systemTools.getEnvVariable "RUN_RAID_MAX_INPUT"
+    local targetFile = systemTools.getEnvVariable "RUN_RAID_FBX_OUTPUT"
     if sourceFile == undefined or targetFile == undefined do throw "Missing input/output paths."
     if not (loadMaxFile sourceFile useFileUnits:true quiet:true) do throw "Cannot open MAX scene."
+    local textureDir = systemTools.getEnvVariable "RUN_RAID_TEXTURE_DIR"
+    if textureDir != undefined and textureDir != "" do (
+        for bitmap in getClassInstances Bitmaptexture where bitmap.filename != undefined do (
+            local texturePath = pathConfig.appendPath textureDir (filenameFromPath bitmap.filename)
+            if doesFileExist texturePath do bitmap.filename = texturePath
+        )
+    )
     pluginManager.loadClass FBXEXP
     FBXExporterSetParam "ResetExport"
     FBXExporterSetParam "Animation" true
