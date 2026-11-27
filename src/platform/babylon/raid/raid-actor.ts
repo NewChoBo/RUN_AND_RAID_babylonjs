@@ -35,11 +35,14 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
     if (scene.isDisposed) throw new Error('Raid scene disposed');
     const motion = source.still
       ? undefined
-      : new ModelMotion(model.animationGroups, ['run', 'walk', 'jump', 'fall', 'basic', ...clips]);
+      : new ModelMotion(
+          model.animationGroups,
+          source.clips ?? ['run', 'walk', 'jump', 'fall', 'basic', ...clips],
+        );
     model.addAllToScene();
     const root = model.meshes[0]!;
     let bodyHeight: number | undefined;
-    if (source.still) {
+    if (source.authored) {
       root.normalizeToUnitCube(true);
       root.scaling.scaleInPlace(2);
       const bounds = root.getHierarchyBoundingVectors(true);

@@ -50,7 +50,7 @@ def publish_outfits(files):
     outfits = []
     for item in files:
         parts = item["path"].split("/")
-        if len(parts) != 2 or item.get("state") != "static" or not item.get("model"):
+        if len(parts) != 2 or item.get("state") not in {"static", "animated"} or not item.get("model"):
             continue
         group, filename = parts
         stem = Path(filename).stem.lower()

@@ -14,12 +14,15 @@ def glb(path, item):
     magic, version, length, jlen, jtype = struct.unpack_from("<4sIII4s", data)
     assert (magic, version, length, jtype) == (b"glTF", 2, len(data), b"JSON")
     doc = json.loads(data[20:20+jlen])
+    if not doc.get("buffers"):
+        assert item["state"] == "rig" and doc.get("nodes") and not doc.get("meshes")
+        return
     blen, btype = struct.unpack_from("<I4s", data, 20+jlen)
     binary = memoryview(data)[28+jlen:]
     assert btype==b"BIN\0" and len(binary)==blen and doc["buffers"][0]["byteLength"]<=blen
-    for view in doc["bufferViews"]:
+    for view in doc.get("bufferViews", []):
         assert view["buffer"]==0 and 0<=view.get("byteOffset",0)<=blen-view["byteLength"]
-    for mesh in doc["meshes"]:
+    for mesh in doc.get("meshes", []):
         for p in mesh["primitives"]:
             assert doc["accessors"][p["attributes"]["POSITION"]]["count"]>0
     for image in doc.get("images", []):
@@ -43,7 +46,7 @@ def main():
                 assert hashlib.file_digest(f,"sha256").hexdigest()==r["sha256"] and source.stat().st_size==r["bytes"]
             if "thumbnail" in r:
                 with Image.open(PUBLIC/r["thumbnail"]) as im:im.verify()
-            if r["state"] in ("static","animated"):
+            if r["state"] in ("static","animated","rig"):
                 glb(PUBLIC/r["model"],r)
             elif r["state"]=="texture":
                 with Image.open(source) as a, Image.open(PUBLIC/r["texture"]) as b:

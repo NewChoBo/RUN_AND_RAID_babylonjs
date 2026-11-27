@@ -67,7 +67,7 @@ async function choose() {
       item.model ? '.glb' : item.hierarchy ? '.json' : '.png',
     );
   }
-  if (!item.model) {
+  if (!item.model || item.state === 'rig') {
     showImage();
     status.textContent = item.texture
       ? item.width + ' × ' + item.height + ' PNG'

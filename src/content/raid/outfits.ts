@@ -4,15 +4,19 @@ interface Outfit {
   group: string;
   skin: string;
   model: string;
+  clips?: string[];
 }
 
 const manifests = import.meta.glob<Outfit[]>('./local-outfits.json', {
   eager: true,
   import: 'default',
 });
-const outfits = new Map(published.map((o) => [o.group + '/' + o.skin, o]));
+const outfits = new Map<string, Outfit>(published.map((o) => [o.group + '/' + o.skin, o]));
 for (const local of manifests['./local-outfits.json'] ?? []) {
-  outfits.set(local.group + '/' + local.skin, {
+  const key = local.group + '/' + local.skin;
+  // A source scene can include a whole take. The packaged outfit carries the game clip mapping.
+  if (outfits.get(key)?.clips && !local.clips) continue;
+  outfits.set(key, {
     ...local,
     model: './player-assets/' + local.model,
   });

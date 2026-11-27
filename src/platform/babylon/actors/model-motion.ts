@@ -47,12 +47,14 @@ export class ModelMotion {
   }
 
   loop(name: string, seconds: number, dt: number) {
-    const clip = this.clips.get(name)!;
+    const clip = this.clips.get(name) ?? this.clips.get('run');
+    if (!clip) return;
     this.sample(clip, (seconds % clip.seconds) / clip.seconds, dt);
   }
 
   seek(name: string, fraction: number, dt: number, blend = true) {
-    this.sample(this.clips.get(name)!, Math.min(1, Math.max(0, fraction)), dt, blend);
+    const clip = this.clips.get(name);
+    if (clip) this.sample(clip, Math.min(1, Math.max(0, fraction)), dt, blend);
   }
 
   private sample(clip: Clip, fraction: number, dt: number, blend = true) {

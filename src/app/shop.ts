@@ -60,7 +60,9 @@ async function select(item: (typeof art)[number]) {
     if (id !== request) return;
     const v = (view ??= createView(canvas, () => !root.hidden && !canvas.hidden));
     v.engine.resize();
-    const loaded = await LoadAssetContainerAsync(item.url, v.scene);
+    const loaded = await LoadAssetContainerAsync(item.url, v.scene, {
+      pluginOptions: { gltf: { animationStartMode: 0 } },
+    });
     if (id !== request) {
       loaded.dispose();
       return;
@@ -68,6 +70,9 @@ async function select(item: (typeof art)[number]) {
     model = loaded;
     model.addAllToScene();
     frameModel(v, model);
+    const preview =
+      model.animationGroups.find((group) => group.name === 'run') ?? model.animationGroups[0];
+    preview?.start(true);
     status.textContent = uiText('modelControls');
   } catch {
     if (id === request) status.textContent = uiText('modelError');

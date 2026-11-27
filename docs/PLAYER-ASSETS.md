@@ -1,5 +1,21 @@
 # 개발진 제공 Player 에셋 준비
 
+## 현재 작업본과 경기 에셋
+
+Google Drive의 **Run and Raid - Player Assets**에서 `Blender/<그룹>.blend`를 내려받아 편집한다. Scene 선택기의 각 장면은 원본 MAX 한 개와 대응한다. `FBX/<그룹>.zip`에는 FBX와 텍스처가 있다. `GLB/<그룹>.zip`의 `Scenes/`에는 원본별 GLB, `Outfits/`에는 경기·상점용 GLB, `index.json`에는 출처와 클립 매핑이 있다. 다운로드한 파일은 Drive 루트의 `SHA256SUMS.txt`로 검사할 수 있다.
+
+31개 그룹의 장면 GLB 876개 중 851개에는 메시가 있고, 25개는 본·헬퍼 장면이다. 별도 제작된 걷기가 없는 경기 모델은 달리기를 느리게 사용한다. 칼리의 중독은 다음 평타를 강화하므로 전용 원본이 없는 이 슬롯에 평타 동작을 연결했다. 피부·의상 디퓨즈의 알파는 마스크로 보존하고 경기용 본체는 불투명하게 렌더링한다. 일부 제작용 장면은 원본 ZIP에 없는 텍스처를 참조한다. 편집 파일의 장면 속성과 그룹별 GLB 색인에 해당 참조를 기록했다.
+
+원본 ZIP을 준비한 작업 환경에서 전체 라이브러리를 다시 만들 때는 FBX를 `asset-sources/baked-fbx/`에 원래 상대경로대로 둔다. 편집 작업본의 출력은 `.asset-work/player-release/Blender/`다. 기존 작업본은 보존하며, 이미 Drive에서 받은 작업본을 사용하는 경우 `glb` 단계부터 실행한다.
+
+```powershell
+uv run --no-project --python 3.13 --with bpy==5.3.0 --with pillow==11.1.0 python tools/assets/player_archive.py blend --timeline "C:/art/fbx-index.csv"
+uv run --no-project --python 3.13 --with bpy==5.3.0 --with pillow==11.1.0 python tools/assets/player_archive.py glb
+uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/assemble_player.py --outfits
+python tools/assets/package_players.py
+uv run --no-project --python 3.13 --with pillow==11.1.0 python tools/assets/verify.py
+```
+
 원본 ZIP은 로컬에서만 사용한다. 게임 플레이는 Babylon.js, 저작 형식 변환은 Blender를 사용한다. 원본 이미지의 RGBA와 원작 장면 파일을 보존하고, 복구할 수 있는 결과를 에셋별로 기록한다.
 
 ## 전체 라이브러리 만들기
@@ -14,7 +30,7 @@ uv run --no-project --python 3.13 --with pillow==11.1.0 python tools/assets/veri
 
 `asset-sources/player/`에는 ZIP의 폴더 구조와 파일을 보존한다. `public/player-assets/catalog.json`은 각 원본 경로·해시·유형·변환 상태와 브라우저용 파일을 연결한다. `models/`에는 정적 GLB 또는 베이크된 애니메이션 GLB, `textures/`에는 무손실 PNG, `rigs/`에는 원본 본·헬퍼 이름과 부모 이름, `previews/`에는 작업 시 저장된 미리보기가 들어간다. 임포터 버전과 중간 기록은 `.asset-work/`에 보관한다. 이 경로들과 베이크한 FBX는 Git에서 제외한다.
 
-| 현재 ZIP 검증 결과              | 수량 |
+| 최초 정적 임포트 검증 결과      | 수량 |
 | ------------------------------- | ---: |
 | 전체 원본 파일                  |  973 |
 | 정적 메시 GLB                   |  851 |
@@ -77,4 +93,4 @@ const { previewStaticHero } = await import('/tools/assets/preview-static.js');
 await previewStaticHero('hammer', 'hammer/hammer#default.max');
 ```
 
-이 미리보기는 경기 카메라에서 외형을 살피도록 크기와 발 높이를 임시 조정한다. 해머 기본 모델은 본체 메시와 텍스처가 보이며 스킨과 클립은 0개다. 달리기, 평타 1·2, 스킬 1~4 시작 장면의 현재 변환본도 단일 자세다. 원작 무기 장착과 모션 재생은 아직 검증하지 못했다. 위 FBX 베이크 경로로 스킨과 클립을 확보하면 경기에서 달리기·평타·스킬을 각각 확인하고 영웅별로 원작 복원 클립과 대체 클립을 기록한다.
+이 미리보기 도구는 개별 장면을 경기 카메라에서 점검할 때 사용한다. 상점과 경기에서는 외형별 게임용 GLB를 읽는다. 해머 봇 경기에서 본체와 무기, 달리기, 타격 시 자세를 확인했다.

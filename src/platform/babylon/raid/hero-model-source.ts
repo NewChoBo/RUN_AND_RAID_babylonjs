@@ -14,11 +14,18 @@ export function heroModelSource(hero: RaidHero, outfit?: string) {
     local &&
     new RegExp('^playable/' + hero + '-[a-f0-9]{16}\\.glb$').test(local.file)
   ) {
-    return { url: './player-assets/' + local.file, authored: true, still: false };
+    return { url: './player-assets/' + local.file, authored: true, still: false, clips: undefined };
   }
   const original = outfit
     ? raidOutfits.find((o) => o.model === outfit)
     : raidOutfits.find((o) => o.group === hero && o.skin === 'default');
-  if (original) return { url: original.model, authored: true, still: true };
-  return { url: './assets/raid/' + hero + '.glb', authored: false, still: false };
+  if (original) {
+    return {
+      url: original.model,
+      authored: true,
+      still: !original.clips?.includes('run'),
+      clips: original.clips,
+    };
+  }
+  return { url: './assets/raid/' + hero + '.glb', authored: false, still: false, clips: undefined };
 }

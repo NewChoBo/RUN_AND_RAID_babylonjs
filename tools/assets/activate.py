@@ -8,6 +8,23 @@ from library import PUBLIC, ROOT, digest, save_json, write_changed
 
 CLIPS = {"run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"}
 
+def fighter_materials(data):
+    """Player body diffuse alpha stores a mask. All approved game outfits render opaque."""
+    json_size = struct.unpack_from("<I", data, 12)[0]
+    model = json.loads(data[20:20 + json_size])
+    changed = False
+    for material in model.get("materials", []):
+        if material.get("alphaMode", "OPAQUE") != "OPAQUE":
+            material.pop("alphaMode", None)
+            material.pop("alphaCutoff", None)
+            changed = True
+    if not changed:
+        return data
+    chunk = json.dumps(model, ensure_ascii=False, separators=(",", ":")).encode("utf8")
+    chunk += b" " * (-len(chunk) % 4)
+    rest = data[20 + json_size:]
+    return struct.pack("<4sIII4s", b"glTF", 2, 20 + len(chunk) + len(rest), len(chunk), b"JSON") + chunk + rest
+
 
 def activate(hero, path):
     ids = re.findall(r"'([a-z0-9-]+)'", (ROOT/"src/game/raid/heroes/hero-id.ts").read_text("utf8"))
