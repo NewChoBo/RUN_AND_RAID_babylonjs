@@ -1,0 +1,201 @@
+﻿/* The toolbar stays in the same grid row from the landing screen through the draft. */
+.lobby {
+  position: relative;
+  z-index: 1;
+}
+.lobby[data-screen='ready'],
+.lobby[data-screen='assets'] {
+  grid-template-rows: min(15.7%, 76px) minmax(0, 1fr);
+}
+.lobby:not([data-screen='home']) > :is(.banner, .board) {
+  display: none;
+}
+.lobby[data-screen='ready']:has(#overlay[hidden]) {
+  display: none;
+}
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  visibility: hidden;
+}
+body.raid-mode #game {
+  visibility: visible;
+}
+#overlay {
+  background: linear-gradient(125deg, #352e28, #1d1c1d 76%);
+  overflow: auto;
+  min-height: 0;
+  color: #f8f0de;
+  --line: #736550;
+}
+.room-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(5px, 1.6vh, 16px) clamp(8px, 2vw, 28px);
+  border-bottom: 1px solid var(--line);
+}
+.room-heading h1 {
+  font-size: clamp(1rem, 2.5vw, 1.8rem);
+}
+.room-heading a {
+  font-size: 0.85rem;
+}
+.room-layout {
+  display: grid;
+  grid-template-columns: minmax(125px, 0.85fr) minmax(0, 2fr);
+  gap: clamp(4px, 1vw, 12px);
+  padding: clamp(4px, 1vw, 12px);
+  align-items: start;
+}
+#overlay .title-copy,
+#overlay .solo-setup,
+#overlay .raid-lobby {
+  min-width: 0;
+  background: linear-gradient(#403b36, #292627);
+  border: 1px solid var(--line);
+}
+#overlay :is(.title-copy, .solo-setup, .raid-lobby) > h2 {
+  margin: 0;
+  padding: 0.3em 0.65em;
+  background: linear-gradient(#fff5df, #c7b99e);
+  color: #352d23;
+  font: 800 clamp(0.9rem, 1.5vw, 1.15rem)/1.35 var(--font-ui);
+}
+#solo-profile,
+.raid-pick-profile {
+  margin: 0;
+  padding: clamp(6px, 1vw, 14px);
+}
+#solo-profile img,
+#overlay .raid-pick-profile img {
+  display: block;
+  object-fit: contain;
+  width: 100%;
+  height: clamp(64px, 18vh, 200px);
+  margin: auto;
+  background: radial-gradient(ellipse at bottom, #665643, transparent 70%);
+}
+#solo-profile p,
+#overlay .raid-pick-profile p {
+  margin: 0.3em 0;
+  font-size: clamp(0.75rem, 1.25vw, 0.95rem);
+  line-height: 1.45;
+}
+#overlay:has(.in-room) #solo-profile {
+  display: none;
+}
+#overlay .raid-setup {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(4px, 1vw, 12px);
+}
+#overlay .raid-setup.in-room {
+  grid-template-columns: 1fr;
+}
+#overlay .solo-setup,
+#overlay .raid-lobby {
+  padding: 0 0 0.6rem;
+}
+.solo-setup > :not(h2),
+.raid-lobby > :not(h2) {
+  margin: 0.5rem 0.65rem;
+}
+#overlay .solo-setup label {
+  display: grid;
+  gap: 0.15rem;
+}
+#overlay select,
+#overlay input {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.35em 0.5em;
+  background: #242221;
+  border: 1px solid #998974;
+  color: #fff4da;
+}
+#overlay button,
+.raid-panel button {
+  border: 1px solid #a08e73;
+  border-radius: 3px;
+  color: #302820;
+  background: linear-gradient(#f6ecd5, #bcad93);
+  font-weight: 700;
+}
+#overlay button:disabled {
+  opacity: 0.55;
+}
+#overlay #start {
+  display: block;
+  width: calc(100% - 1.3rem);
+  color: white;
+  border-color: #b65b38;
+  background: linear-gradient(#ef582d, #992617);
+}
+#overlay .raid-pick-grid button[aria-pressed='true'] {
+  background: #68482e;
+  color: white;
+  border: 2px solid #e8bf70;
+}
+#overlay .raid-lobby output:empty {
+  display: none;
+}
+#overlay .raid-lobby input {
+  flex: 1 1 8ch;
+}
+#overlay .raid-lobby button {
+  min-height: 32px;
+}
+#overlay details summary {
+  cursor: pointer;
+  color: #f3d292;
+}
+#overlay .raid-draft p,
+#overlay .raid-draft h3 {
+  margin: 0.4rem 0;
+}
+#overlay .raid-pick-profile {
+  background: none;
+  max-width: none;
+}
+#overlay .raid-pick-profile figcaption strong {
+  font: 700 1.15rem var(--font-ui);
+}
+#overlay .raid-pick-grid button {
+  min-width: 0;
+  padding: 2px;
+  position: relative;
+  display: grid;
+  justify-items: center;
+}
+#overlay .raid-pick-grid img {
+  height: clamp(30px, 7vh, 58px);
+}
+#startup-progress,
+#startup-error {
+  padding: 1em;
+}
+@media (max-width: 850px) {
+  .room-layout {
+    grid-template-columns: minmax(100px, 0.72fr) minmax(0, 2fr);
+  }
+  #overlay .raid-setup {
+    font-size: clamp(0.75rem, 1.7vw, 0.88rem);
+  }
+  .solo-setup > :not(h2),
+  .raid-lobby > :not(h2) {
+    margin: 0.35rem;
+  }
+  #overlay #start {
+    width: calc(100% - 0.7rem);
+  }
+}
+@media (max-width: 620px) {
+  #overlay .raid-setup {
+    grid-template-columns: 1fr;
+  }
+}

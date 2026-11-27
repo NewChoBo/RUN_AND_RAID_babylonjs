@@ -29,7 +29,7 @@ export function installViewportLimit(dialog: HTMLDialogElement) {
   const portraitHelp = instructions.textContent;
 
   const update = () => {
-    if (playableViewport.matches) {
+    if (location.hash !== '#/ready' || playableViewport.matches) {
       if (dialog.open) dialog.close();
       message.textContent = '';
       return;
@@ -92,7 +92,9 @@ export function installViewportLimit(dialog: HTMLDialogElement) {
     display.removeEventListener('fullscreenchange', update),
   );
   window.addEventListener('resize', update);
+  window.addEventListener('hashchange', update);
   update();
   // Installed apps and some tabs can rotate on launch without a fullscreen gesture.
-  if (portrait.matches && touch.matches) void requestLandscape(false);
+  if (location.hash === '#/ready' && portrait.matches && touch.matches)
+    void requestLandscape(false);
 }

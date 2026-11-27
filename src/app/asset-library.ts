@@ -1,3 +1,4 @@
+import '../ui/styles/library.css';
 import {
   Engine,
   Scene,
@@ -53,7 +54,7 @@ function createView() {
   const resize = new ResizeObserver(() => engine.resize());
   resize.observe(canvas);
   engine.runRenderLoop(() => {
-    if (!canvas.hidden) scene.render();
+    if (!canvas.hidden && !el('library').hidden) scene.render();
   });
   window.addEventListener('pagehide', (e) => {
     if (!e.persisted) {

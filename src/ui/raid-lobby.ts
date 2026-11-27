@@ -104,13 +104,7 @@ export function createRaidLobby(
   }
   lock.onclick = () => actions.pick(seats.find((s) => s.actor === self)?.hero ? null : preview);
   draft.append(title, cards, lock, notice);
-  const wide = matchMedia(
-    '(min-width: 820px) and (min-height: 480px), (orientation: landscape) and (min-width: 568px) and (min-height: 320px)',
-  );
-  const titleCopy = document.querySelector<HTMLElement>('#overlay .title-copy')!;
-  const placeProfile = () => (wide.matches ? titleCopy.append(profile) : lock.before(profile));
-  placeProfile();
-  wide.addEventListener('change', placeProfile);
+  document.querySelector('#overlay .title-copy')!.append(profile);
   group.append(heading, status, teams, draft, controls);
   function button(label: string, click: () => void) {
     const b = document.createElement('button');

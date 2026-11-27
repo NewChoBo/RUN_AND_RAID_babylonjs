@@ -71,14 +71,17 @@ export function createRaidHud(
   setup.className = 'raid-setup';
   const start = document.querySelector<HTMLButtonElement>('#start')!;
   start.before(setup);
-  element('p', setup, t('rules'));
-  const label = element('label', setup, t('hero'));
+  const solo = element('section', setup);
+  solo.className = 'solo-setup';
+  element('h2', solo, t('solo'));
+  element('p', solo, t('rules'));
+  const label = element('label', solo, t('hero'));
   const select = element('select', label);
   for (const hero of HERO_IDS)
     select.add(new Option(t('runnerRange', { name: t(hero), range: HEROES[hero].reach }), hero));
   let outfit: HTMLSelectElement | undefined;
   if (raidOutfits.length) {
-    outfit = element('select', element('label', setup, '봇 연습 외형'));
+    outfit = element('select', element('label', solo, '봇 연습 외형'));
     outfit.add(new Option('주자 기본 외형', ''));
     const groups = new Map<string, HTMLOptGroupElement>();
     for (const { group, skin, model } of raidOutfits) {
@@ -91,7 +94,7 @@ export function createRaidHud(
       options.append(new Option(group + ' · ' + skin, model));
     }
   }
-  const detail = element('small', setup);
+  const profile = document.querySelector<HTMLElement>('#solo-profile')!;
   const selected = () => select.value as RaidHero;
   const heroInfo = {
     hammer: 'hammerInfo',
@@ -106,21 +109,18 @@ export function createRaidHud(
     swift: 'swiftInfo',
     kali: 'kaliInfo',
   } as const;
-  select.onchange = () => {
-    detail.textContent = t(heroInfo[selected()]);
-  };
-  detail.textContent = t(heroInfo[selected()]);
-  const instructions = t('controls');
-  const guide = element('small', setup, instructions);
-  const compact = matchMedia('(orientation: landscape) and (max-height: 319px)');
-  const titleCopy = document.querySelector<HTMLElement>('#overlay .title-copy')!;
-  const placeGuide = () => (compact.matches ? titleCopy : setup).append(guide);
-  placeGuide();
-  compact.addEventListener('change', placeGuide);
-  const home = button(start.parentElement!, t('leave'), actions.leave);
-  home.className = 'subtle';
-  // Keep solo launch next to its hero selector, ahead of the online room controls.
-  setup.append(start);
+  function showHero() {
+    const hero = selected();
+    profile.querySelector('img')!.src = './assets/raid/portraits/' + hero + '.webp';
+    profile.querySelector('strong')!.textContent = t(hero);
+    profile.querySelector('p')!.textContent = t(heroInfo[hero]);
+  }
+  select.onchange = showHero;
+  showHero();
+  solo.append(start);
+  const guide = element('details', solo);
+  element('summary', guide, '조작법');
+  element('p', guide, t('controls'));
   const root = element('section', document.body);
   root.className = 'raid-hud';
   root.hidden = true;
@@ -445,7 +445,7 @@ export function createRaidHud(
             duration: matchClock(Math.floor(view.tick / RAID_HZ)),
             count: view.leadChanges,
           })
-        : instructions;
+        : t('controls');
     records.hidden = !view;
     if (view) {
       records.replaceChildren();
@@ -489,7 +489,7 @@ export function createRaidHud(
     select,
     selectHero(hero: RaidHero) {
       select.value = hero;
-      detail.textContent = t(heroInfo[hero]);
+      showHero();
     },
     reset() {
       root.hidden = panel.hidden = true;

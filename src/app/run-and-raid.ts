@@ -32,7 +32,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   const preferences = device.get();
 
   const start = document.querySelector<HTMLButtonElement>('#start')!;
-  document.body.classList.add('raid-mode');
+
   canvas.setAttribute('aria-label', raidText('canvas'));
   let match: RaidMatch, solo: RaidSimulation;
   let slot = 0;
@@ -157,10 +157,17 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     canvas.inert = true;
   }
   // Prepare the arena before joining Photon so renderer startup cannot delay an online round.
-  async function prepareCourse() {
+  let preparing: Promise<boolean> | undefined;
+  function prepareCourse() {
+    return (preparing ??= loadCourse().finally(() => {
+      preparing = undefined;
+    }));
+  }
+  async function loadCourse() {
     if (course) return true;
     const progress = document.getElementById('startup-progress')!;
     const actions = document.getElementById('menu-actions')!;
+    document.getElementById('startup-error')!.hidden = true;
     state = 'loading';
     progress.hidden = false;
     actions.hidden = true;
@@ -175,6 +182,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       state = 'setup';
       return true;
     } catch (error) {
+      state = 'setup';
+      actions.hidden = false;
       showStartupError(error);
       return false;
     }
@@ -289,7 +298,9 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       pause,
       resume,
       retry: () => (round ? resetLobby() : begin()),
-      leave: () => location.assign('./'),
+      leave: () => {
+        location.hash = '/home';
+      },
       setSkillSize: (size) => device.set({ ...device.get(), raidSkillSize: size }),
     },
     canvas,
@@ -317,7 +328,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     hud.reset();
     course?.stopRendering(renderFrame);
     course?.showAim(null);
-    hud.selectHero(preferredHero);
+    if (hud.select.disabled) hud.selectHero(preferredHero);
     hud.select.disabled = false;
     start.hidden = false;
     canvas.inert = true;
@@ -573,4 +584,5 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       hud.showPanel(match, slot, !!round);
     }
   }
+  return () => resetLobby();
 }
