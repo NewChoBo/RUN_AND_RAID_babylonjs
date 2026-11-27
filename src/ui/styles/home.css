@@ -334,7 +334,19 @@ a:focus-visible {
 .article-title h3 {
   font-size: calc(2.65 * var(--unit));
 }
+.article-title > div {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: 0.6em;
+}
+.article-title time {
+  color: #d1c3ad;
+  font-size: clamp(10px, calc(1.65 * var(--unit)), 13px);
+  white-space: nowrap;
+}
 #details {
+  flex-shrink: 0;
   font-size: calc(1.9 * var(--unit));
   padding: 0.55cqh 1.8cqw;
   border-radius: 0.45cqw;
