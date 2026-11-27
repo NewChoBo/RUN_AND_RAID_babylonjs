@@ -384,3 +384,44 @@
     min-height: 44px;
   }
 }
+
+#overlay .room-layout {
+  display: block;
+}
+#overlay #menu-actions {
+  grid-template-columns: minmax(0, 1fr);
+}
+#overlay .raid-lobby:not(.drafting) {
+  width: min(100%, 720px);
+  margin: auto;
+  padding: 0 0 0.75rem;
+}
+#overlay .raid-lobby:not(.drafting) > div:last-of-type {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: clamp(8px, 3vh, 24px);
+}
+#overlay .raid-lobby:not(.drafting) > div:last-of-type button {
+  min-height: 48px;
+  min-width: 84px;
+  font-size: 1rem;
+}
+#overlay .raid-lobby:not(.drafting) > div:last-of-type button:nth-child(-n + 4) {
+  flex: 1 1 30%;
+  min-height: clamp(56px, 17vh, 110px);
+  font-size: clamp(1rem, 3vw, 1.65rem);
+}
+#overlay .raid-lobby:not(.drafting) input {
+  flex: 0 1 10em;
+  min-height: 48px;
+}
+#overlay .raid-lobby:not(.drafting) > output {
+  display: block;
+  text-align: center;
+}
+#overlay .raid-lobby:not(.drafting) > output:empty {
+  display: none;
+}

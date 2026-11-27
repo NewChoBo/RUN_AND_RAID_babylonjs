@@ -6,14 +6,12 @@ import { raidText as t } from '../content/locales/run-and-raid.ts';
 import {
   HEROES,
   canUseRaidSkill,
-  HERO_IDS,
   raidRunnerAimKind,
   raidBossBonusPercent,
   RAID_HZ,
   ROUND_TICKS,
   SKILL_COOLDOWNS,
   WAGON_HP,
-  type RaidHero,
   type RaidView,
   type Skill,
 } from '../game/raid/raid-match.ts';
@@ -69,29 +67,11 @@ export function createRaidHud(
   course: HTMLCanvasElement,
   skillSize: { min: number; max: number; step: number; value: number },
 ) {
-  const setup = document.createElement('div');
-  setup.className = 'raid-setup';
-  const start = document.querySelector<HTMLButtonElement>('#start')!;
-  start.before(setup);
-  const solo = element('section', setup);
-  solo.className = 'solo-setup';
-  element('h2', solo, t('solo'));
-  element('p', solo, t('rules'));
-  const select = button(solo, '');
-  let runner: RaidHero = HERO_IDS[0];
-  const runners = HERO_IDS.map((hero) => ({
-    value: hero,
-    label: t(hero),
-    image: './assets/raid/portraits/' + hero + '.webp',
-  }));
-  const runnerPicker = touchPicker(select, t('hero'), (value) => {
-    runner = value as RaidHero;
-    showHero();
-  });
+  const outfitButton = document.createElement('button');
   let outfit: string | undefined;
   let outfitPicker: ReturnType<typeof touchPicker> | undefined;
   if (raidOutfits.length) {
-    outfitPicker = touchPicker(button(solo, ''), '연습 외형', (value) => {
+    outfitPicker = touchPicker(outfitButton, '연습 외형', (value) => {
       outfit = value || undefined;
     });
     outfitPicker.set(
@@ -106,36 +86,6 @@ export function createRaidHud(
       '',
     );
   }
-  const profile = document.querySelector<HTMLElement>('#solo-profile')!;
-  const selected = () => runner;
-  const heroInfo = {
-    hammer: 'hammerInfo',
-    abyss: 'abyssInfo',
-    longshot: 'longshotInfo',
-    jade: 'jadeInfo',
-    rend: 'rendInfo',
-    bastion: 'bastionInfo',
-    rime: 'rimeInfo',
-    rildin: 'rildinInfo',
-    kaiken: 'kaikenInfo',
-    swift: 'swiftInfo',
-    kali: 'kaliInfo',
-  } as const;
-  function showHero() {
-    const hero = selected();
-    runnerPicker.set(runners, hero);
-    profile.querySelector('img')!.src = './assets/raid/portraits/' + hero + '.webp';
-    profile.querySelector('strong')!.textContent = t('runnerRange', {
-      name: t(hero),
-      range: HEROES[hero].reach,
-    });
-    profile.querySelector('p')!.textContent = t(heroInfo[hero]);
-  }
-  showHero();
-  solo.append(start);
-  const guide = element('details', solo);
-  element('summary', guide, '조작법');
-  element('p', guide, t('controls'));
   const root = element('section', document.body);
   root.className = 'raid-hud';
   root.hidden = true;
@@ -498,16 +448,10 @@ export function createRaidHud(
   return {
     aimPad,
     drawCombatNumbers,
-    selected,
+    outfitButton,
+    closeOutfits: () => outfitPicker?.close(),
     outfit: () => outfit,
-    setup,
-    select,
-    selectHero(hero: RaidHero) {
-      runner = hero;
-      showHero();
-    },
     reset() {
-      runnerPicker.close();
       outfitPicker?.close();
       root.hidden = panel.hidden = true;
       aimPad.close();

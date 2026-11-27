@@ -92,7 +92,7 @@ export const korean = {
   controls:
     '좌우로 밀어 이동하고 아래로 당겨 감속합니다. 즉발 스킬은 한 번 탭하고, 조준 스킬은 방향이나 위치를 정한 뒤 놓으세요. 지정기는 버튼 밖으로 끌어 놓거나 Shift와 숫자를 함께 누르면 마지막 대상에게 다시 씁니다.',
   callTarget: '공격 요청',
-  quickMatch: '빠른 대전',
+  quickMatch: '빠른 매칭',
   quickRoomStatus: '공개 대전 · {count}/4명',
   attackRequest: '{from}의 공격 요청 · {target}',
   teamKills: '처치 {count}',

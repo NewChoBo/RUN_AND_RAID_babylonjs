@@ -9,6 +9,7 @@ import {
   canUseRaidSkill,
   raidRunnerAimKind,
   raidRunnerHeight,
+  type RaidHero,
   type Skill,
   type RaidTarget,
 } from '../game/raid/raid-match.ts';
@@ -31,8 +32,9 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   const device = createPreferences();
   const preferences = device.get();
 
-  const start = document.querySelector<HTMLButtonElement>('#start')!;
-
+  let chosenHero: RaidHero = 'hammer';
+  let offline = false;
+  let offlinePick: RaidHero | null = null;
   canvas.setAttribute('aria-label', raidText('canvas'));
   let match: RaidMatch, solo: RaidSimulation;
   let slot = 0;
@@ -196,12 +198,13 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   }
   function launchSolo() {
     slot = 0;
-    match = new RaidMatch(hud.selected(), course.viewAspect);
+    match = new RaidMatch(chosenHero, course.viewAspect);
     solo = new RaidSimulation(match, new Set([slot]));
     launch();
   }
   function launch() {
     lobby.closePicker();
+    hud.closeOutfits();
     pressed.clear();
     padSide = 0;
     padBrake = 0;
@@ -310,16 +313,36 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     canvas,
     { ...RAID_SKILL_SIZE, value: preferences.raidSkillSize },
   );
-  start.textContent = raidText('solo');
-  let preferredHero = hud.selected();
-  const lobby = createRaidLobby(hud.setup, {
-    connect: (code, entry) => void connect(code, entry),
-    start: () => room?.start(),
-    pick: (hero) => room?.pick(hero),
-    selected: hud.selected,
-    leave: () => resetLobby(),
-  });
-  function resetLobby(reason?: RoomError) {
+  function drawOffline() {
+    lobby.room('', [{ actor: 1, hero: offlinePick }], 1, true, true);
+  }
+  const lobby = createRaidLobby(
+    document.querySelector<HTMLElement>('#menu-actions')!,
+    hud.outfitButton,
+    {
+      connect: (code, entry) => void connect(code, entry),
+      practice() {
+        offline = true;
+        offlinePick = null;
+        drawOffline();
+      },
+      start() {
+        if (offline && offlinePick) {
+          chosenHero = offlinePick;
+          void begin();
+        } else room?.start();
+      },
+      pick(hero) {
+        if (offline) {
+          offlinePick = hero;
+          drawOffline();
+        } else room?.pick(hero);
+      },
+      selected: () => chosenHero,
+      leave: () => resetLobby(),
+    },
+  );
+  function resetLobby(reason?: RoomError, restart = false) {
     attempt++;
     clearInterval(timer);
     room?.close();
@@ -332,20 +355,17 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     hud.reset();
     course?.stopRendering(renderFrame);
     course?.showAim(null);
-    if (hud.select.disabled) hud.selectHero(preferredHero);
-    hud.select.disabled = false;
-    start.hidden = false;
+    offline = false;
+    offlinePick = null;
     canvas.inert = true;
     document.getElementById('overlay')!.hidden = false;
-    lobby.reset(reason);
+    lobby.reset(reason, restart);
   }
   async function connect(code: string, entry: RaidEntry) {
     if (state !== 'setup' || room) return;
     const token = ++attempt;
     if (!(await prepareCourse()) || token !== attempt) return;
-    preferredHero = hud.selected();
-    hud.select.disabled = true;
-    start.hidden = true;
+
     lobby.pending();
     try {
       const id = import.meta.env.VITE_PHOTON_APP_ID;
@@ -354,11 +374,12 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       if (token !== attempt) return;
       room = new RaidRoom(id, code, entry, {
         lobby(seats, self, host) {
+          if (seats.length > 1) hud.closeOutfits();
           lobby.room(code, seats, self, host);
         },
         solo(hero) {
           room = undefined;
-          hud.selectHero(hero);
+          chosenHero = hero;
           launchSolo();
         },
         start(seats, self, host) {
@@ -414,10 +435,9 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   }
   window.addEventListener('pagehide', () => {
     clearInterval(timer);
-    if (room || hud.select.disabled) resetLobby();
+    if (room || offline) resetLobby();
     else attempt++;
   });
-  start.addEventListener('click', begin);
   canvas.addEventListener('pointermove', (e) => {
     if (e.pointerType !== 'mouse') return;
     keyboardAimPoint = { clientX: e.clientX, clientY: e.clientY };
@@ -531,7 +551,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     if (!playableViewport.matches) pause();
   });
   function renderCourse(dt: number, subtick: number) {
-    course.render(match, dt, subtick, slot, hud.select.disabled ? undefined : hud.outfit());
+    course.render(match, dt, subtick, slot, round ? undefined : hud.outfit());
     hud.drawCombatNumbers(
       match.healthChanges,
       match.tick + subtick,
@@ -593,5 +613,5 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       hud.showPanel(match, slot, !!round);
     }
   }
-  return () => resetLobby();
+  return () => resetLobby(undefined, true);
 }

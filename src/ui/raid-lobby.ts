@@ -5,9 +5,11 @@ import { HERO_IDS, HEROES, type RaidHero } from '../game/raid/raid-match.ts';
 import type { RaidEntry, RoomError } from '../platform/photon/raid-room.ts';
 export function createRaidLobby(
   parent: HTMLElement,
+  outfitButton: HTMLButtonElement,
   actions: {
     connect(code: string, entry: RaidEntry): void;
     start(): void;
+    practice(): void;
     leave(): void;
     pick(hero: RaidHero | null): void;
     selected(): RaidHero;
@@ -130,7 +132,7 @@ export function createRaidLobby(
   const selection = document.createElement('section');
   selection.append(title, cards);
   picker.append(selection, profile, confirm);
-  draft.append(choose, lock, notice);
+  draft.append(choose, lock, outfitButton, notice);
   group.append(heading, status, teams, versus, draft, controls, picker);
   function button(label: string, click: () => void) {
     const b = document.createElement('button');
@@ -142,6 +144,7 @@ export function createRaidLobby(
   }
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const quick = button(t('quickMatch'), () => actions.connect('', 'quick'));
+  const privateRooms = button('사설방', () => menu('private'));
   const host = button(t('hostRoom'), () =>
     actions.connect(
       Array.from(
@@ -151,6 +154,10 @@ export function createRaidLobby(
       'host',
     ),
   );
+  const enterCode = button('참가하기', () => {
+    menu('code');
+    code.focus();
+  });
   controls.append(code);
   const join = button(t('joinRoom'), () => actions.connect(code.value, 'join'));
   code.oninput = () => {
@@ -162,9 +169,30 @@ export function createRaidLobby(
   };
   const start = button(t('startRound'), actions.start);
   const leave = button(t('leaveRoom'), actions.leave);
+  const back = button('뒤로', () => menu(page === 'code' ? 'private' : 'entry'));
+  const practice = button('오프라인 봇 연습', actions.practice);
+  let page: 'entry' | 'private' | 'code' = 'entry';
+  function menu(next: typeof page) {
+    page = next;
+    status.textContent = '';
+    show('entry');
+  }
   function show(stage: 'entry' | 'connecting' | 'draft') {
     const room = stage !== 'entry';
-    quick.hidden = host.hidden = join.hidden = code.hidden = room;
+    quick.hidden = privateRooms.hidden = room || page !== 'entry';
+    host.hidden = enterCode.hidden = room || page !== 'private';
+    code.hidden = join.hidden = room || page !== 'code';
+    back.hidden = room || page === 'entry';
+    practice.hidden = true;
+    group.dataset.stage = stage;
+    heading.textContent =
+      stage === 'connecting'
+        ? t('connecting')
+        : page === 'entry'
+          ? '게임 모드 선택'
+          : page === 'private'
+            ? '사설방'
+            : '방 코드 입력';
     leave.hidden = !room;
     if (stage !== 'draft') start.hidden = true;
     teams.replaceChildren();
@@ -184,19 +212,24 @@ export function createRaidLobby(
       show('connecting');
       status.textContent = t('connecting');
     },
-    reset(reason?: RoomError) {
+    reset(reason?: RoomError, restart = false) {
+      if (restart) page = 'entry';
       show('entry');
       status.textContent = reason ? t(reason) : '';
+      practice.hidden = !(reason && page === 'private');
     },
-    room(roomCode: string, members: DraftSeat[], actor: number, isHost: boolean) {
+    room(roomCode: string, members: DraftSeat[], actor: number, isHost: boolean, offline = false) {
       seats = members;
       self = actor;
-      soloRoom = !!roomCode && isHost && seats.length === 1;
+      soloRoom = (!!roomCode || offline) && isHost && seats.length === 1;
+      outfitButton.hidden = !soloRoom;
       show('draft');
       paint();
-      status.textContent = roomCode
-        ? t('roomStatus', { code: roomCode, count: seats.length })
-        : t('quickRoomStatus', { count: seats.length });
+      status.textContent = offline
+        ? '오프라인 봇 연습'
+        : roomCode
+          ? t('roomStatus', { code: roomCode, count: seats.length })
+          : t('quickRoomStatus', { count: seats.length });
       versus.querySelector('output')!.textContent =
         seats.filter((s) => s.hero).length + ' / ' + seats.length;
       for (let i = 0; i < 4; i++) {
