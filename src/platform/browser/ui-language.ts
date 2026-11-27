@@ -40,11 +40,15 @@ export function initializeUiLanguage() {
   }
 }
 
-export function installLanguagePicker(picker: HTMLSelectElement) {
-  picker.value = getLocale();
-  picker.onchange = () => {
-    const choice: Locale = resolveLocale(picker.value);
-    if (choice === getLocale()) return;
+export function installLanguagePickers(pickers: NodeListOf<HTMLSelectElement>) {
+  let selected: Locale = getLocale();
+  function applyWhenOutOfRoom() {
+    if (selected !== getLocale() && location.hash !== '#/ready') location.reload();
+  }
+  function change(choice: Locale) {
+    if (choice === selected) return;
+    selected = choice;
+    for (const picker of pickers) picker.value = choice;
     const url = new URL(location.href);
     try {
       localStorage.setItem(storageKey, choice);
@@ -53,6 +57,11 @@ export function installLanguagePicker(picker: HTMLSelectElement) {
       url.searchParams.set('lang', choice);
     }
     replaceGameUrl(url);
-    location.reload();
-  };
+    applyWhenOutOfRoom();
+  }
+  for (const picker of pickers) {
+    picker.value = selected;
+    picker.onchange = () => change(resolveLocale(picker.value));
+  }
+  window.addEventListener('hashchange', applyWhenOutOfRoom);
 }

@@ -402,7 +402,7 @@
 #overlay #menu-actions {
   grid-template-columns: minmax(0, 1fr);
 }
-#match-menu {
+:is(#match-menu, #game-settings) {
   width: min(30rem, calc(100% - 24px));
   max-height: calc(100dvh - 16px);
   overflow: auto;
@@ -413,29 +413,53 @@
   border-radius: 6px;
   box-shadow: 0 12px 40px #0008;
 }
-#match-menu::backdrop {
+:is(#match-menu, #game-settings)::backdrop {
   background: #100e0bb8;
 }
-#match-menu header {
+:is(#match-menu, #game-settings) header {
   display: grid;
   grid-template-columns: 44px 1fr 44px;
   align-items: center;
   color: #352d23;
   background: linear-gradient(#fff5df, #c7b99e);
 }
-#match-heading {
+:is(#match-heading, #settings-heading) {
   grid-column: 2;
   margin: 0;
   font-size: clamp(1.05rem, 2.8vw, 1.4rem);
   text-align: center;
 }
-#match-menu header button {
+:is(#match-menu, #game-settings) header button {
   width: 44px;
   height: 44px;
   padding: 0;
   border: none;
   background: transparent;
   font: 1.6rem/1 var(--font-ui);
+}
+#game-settings header button {
+  color: inherit;
+}
+.settings-body {
+  display: grid;
+  gap: 8px;
+  padding: clamp(8px, 3dvh, 20px);
+}
+.settings-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(9rem, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.settings-row :is(button, select) {
+  min-height: 44px;
+}
+.settings-body p {
+  margin: 0;
+  color: #e6d5b8;
+}
+#settings-status:empty {
+  display: none;
 }
 #match-menu .match-options {
   display: grid;

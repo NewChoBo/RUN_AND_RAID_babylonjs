@@ -4,8 +4,7 @@ import { landscapeFrame } from './game-navigation.ts';
 type LockableOrientation = ScreenOrientation & { lock?(direction: 'landscape'): Promise<void> };
 
 let locked: 'window' | 'fullscreen' | null = null;
-let wanted = false;
-let pending: { gesture: boolean; promise: Promise<boolean> } | null = null;
+let pending: Promise<boolean> | null = null;
 
 export function canRequestLandscape() {
   return (
@@ -14,48 +13,35 @@ export function canRequestLandscape() {
   );
 }
 
-async function acquire(fromGesture: boolean) {
+async function acquire() {
   try {
-    // Regular mobile tabs may require fullscreen. Only an actual tap can enter it.
-    if (
-      fromGesture &&
-      !document.fullscreenElement &&
-      !matchMedia('(display-mode: fullscreen)').matches &&
-      document.fullscreenEnabled
-    ) {
-      // An embedded browser may allow a windowed lock even when it denies fullscreen.
-      await document.documentElement.requestFullscreen().catch(() => {});
-    }
     await (screen.orientation as LockableOrientation).lock!('landscape');
     return true;
   } catch {
-    // Even without an orientation lock, fullscreen keeps the hand-rotated game playable.
+    // The game frame still supplies a landscape layout when the browser denies the lock.
     return false;
   }
 }
 
-export function requestLandscape(fromGesture: boolean): Promise<boolean> {
+export function requestLandscape(): Promise<boolean> {
   const frame = landscapeFrame();
-  if (frame) return frame.requestGameLandscape(fromGesture);
+  if (frame) return frame.requestGameLandscape();
   if (!canRequestLandscape()) return Promise.resolve(false);
-  wanted = true;
   if (document.hidden) return Promise.resolve(false);
   if (locked === 'window' || (locked === 'fullscreen' && document.fullscreenElement))
     return Promise.resolve(true);
-  if (pending && (!fromGesture || pending.gesture)) return pending.promise;
+  if (pending) return pending;
 
-  // A real tap can enter fullscreen while a windowed attempt is still waiting for permission.
-  const promise = acquire(fromGesture).then((accepted) => {
-    if (pending?.promise === promise) {
+  const promise = acquire().then((accepted) => {
+    if (pending === promise) {
       pending = null;
       if (accepted) {
         locked = document.fullscreenElement ? 'fullscreen' : 'window';
-        wanted = true;
       }
     }
     return accepted;
   });
-  pending = { gesture: fromGesture, promise };
+  pending = promise;
   return promise;
 }
 
@@ -63,7 +49,8 @@ export function installLandscapeRecovery() {
   if (!canRequestLandscape()) return;
   const restore = () => {
     locked = null;
-    if (wanted && !document.hidden) void requestLandscape(false);
+    pending = null;
+    if (!document.hidden) void requestLandscape();
   };
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -78,6 +65,10 @@ export function installLandscapeRecovery() {
     if (screen.orientation.type.startsWith('portrait')) restore();
   });
   document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement) locked = null;
+    if (document.fullscreenElement) restore();
+    else {
+      locked = null;
+      pending = null;
+    }
   });
 }

@@ -1,7 +1,8 @@
 ﻿import { uiText } from './content/locales/ui.ts';
 import './app/home.ts';
 import { prepareRaid } from './app/run-and-raid.ts';
-import { landscapeFrame, syncGameUrl } from './platform/browser/game-navigation.ts';
+import { syncGameUrl } from './platform/browser/game-navigation.ts';
+import { installSettings } from './ui/settings.ts';
 import { installViewportLimit } from './ui/viewport-limit.ts';
 
 const lobby = document.querySelector<HTMLElement>('.lobby')!;
@@ -64,14 +65,5 @@ shop.onclick = () => {
 };
 window.addEventListener('hashchange', route);
 route();
-const frame = landscapeFrame();
-if (frame) {
-  window.addEventListener(
-    'click',
-    (event) => {
-      if (event.isTrusted) void frame.requestGameLandscape(true);
-    },
-    { once: true },
-  );
-}
+installSettings();
 installViewportLimit(document.querySelector<HTMLDialogElement>('#viewport-limit')!);

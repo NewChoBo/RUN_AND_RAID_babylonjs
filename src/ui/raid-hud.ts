@@ -1,5 +1,6 @@
 import { uiText } from '../content/locales/ui.ts';
 import { raidOutfits } from '../content/raid/outfits.ts';
+import { openSettings } from './settings.ts';
 import { characterLabel, characterName } from '../content/raid/gallery.ts';
 import { touchPicker } from './touch-picker.ts';
 import { raidSkill } from '../game/raid/heroes/hero-catalog.ts';
@@ -284,6 +285,9 @@ export function createRaidHud(
   sizeInput.onchange = () => actions.setSkillSize(sizeInput.valueAsNumber);
   const records = element('table', card);
   const resume = button(card, t('resume'), actions.resume);
+  const settings = button(card, uiText('settings'), openSettings);
+  settings.setAttribute('aria-haspopup', 'dialog');
+  settings.setAttribute('aria-controls', 'game-settings');
   const retry = button(card, t('retry'), actions.retry);
   resume.dataset.resumeRaid = retry.dataset.resumeRaid = '';
   button(card, t('leave'), actions.leave);

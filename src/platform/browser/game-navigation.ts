@@ -1,7 +1,7 @@
 // The outer document owns fullscreen. The mobile SPA keeps one landscape viewport
 // so canvas input, modal dialogs and layout all use the same coordinate system.
 type LandscapeFrame = HTMLIFrameElement & {
-  requestGameLandscape(fromGesture: boolean): Promise<boolean>;
+  requestGameLandscape(): Promise<boolean>;
   gameReady(): void;
 };
 

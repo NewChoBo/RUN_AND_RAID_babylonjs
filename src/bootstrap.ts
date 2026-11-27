@@ -8,7 +8,7 @@ const frame = landscapeFrame();
 const splash = document.querySelector<HTMLElement>('#launch-splash')!;
 if (!frame && document.documentElement.hasAttribute('data-mobile')) {
   installLandscapeRecovery();
-  void requestLandscape(false);
+  void requestLandscape();
   mountLandscapeFrame(requestLandscape, splash);
 } else {
   void import('./routes.ts')

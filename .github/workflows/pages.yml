@@ -34,7 +34,7 @@ jobs:
           diff -u <(cut -c67- ../.github/pages-assets.sha256 | sort) <(find . -type f -printf '%P\n' | grep -Ev '^(index|game|library)\.html$|^assets/[^/]+-[[:alnum:]_-]+\.(js|css)$' | sort)
           grep -Eq 'src="\./assets/[^"]+\.js"' index.html
           grep -Eq 'src="\./assets/[^"]+\.js"' game.html
-          for marker in 'class="symbols"' 'class="lobby-toolbar"' 'class="banner"' 'id="shop-gallery"' 'id="match-menu"' 'id="library"'; do
+          for marker in 'class="symbols"' 'class="lobby-toolbar"' 'class="banner"' 'id="shop-gallery"' 'id="match-menu"' 'id="library"' 'id="game-settings"'; do
             grep -Fq "$marker" index.html
           done
       - uses: actions/upload-pages-artifact@v5

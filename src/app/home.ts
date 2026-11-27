@@ -1,7 +1,4 @@
 import { uiText } from '../content/locales/ui.ts';
-import { installLanguagePicker } from '../platform/browser/ui-language.ts';
-
-installLanguagePicker(document.querySelector<HTMLSelectElement>('#ui-language')!);
 
 const news = [
   {

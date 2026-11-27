@@ -47,21 +47,21 @@ export function installViewportLimit(dialog: HTMLDialogElement) {
       ? portraitHelp
       : startupText(mobile ? 'landscapeRoom' : 'windowRoom');
     rotate.hidden = !mobilePortrait || !canRequestLandscape();
-    expand.hidden =
-      !mobile || portrait.matches || !display.fullscreenEnabled || !!display.fullscreenElement;
+    expand.hidden = !display.fullscreenEnabled || !!display.fullscreenElement;
     if (!dialog.open) dialog.showModal();
   };
 
   rotate.onclick = async () => {
     rotate.disabled = true;
     message.textContent = '';
-    const accepted = await requestLandscape(true);
+    const accepted = await requestLandscape();
     rotate.disabled = false;
     if (!accepted && dialog.open && portrait.matches)
       message.textContent = startupText('rotateManually');
   };
   expand.onclick = async () => {
     expand.disabled = true;
+    message.textContent = '';
     try {
       await display.documentElement.requestFullscreen();
     } catch {
@@ -92,5 +92,5 @@ export function installViewportLimit(dialog: HTMLDialogElement) {
   window.addEventListener('hashchange', update);
   update();
   // Installed apps and some tabs can rotate on launch without a fullscreen gesture.
-  if (location.hash === '#/ready' && portrait.matches && mobile) void requestLandscape(false);
+  if (location.hash === '#/ready' && portrait.matches && mobile) void requestLandscape();
 }
