@@ -1,21 +1,3 @@
-#overlay .runner-picker .raid-pick-grid img.guide-face {
-  object-position: var(--face-x, 6%) center;
-  transform: scale(1.12);
-}
-.raid-pick-grid img[data-hero='kaiken'] {
-  --face-x: 11%;
-}
-.raid-pick-grid
-  img:is([data-hero='alice'], [data-hero='kali'], [data-hero='swift'], [data-hero='froze']) {
-  --face-x: 4%;
-}
-#overlay .runner-picker .raid-pick-grid img.freesia-face {
-  object-position: 62% center;
-}
-#overlay .runner-picker .raid-pick-grid img.model-face {
-  transform: scale(1.45);
-  transform-origin: 50% 25%;
-}
 #overlay .runner-picker .raid-pick-profile {
   position: relative;
 }
@@ -25,11 +7,13 @@
   object-fit: cover;
   object-position: var(--portrait-x, 50%) 32%;
 }
-.runner-picker .raid-pick-profile figcaption > strong {
+#overlay .runner-picker .raid-pick-profile figcaption > strong {
   position: absolute;
   top: 4px;
   left: 5px;
-  padding: 1px 5px;
+  padding: 1px 4px;
+  font-size: clamp(11px, 2.8dvh, 15px);
+  line-height: 1.25;
   color: white;
   background: #16120ec9;
 }
@@ -37,11 +21,6 @@
   object-fit: contain;
   object-position: center;
   background-color: #202733;
-}
-#overlay .runner-picker .kit-card small {
-  inset: auto 0 0;
-  white-space: nowrap;
-  font-size: clamp(9px, 2.2dvh, 12px);
 }
 .draft-kit {
   padding: 3px 4px;

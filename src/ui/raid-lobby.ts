@@ -1,7 +1,8 @@
 import { uiText } from '../content/locales/ui.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { createDraftLoadout } from './raid-draft-loadout.ts';
-import { draftCatalog, hasDraftCatalog } from '../content/raid/draft-loadout.ts';
+import { hasDraftCatalog } from '../content/raid/draft-loadout.ts';
+import { addPickFace } from './raid-pick-face.ts';
 import { characterArt } from '../content/raid/gallery.ts';
 import { officialGuides } from '../content/raid/official-guides.ts';
 import { battleIconIndex, skillLabel } from './raid-skill-icon.ts';
@@ -39,8 +40,6 @@ function setDraftArt(
       ? null
       : () => {
           image.onerror = null;
-          image.classList.remove('guide-face', 'freesia-face');
-          image.classList.add('model-face');
           image.src = fallback;
         };
   if (thumbnail && source.startsWith('https://cafeptthumb-phinf.pstatic.net/')) {
@@ -202,23 +201,17 @@ export function createRaidLobby(
   const choices = HERO_IDS.map((hero) => {
     const card = document.createElement('button');
     card.type = 'button';
-    const image = document.createElement('img');
-    image.alt = '';
-    image.width = image.height = 80;
-    image.loading = 'lazy';
-    const face = hasDraftCatalog(hero) ? draftCatalog[hero].face : undefined;
-    image.className = face ? (hero === 'freesia' ? 'freesia-face' : 'guide-face') : 'model-face';
-    setDraftArt(image, hero, false, face);
-    card.title = t(hero);
+    addPickFace(card, hero);
     const taken = document.createElement('small');
+    taken.textContent = '✓';
+    taken.setAttribute('aria-hidden', 'true');
     const badge =
       heroKit(hero) !== hero
         ? 'borrowedKit'
         : PRACTICE_HERO_IDS.some((id) => id === hero)
           ? 'practiceRunner'
           : undefined;
-    card.classList.toggle('kit-card', !!badge);
-    card.append(image, taken);
+    card.append(taken);
     card.onclick = () => {
       preview = hero;
       paint();
@@ -265,9 +258,10 @@ export function createRaidLobby(
     for (const { hero, card, taken, badge } of choices) {
       const occupied = seats.some((s) => s.hero === hero && s.actor !== self);
       card.disabled = occupied || (!!mine && hero !== mine);
-      taken.hidden = !occupied && !badge;
-      taken.textContent = occupied ? t('pickTaken') : badge ? t(badge) : '';
-      card.setAttribute('aria-label', taken.hidden ? t(hero) : t(hero) + ' · ' + taken.textContent);
+      taken.hidden = !occupied;
+      const status = occupied ? t('pickTaken') : badge ? t(badge) : '';
+      card.title = status ? t(hero) + ' · ' + status : t(hero);
+      card.setAttribute('aria-label', card.title);
       card.setAttribute('aria-pressed', String(hero === preview));
     }
     battleModel.show(preview, !!mine, own?.outfit);

@@ -347,11 +347,12 @@
 }
 #overlay .runner-picker .raid-pick-grid img {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: var(--portrait-x, 50%) 30%;
+  max-width: none;
+  height: auto;
+  pointer-events: none;
 }
 .raid-lobby
   img:is([data-hero='hammer'], [data-hero='abyss'], [data-hero='jade'], [data-hero='kali']) {
@@ -381,18 +382,16 @@
   min-height: 0;
   overflow: hidden;
   padding: 0;
+  background: #202733;
 }
-.runner-picker .raid-pick-grid button :is(span, small) {
+.runner-picker .raid-pick-grid button small {
   position: absolute;
-  inset: auto 0 0;
+  inset: auto 1px 1px auto;
+  padding: 1px 3px;
   color: white;
   background: #201b16cf;
   font-size: clamp(10px, 2.3dvh, 14px);
   line-height: 1.2;
-}
-.runner-picker .raid-pick-grid button small {
-  inset: 0 0 auto;
-  background: #362b1be6;
 }
 #overlay .runner-picker .raid-pick-profile {
   overflow: auto;
