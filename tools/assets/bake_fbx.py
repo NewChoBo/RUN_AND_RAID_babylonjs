@@ -3,6 +3,8 @@ import argparse
 import os
 import subprocess
 from pathlib import Path
+from asset_names import fbx_path
+from convert import fbx_for
 from library import INDEX, SOURCE, read_json
 
 
@@ -26,8 +28,8 @@ def main():
         parser.error("No matching scenes")
     for r in files:
         source = SOURCE / r["path"]
-        dest = SOURCE.parent / "baked-fbx" / Path(r["path"]).with_suffix(".fbx")
-        if dest.is_file() and not args.force:
+        dest = SOURCE.parent / "baked-fbx" / fbx_path(r)
+        if fbx_for(r).is_file() and not args.force:
             continue
         dest.parent.mkdir(parents=True, exist_ok=True)
         temporary = dest.with_suffix(".partial.fbx")

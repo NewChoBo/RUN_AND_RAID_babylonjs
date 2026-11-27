@@ -5,6 +5,7 @@ from pathlib import Path
 
 import bpy
 from activate import activate, fighter_materials
+from asset_names import outfit_name
 from library import PUBLIC, ROOT, WORK, read_json, save_json
 from mathutils import Matrix
 
@@ -114,7 +115,7 @@ def assemble(blend, outfit=None, item=None):
     scenes = {s["source_max"].lower(): s for s in bpy.data.scenes}
     base = scenes[item["path"].lower() if item else f"{hero}/{hero}#default.max"]
     skin = outfit["skin"] if outfit else "default"
-    output = WORK / "player-release" / "Fighters" / hero / (skin + ".glb")
+    output = WORK / "player-release" / "Fighters" / hero / outfit_name(hero, skin)
     output.parent.mkdir(parents=True, exist_ok=True)
 
     def keep_source():

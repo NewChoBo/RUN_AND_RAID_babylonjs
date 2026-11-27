@@ -4,6 +4,7 @@ from pathlib import Path
 import bpy
 from PIL import Image
 from convert import fbx_for, stamp
+from asset_names import library_file
 from library import INDEX, IMPORTER, PUBLIC, RECORDS, SOURCE, WORK, read_json, save_json
 
 sys.path.insert(0, str(IMPORTER))
@@ -78,7 +79,7 @@ def convert(item, textures):
             nodes = [{"name": ob.name, "parent": ob.parent.name if ob.parent else None}
                      for ob in bpy.context.scene.objects if ob.type in ("EMPTY", "ARMATURE")]
         if nodes and any(node["parent"] for node in nodes):
-            hierarchy = "rigs/" + item["id"] + ".json"
+            hierarchy = library_file(item, "hierarchy")
             save_json(PUBLIC / hierarchy, {"source": item["path"], "nodes": nodes})
             return dict(state="hierarchy", hierarchy=hierarchy, nodes=len(nodes))
         return dict(state="source-only", detail="No editable mesh or named hierarchy was imported")
@@ -91,10 +92,10 @@ def convert(item, textures):
             if obj not in meshes:
                 bpy.data.objects.remove(obj, do_unlink=True)
     bound, missing = bind_textures(meshes, item, textures) if not baked.exists() else ([], [])
-    folder = PUBLIC / "models"
-    folder.mkdir(exist_ok=True)
-    path = folder / (item["id"] + ".glb")
-    temporary = folder / (item["id"] + ".part.glb")
+    file = library_file(item, "model")
+    path = PUBLIC / file
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".part.glb")
     bpy.ops.export_scene.gltf(filepath=str(temporary), export_format="GLB", export_animations=baked.exists(),
                               export_cameras=False, export_lights=False)
     import json
@@ -109,7 +110,7 @@ def convert(item, textures):
     temporary.replace(path)
     skins = len(doc.get("skins", []))
     clips = [a.get("name", "") for a in doc.get("animations", [])]
-    return dict(state="animated" if skins and clips else "static", model="models/" + path.name,
+    return dict(state="animated" if skins and clips else "static", model=file,
                 meshes=len(doc["meshes"]), skins=skins, clips=clips, boundTextures=bound,
                 embeddedImages=len(doc.get("images", [])), missingBitmaps=missing)
 

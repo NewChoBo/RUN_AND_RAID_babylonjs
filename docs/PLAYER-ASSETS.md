@@ -4,15 +4,17 @@
 
 Google Drive의 **Run and Raid - Player Assets**에서 `Blender/<그룹>.blend`를 내려받아 편집한다. Scene 선택기의 각 장면은 원본 MAX 한 개와 대응한다. `FBX/<그룹>.zip`에는 FBX와 텍스처가 있다. `GLB/<그룹>.zip`의 `Scenes/`에는 원본별 GLB, `Outfits/`에는 경기·상점용 GLB, `index.json`에는 출처와 클립 매핑이 있다. 다운로드한 파일은 Drive 루트의 `SHA256SUMS.txt`로 검사할 수 있다.
 
+게임과 Drive에서 같은 외형은 같은 파일명을 쓴다. 예를 들어 해머 근위대 외형은 `hammer-royalguard.glb`, 해머 기본 달리기는 `hammer-default-run.glb`와 `hammer-default-run.fbx`, 기본 편집 장면은 `hammer-default-scene.glb`다. 구버전·변형 장면은 원본의 하위 폴더 이름까지 덧붙인다. 각 FBX의 원본 MAX 경로와 프레임 범위는 `fbx-index.csv`에서 찾을 수 있다. FBX에 연결된 원본 TGA는 재연결에 쓰이는 이름을 유지한다.
+
 31개 그룹의 장면 GLB 876개 중 851개에는 메시가 있고, 25개는 본·헬퍼 장면이다. 별도 제작된 걷기가 없는 경기 모델은 달리기를 느리게 사용한다. 칼리의 중독은 다음 평타를 강화하므로 전용 원본이 없는 이 슬롯에 평타 동작을 연결했다. 피부·의상 디퓨즈의 알파는 마스크로 보존하고 경기용 본체는 불투명하게 렌더링한다. 일부 제작용 장면은 원본 ZIP에 없는 텍스처를 참조한다. 편집 파일의 장면 속성과 그룹별 GLB 색인에 해당 참조를 기록했다.
 
-원본 ZIP을 준비한 작업 환경에서 전체 라이브러리를 다시 만들 때는 FBX를 `asset-sources/baked-fbx/`에 원래 상대경로대로 둔다. 편집 작업본의 출력은 `.asset-work/player-release/Blender/`다. 기존 작업본은 보존하며, 이미 Drive에서 받은 작업본을 사용하는 경우 `glb` 단계부터 실행한다.
+원본 ZIP을 준비한 작업 환경에서 전체 라이브러리를 다시 만들 때는 Drive의 FBX 압축을 `asset-sources/baked-fbx/`에 푼다. 편집 작업본의 출력은 `.asset-work/player-release/Blender/`다. 이미 Drive에서 받은 작업본이 있으면 `glb` 단계부터 실행한다.
 
 ```powershell
 uv run --no-project --python 3.13 --with bpy==5.3.0 --with pillow==11.1.0 python tools/assets/player_archive.py blend --timeline "C:/art/fbx-index.csv"
 uv run --no-project --python 3.13 --with bpy==5.3.0 --with pillow==11.1.0 python tools/assets/player_archive.py glb
 uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/assemble_player.py --outfits
-python tools/assets/package_players.py
+python tools/assets/package_players.py --fbx-index "C:/art/fbx-index.csv"
 uv run --no-project --python 3.13 --with pillow==11.1.0 python tools/assets/verify.py
 ```
 
@@ -66,7 +68,7 @@ python tools/assets/bake_fbx.py --maxbatch "C:/Program Files/Autodesk/3ds Max 20
 uv run --no-project --python 3.13 --with bpy==5.3.0 --with pillow==11.1.0 python tools/assets/convert.py --group hammer
 ```
 
-3ds Max 경로는 설치 위치에 맞춘다. 각 MAX 장면의 타임라인 범위로 스킨과 애니메이션을 베이크한다. 별도로 받은 FBX도 원본 MAX와 동일한 상대경로로 `asset-sources/baked-fbx/`에 둘 수 있다. 예를 들어 `hammer/Animation/hammer#default#run.max`는 `hammer/Animation/hammer#default#run.fbx`와 짝을 이룬다. 변환기는 짝을 이루는 FBX를 우선하고 내보낸 GLB에서 실제 스킨과 클립이 모두 있을 때만 `animated`로 표시한다.
+3ds Max 경로는 설치 위치에 맞춘다. 각 MAX 장면의 타임라인 범위로 스킨과 애니메이션을 베이크한다. `hammer/Animation/hammer#default#run.max`의 출력은 `asset-sources/baked-fbx/hammer/Animation/hammer-default-run.fbx`다. 변환기는 이전 파일명 `hammer#default#run.fbx`도 읽으며, 내보낸 GLB에서 실제 스킨과 클립이 모두 있을 때만 `animated`로 표시한다.
 
 경기용 영웅은 기본 모델 하나에 스킨과 게임용 아홉 클립을 합친 구조다. 각 스킬의 여러 원본 단계가 어느 클립에 해당하는지는 실제 동작과 공식 스킬표를 대조한 뒤 결정한다.
 

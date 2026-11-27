@@ -54,18 +54,16 @@ async function choose() {
       picture.hidden = false;
     }
   };
-  if (item.model || item.texture || item.hierarchy) {
-    download.href = base + (item.model ?? item.texture ?? item.hierarchy);
+  const file = item.model ?? item.texture ?? item.hierarchy;
+  if (file) {
+    download.href = base + file;
     download.hidden = false;
     download.textContent = item.model
       ? uiText('downloadGlb')
       : item.hierarchy
         ? uiText('downloadBones')
         : uiText('downloadPng');
-    download.download = (item.path.split('/').pop() ?? item.id).replace(
-      /\.[^.]+$/,
-      item.model ? '.glb' : item.hierarchy ? '.json' : '.png',
-    );
+    download.download = file.split('/').at(-1)!;
   }
   if (!item.model || item.state === 'rig') {
     showImage();

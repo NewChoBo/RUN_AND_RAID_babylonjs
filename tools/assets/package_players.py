@@ -1,13 +1,18 @@
 """Package the full private GLB library by group and install approved game outfits."""
 
+import argparse
+import csv
 import hashlib
+import io
 import json
 import struct
 import zipfile
 from pathlib import Path
 
 from activate import fighter_materials
-from library import PUBLIC, ROOT, WORK, read_json, save_json, write_changed
+from asset_names import fbx_path, outfit_name, source_stem
+from convert import fbx_for
+from library import PUBLIC, ROOT, SOURCE, WORK, read_json, save_json, write_changed
 
 
 def inspect(data):
@@ -20,13 +25,70 @@ def inspect(data):
     return doc
 
 
-def main():
+def package_fbx(groups, work, timeline):
+    with timeline.open(encoding="utf-8-sig", newline="") as stream:
+        reader = csv.DictReader(stream)
+        fields = list(reader.fieldnames)
+        records = {}
+        for row in reader:
+            source = row.get("원본 MAX 경로") or Path(row["FBX 상대경로"]).with_suffix(".max").as_posix()
+            if source in records:
+                raise ValueError(f"Duplicate FBX timeline entry: {source}")
+            records[source] = row
+    if "원본 MAX 경로" not in fields:
+        fields.insert(fields.index("FBX 상대경로"), "원본 MAX 경로")
+    scenes = {i["path"] for rows in groups.values() for i in rows if i["kind"] in {"motion", "scene"}}
+    if scenes != records.keys():
+        raise ValueError("FBX timeline must cover every original scene")
+    folder = work / "FBX"
+    folder.mkdir(exist_ok=True)
+    for group, rows in groups.items():
+        archive = folder / (group + ".zip")
+        tmp = archive.with_suffix(".partial.zip")
+        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED, compresslevel=1) as bundle:
+            for item in rows:
+                source = item["path"]
+                if source in scenes:
+                    member = fbx_path(item).as_posix()
+                    records[source].update({"원본 MAX 경로": source, "FBX 상대경로": member})
+                    bundle.write(fbx_for(item), member)
+                elif item["kind"] == "texture":
+                    # External bitmap references in the native scenes use the original TGA names.
+                    bundle.write(SOURCE / source, source)
+        with zipfile.ZipFile(tmp) as bundle:
+            if bundle.testzip():
+                raise ValueError(f"FBX archive CRC mismatch: {group}")
+        tmp.replace(archive)
+    buf = io.StringIO(newline="")
+    writer = csv.DictWriter(buf, fieldnames=fields)
+    writer.writeheader()
+    writer.writerows(records.values())
+    write_changed(work / "fbx-index.csv", buf.getvalue().encode("utf-8-sig"))
+
+
+def write_drive_checksums(work, groups):
+    files = [work / kind / (group + ext)
+             for kind, ext in [("FBX", ".zip"), ("Blender", ".blend"), ("GLB", ".zip")]
+             for group in sorted(groups)]
+    sums = []
+    for file in [*files, work / "fbx-index.csv"]:
+        with file.open("rb") as stream:
+            sha = hashlib.file_digest(stream, "sha256").hexdigest()
+        sums.append(f"{sha}  {file.relative_to(work).as_posix()}\n")
+    write_changed(work / "SHA256SUMS.txt", "".join(sums).encode())
+
+
+def main(timeline=None):
     work = WORK / "player-release"
     groups = {}
     for row in read_json(PUBLIC / "catalog.json")["files"]:
         groups.setdefault(row["group"], []).append(row)
+    if timeline:
+        package_fbx(groups, work, timeline)
     manifest = ROOT / "src/content/raid/published-outfits.json"
     approved = read_json(manifest)
+    if len({outfit_name(i["group"], i["skin"]) for i in approved}) != len(approved):
+        raise ValueError("Duplicate published outfit filename")
     hashes = ROOT / ".github/pages-assets.sha256"
     checksums = {
         path: sha
@@ -44,7 +106,7 @@ def main():
             for item in rows:
                 if item["kind"] not in {"scene", "motion"}:
                     continue
-                relative = Path(item["path"]).relative_to(group).with_suffix(".glb").as_posix()
+                relative = source_stem(item) + ".glb"
                 data = (PUBLIC / item["model"]).read_bytes()
                 inspect(data)
                 bundle.writestr("Scenes/" + relative, data)
@@ -61,20 +123,24 @@ def main():
                 if outfit["group"] != group.lower():
                     continue
                 skin = outfit["skin"]
-                path = work / "Fighters" / group.lower() / (skin + ".glb")
+                filename = outfit_name(group, skin)
+                folder = work / "Fighters" / group.lower()
+                path = folder / filename
+                if not path.exists():
+                    path = folder / (skin + ".glb")
                 data = fighter_materials(path.read_bytes())
                 doc = inspect(data)
                 if not doc.get("meshes"):
                     raise ValueError("Missing body mesh: " + str(path))
                 sha = hashlib.sha256(data).hexdigest()
-                asset = "assets/fighters/" + sha[:20] + ".glb"
+                asset = "assets/fighters/" + filename
                 write_changed(public_root / asset, data)
                 checksums[asset] = sha
                 clips = [a["name"] for a in doc.get("animations", [])]
                 installed.append(
                     {"group": group.lower(), "skin": skin, "model": "./" + asset, "clips": clips}
                 )
-                relative = "Outfits/" + path.name
+                relative = "Outfits/" + filename
                 bundle.writestr(relative, data)
                 entries.append(
                     dict(file=relative, sha256=sha, **read_json(path.with_suffix(".json")))
@@ -87,12 +153,18 @@ def main():
     if len(installed) != len(approved):
         raise ValueError("Incomplete game outfit set")
     by_key = {(i["group"], i["skin"]): i for i in installed}
-    save_json(manifest, [by_key[i["group"], i["skin"]] for i in approved])
+    installed = [by_key[i["group"], i["skin"]] for i in approved]
+    if approved != installed:
+        save_json(manifest, installed)
     write_changed(
         hashes, "".join(f"{checksums[p]}  {p}\n" for p in sorted(checksums)).encode("utf8")
     )
+    if timeline or (work / "fbx-index.csv").exists():
+        write_drive_checksums(work, groups)
     print("Packaged", len(groups), "groups and", len(installed), "game outfits")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--fbx-index", type=Path, help="Also package native FBX files, timeline and Drive checksums")
+    main(parser.parse_args().fbx_index)

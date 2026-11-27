@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from asset_names import fbx_path
 from library import INDEX, IMPORTER, PUBLIC, RECORDS, REVISION, ROOT, SOURCE, WORK, digest, publish, read_json, save_json
 
 
@@ -14,7 +15,10 @@ def ensure_importer():
 
 
 def fbx_for(item):
-    return SOURCE.parent / "baked-fbx" / Path(item["path"]).with_suffix(".fbx")
+    folder = SOURCE.parent / "baked-fbx"
+    named = folder / fbx_path(item)
+    legacy = folder / Path(item["path"]).with_suffix(".fbx")
+    return legacy if not named.exists() and legacy.is_file() else named
 
 
 def stamp(item, archive):

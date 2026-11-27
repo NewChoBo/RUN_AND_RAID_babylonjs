@@ -8,6 +8,7 @@ from pathlib import Path
 
 import bpy
 from convert import fbx_for, stamp
+from asset_names import library_file
 from library import INDEX, PUBLIC, RECORDS, SOURCE, WORK, publish, read_json, save_json
 from materials import choose_texture, diffuse
 from prepare_blend import frame_body
@@ -112,7 +113,7 @@ def export_scenes(items, blend, archive):
                                 and not Path(bpy.path.abspath(node.image.filepath)).is_file()
                             ):
                                 node.image = None
-        file = "models/" + item["id"] + ".glb"
+        file = library_file(item, "model")
         dest = PUBLIC / file
         dest.parent.mkdir(parents=True, exist_ok=True)
         temp = dest.with_suffix(".partial.glb")
@@ -172,7 +173,7 @@ def main():
         if args.timeline.suffix.lower() == ".csv":
             with args.timeline.open(encoding="utf-8-sig", newline="") as stream:
                 for row in csv.DictReader(stream):
-                    key = Path(row["FBX 상대경로"]).with_suffix(".max").as_posix()
+                    key = row.get("원본 MAX 경로") or Path(row["FBX 상대경로"]).with_suffix(".max").as_posix()
                     timeline[key] = {
                         "start": int(row["원본 시작 프레임"]),
                         "end": int(row["원본 끝 프레임"]),

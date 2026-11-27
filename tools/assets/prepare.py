@@ -9,6 +9,7 @@ import zipfile
 from pathlib import Path, PurePosixPath
 import olefile
 from PIL import Image
+from asset_names import library_file, source_stem
 from library import INDEX, PUBLIC, SOURCE, digest, publish, save_json, write_changed
 
 
@@ -58,6 +59,7 @@ def main(archive):
         archive_hash = hashlib.file_digest(original, "sha256").hexdigest()
     files = []
     seen = set()
+    names = set()
     with zipfile.ZipFile(archive) as source:
         for entry in source.infolist():
             if entry.is_dir():
@@ -79,11 +81,17 @@ def main(archive):
             write_changed(dest, data)
             key = digest(name.encode())[:24]
             item = dict(id=key, path=name, group=path.parts[0], bytes=len(data), sha256=digest(data))
+            motion = any(p.casefold() in ("animation", "animaion") for p in path.parts[1:-1])
+            item["kind"] = {".tga": "texture", ".max": "motion" if motion else "scene"}.get(path.suffix.lower(), "source")
+            stem = source_stem(item)
+            if stem in names:
+                raise ValueError(f"Duplicate generated asset filename: {stem} for {name}")
+            names.add(stem)
             if path.suffix.lower() == ".tga":
                 with Image.open(io.BytesIO(data)) as image:
                     image.load()
-                    item.update(kind="texture", width=image.width, height=image.height,
-                                channels=image.mode, texture=f"textures/{key}.png")
+                    item.update(width=image.width, height=image.height, channels=image.mode)
+                    item["texture"] = library_file(item, "texture")
                     # Store the original color and alpha channels for authoring.
                     write_changed(PUBLIC / item["texture"], png(image))
                     small = image.convert("RGB")
@@ -91,18 +99,17 @@ def main(archive):
                     thumbnail = png(small)
                 item["state"] = "texture"
             elif path.suffix.lower() == ".max":
-                motion = any(p.casefold() in ("animation", "animaion") for p in path.parts[1:-1])
                 with olefile.OleFileIO(io.BytesIO(data)) as document:
                     if not document.exists("Scene"):
                         raise ValueError(f"Missing MAX scene stream: {name}")
-                    item.update(kind="motion" if motion else "scene", bitmaps=bitmap_names(document))
+                    item.update(bitmaps=bitmap_names(document))
                     thumbnail = preview(document)
                 item["state"] = "source"
             else:
-                item.update(kind="source", state="source")
+                item["state"] = "source"
                 thumbnail = None
             if thumbnail:
-                item["thumbnail"] = f"previews/{digest(thumbnail)[:24]}.png"
+                item["thumbnail"] = library_file(item, "thumbnail")
                 write_changed(PUBLIC / item["thumbnail"], thumbnail)
             files.append(item)
     if len({i["id"] for i in files}) != len(files):

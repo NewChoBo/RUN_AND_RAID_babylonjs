@@ -5,10 +5,21 @@ import test from 'node:test';
 import outfits from '../../src/content/raid/published-outfits.json' with { type: 'json' };
 
 test('each published Player outfit embeds the advertised clips and renders its body opaque', () => {
+  const paths = new Set();
+  const checksums = new Map(
+    readFileSync(new URL('../../.github/pages-assets.sha256', import.meta.url), 'utf8')
+      .trim()
+      .split(/\r?\n/)
+      .map((line) => [line.slice(66), line.slice(0, 64)]),
+  );
   for (const outfit of outfits) {
+    const skin = outfit.skin.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+    const path = `assets/fighters/${outfit.group}-${skin}.glb`;
+    assert.equal(outfit.model, './' + path);
+    assert.ok(!paths.has(path), path);
+    paths.add(path);
     const data = readFileSync(new URL('../../public/' + outfit.model, import.meta.url));
-    const id = createHash('sha256').update(data).digest('hex').slice(0, 20);
-    assert.equal(outfit.model, './assets/fighters/' + id + '.glb');
+    assert.equal(createHash('sha256').update(data).digest('hex'), checksums.get(path), path);
     const doc = JSON.parse(data.toString('utf8', 20, 20 + data.readUInt32LE(12)));
     assert.ok(doc.meshes?.length, outfit.model);
     assert.deepEqual(
