@@ -7,6 +7,7 @@ import { createFlyingBlade, createBladeWave } from './raid-blade-wave.ts';
 import { createHofTurrets } from './raid-hof-turrets.ts';
 import { createAirArrows } from './raid-air-arrows.ts';
 import { createRaidArrowRain } from './raid-arrow-rain.ts';
+import { createSwiftDaggerFx } from './raid-swift-dagger.ts';
 import { createIgnitionFx, createFlame, createFlameMaterial } from './raid-ignition.ts';
 import { createRaidArrow } from './raid-arrow.ts';
 import { createShadowBlades } from './raid-shadow-blades.ts';
@@ -45,6 +46,7 @@ const tau = Math.PI * 2;
 export function createRaidEffects(scene: Scene) {
   const drawTurrets = createHofTurrets(scene);
   const drawAirArrows = createAirArrows(scene);
+  const drawSwiftDagger = createSwiftDaggerFx(scene);
   const fire = createFlameMaterial(scene);
   const drawIgnition = createIgnitionFx(scene, fire);
   const materials = new Map<RaidHero, { sigil: StandardMaterial; light: StandardMaterial }>();
@@ -271,6 +273,7 @@ export function createRaidEffects(scene: Scene) {
   return (view: RaidView, subtick: number, outfits: readonly (string | undefined)[] = []) => {
     drawTurrets(view, subtick, outfits);
     drawAirArrows(view, subtick);
+    drawSwiftDagger(view, subtick);
     drawIgnition(view, subtick);
     const now = view.tick + subtick;
     for (
@@ -333,6 +336,7 @@ export function createRaidEffects(scene: Scene) {
         now - cue.tick < lifetime(cue) &&
         !(heroKit(cue.hero) === 'hof' && cue.skill !== 'basic') &&
         !(cue.hero === 'longshot' && cue.skill === 2) &&
+        !(cue.hero === 'swift' && cue.skill === 2) &&
         !(
           cue.skill !== 'basic' &&
           appearance[heroKit(cue.hero)].spinClip ===

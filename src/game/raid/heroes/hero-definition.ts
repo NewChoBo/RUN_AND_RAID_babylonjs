@@ -1,6 +1,7 @@
 import type { RaidAction, RaidPoint, RaidRunner, Runner, RaidTarget, Skill } from '../raid-view.ts';
 import type { FieldPulse, HitRule, ProjectileAttack } from '../skills/attack-rule.ts';
 import type { RaidDirection } from '../raid-projectiles.ts';
+import type { TrackingDagger } from './swift.ts';
 import { applySkill } from '../skills/skill-execution.ts';
 import type { HeroSkill, SkillInfo, ResolvedCast } from '../skills/skill-rule.ts';
 
@@ -25,6 +26,8 @@ export interface HofTurret extends RaidPoint {
   shot?: RaidPoint & { tick: number };
 }
 export interface HeroView {
+  readonly firingStacks?: number;
+  readonly trackingDagger?: TrackingDagger | null;
   readonly escapeTicks?: number;
   readonly concealedUntil?: number;
   readonly airArrows?: readonly AirArrow[];

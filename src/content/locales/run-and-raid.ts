@@ -28,6 +28,7 @@ export const raidText = defineMessages(
     magnusCry: 'Battle Cry',
     magnusBattle: 'Battle Mode',
     iceCrystals: 'Ice crystals {count}',
+    firingStacks: 'Firing Frenzy {count}/3',
     flare: 'Flare',
     flareInfo:
       'Fireball slows nearby enemies on impact. Flame Burst grants brief control immunity. Ignite burns a target for four seconds. Other skill hits extend the burn.',
@@ -65,7 +66,7 @@ export const raidText = defineMessages(
     theresaFury: 'Divine Call',
     vallet: 'Vallet',
     valletInfo:
-      'Scatter Shot recoils away from the firing direction. Tap Emergency Escape again while airborne to land early.',
+      'Casting a skill increases basic attack speed for three seconds, stacking up to three times. Scatter Shot pushes you back. Tap Emergency Escape again to land early.',
     valletPulse: 'Explosive Round',
     valletBolt: 'Scatter Shot',
     valletField: 'Emergency Escape',
@@ -266,7 +267,7 @@ export const raidText = defineMessages(
     hammerInfo:
       'Crush slows nearby enemies. Leaping attack launches enemies at the landing point. Whirlwind deals damage as you move. Hammer of Judgment stuns on impact.',
     abyssInfo:
-      'Fire a silencing orb or pull enemies towards a chosen patch of road. Into the Abyss prevents incoming damage for two seconds.',
+      'Silence enemies or pull them in. Your skills deal 25% more damage to enemies hit within five metres of you. Into the Abyss prevents incoming damage for two seconds.',
     longshotInfo:
       'Fire a spread of arrows, slow enemies with arrow rain and fly in the aimed direction while firing five arrows below.',
     jadeInfo:

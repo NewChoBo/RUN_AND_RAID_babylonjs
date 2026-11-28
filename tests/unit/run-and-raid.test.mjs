@@ -366,7 +366,8 @@ test('Swift designates a quarry, closes over time and blinks behind a visible ta
   r.z = 0;
   victim.z = 7;
   assert.ok(send(0, 'cast', { skill: 2, target: 2 }));
-  match.step();
+  assert.ok(r.heroView.trackingDagger);
+  for (let tick = 0; tick < RAID_HZ && r.heroView.trackingDagger; tick++) match.step();
   assert.equal(r.heroView.quarry, 2);
   const aimZ = victim.z;
   const hpBeforeLunge = victim.hp;
@@ -1167,7 +1168,7 @@ test('Abyss aims the silencing orb and delays Distortion on its road tile; Jade 
   const protection = ally.barrier.amount;
   advance(match, 20);
   assert.equal(ally.slowed, 2 * RAID_HZ);
-  assert.equal(ally.barrier.amount, protection - 30);
+  assert.equal(ally.barrier.amount, protection - HEROES.abyss.power * 3 * 1.25);
   advance(match, 10);
   assert.ok(send(ally.slot, 'cast', { skill: 0 }));
 });

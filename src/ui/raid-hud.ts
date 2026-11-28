@@ -191,6 +191,8 @@ export function createRaidHud(
     if (runner.heroView.comboPoints !== undefined)
       rage.textContent += ' · ' + t('shadowCombo', { count: runner.heroView.comboPoints });
     if (runner.heroView.poisonArmed) rage.textContent += ' · ' + t('poisonArmed');
+    if (runner.heroView.firingStacks)
+      rage.textContent += ' · ' + t('firingStacks', { count: runner.heroView.firingStacks });
     if (runner.heroView.iceCrystals !== undefined)
       rage.textContent += ' · ' + t('iceCrystals', { count: runner.heroView.iceCrystals });
     if (runner.heroView.shieldMode !== undefined)

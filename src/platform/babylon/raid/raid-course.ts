@@ -17,6 +17,7 @@ import {
 import { raidMaterial } from './raid-material.ts';
 import type { RaidHealthChange } from '../../../game/raid/raid-view.ts';
 import { createRaidActor } from './raid-actor.ts';
+import { createQuarryMarks } from './raid-quarry-mark.ts';
 import { RAID_RUNNER_SCALE } from './hero-appearance.ts';
 import { createRenderer } from '../rendering/renderer.ts';
 import { observeRaidResolution } from './raid-resolution.ts';
@@ -243,14 +244,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   );
   callMarker.color = Color3.FromHexString('#ffd253');
   callMarker.isPickable = false;
-  const quarryMark = MeshBuilder.CreateTorus(
-    'tracking dagger',
-    { diameter: 0.8, thickness: 0.09, tessellation: 4 },
-    scene,
-  );
-  quarryMark.rotation.x = Math.PI / 2;
-  quarryMark.material = raidMaterial(scene, 'tracking dagger amber', '#ffa341', 0.8);
-  quarryMark.isPickable = false;
+  const drawQuarryMarks = createQuarryMarks(scene);
   // The local runner remains identifiable when a teammate overlaps the same team ring.
   const selfMark = MeshBuilder.CreateRibbon(
     'local runner chevron',
@@ -384,20 +378,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
       const p = positions[carrier.slot]!;
       lightningOrb.position.set(p.x, 2 + raidRunnerHeight(carrier, subtick), p.z);
     }
-    const quarry = view.runners.find((r) => r.heroView.quarry != null)?.heroView.quarry;
-    quarryMark.setEnabled(quarry != null);
-    if (quarry != null) {
-      const p = quarry === 'wagon' ? WAGON : positions[quarry]!;
-      quarryMark.position.set(
-        p.x,
-        quarry === 'wagon'
-          ? 4.3
-          : barHeight(quarry) +
-              0.5 * RAID_RUNNER_SCALE +
-              raidRunnerHeight(view.runners[quarry]!, subtick),
-        p.z,
-      );
-    }
+    drawQuarryMarks(view, positions, subtick, barHeight);
     const target =
       player.target === null ? null : player.target === 'wagon' ? WAGON : positions[player.target];
     lock.setEnabled(!!target && (!aimKind || aimKind === 'field' || aimKind === 'pulse'));

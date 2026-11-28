@@ -6,8 +6,38 @@ import { raidRoadTravel } from '../runner-motion.ts';
 import { shot } from './archive-skills.ts';
 import { bolt } from '../skills/skill-effects.ts';
 
+function basicInterval(base: number, stacks: number) {
+  return Math.ceil(base / (1 + 0.3 * stacks));
+}
+
 class Vallet implements HeroEvents {
-  readonly view = { escapeTicks: 0 };
+  readonly view = { escapeTicks: 0, firingStacks: 0 };
+  private firingUntil = 0;
+  private setStacks(c: HeroCombat, stacks: number) {
+    if (stacks === this.view.firingStacks) return;
+    const previous = basicInterval(c.stats.cooldown, this.view.firingStacks);
+    const next = basicInterval(c.stats.cooldown, stacks);
+    // Preserve the completed portion of the current basic attack's recovery.
+    c.self.basic = Math.ceil((c.self.basic * next) / previous);
+    this.view.firingStacks = stacks;
+  }
+  onCast(c: HeroCombat) {
+    this.setStacks(c, Math.min(3, this.view.firingStacks + 1));
+    this.firingUntil = c.tick() + 3 * RAID_HZ;
+  }
+  onBasicAttack(c: HeroCombat) {
+    return {
+      amount: c.stats.basicAttack,
+      cooldown: basicInterval(c.stats.cooldown, this.view.firingStacks),
+    };
+  }
+  onTimersAdvanced(c: HeroCombat) {
+    if (this.view.firingStacks && c.tick() >= this.firingUntil) this.setStacks(c, 0);
+  }
+  onKnockout(c: HeroCombat) {
+    this.setStacks(c, 0);
+    this.firingUntil = this.view.escapeTicks = 0;
+  }
   land(c: HeroCombat) {
     this.view.escapeTicks = 0;
     if (!c.self.launchDuration) c.self.jumping = 0;

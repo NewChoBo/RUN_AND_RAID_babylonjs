@@ -5,7 +5,7 @@ import type { RaidHeroDefinition, HeroStats } from './hero-definition.ts';
 import { HERO_IDS, heroKit, type HeroKit, type RaidHero } from './hero-id.ts';
 import type { Skill, RaidRunner } from '../raid-view.ts';
 import { hammer } from './hammer.ts';
-import { abyss } from './abyss.ts';
+import { abyss, archiveAbyss } from './abyss.ts';
 import { longshot } from './longshot.ts';
 import { jade } from './jade.ts';
 import { rend } from './rend.ts';
@@ -47,7 +47,7 @@ const kits = {
   magnus,
 } satisfies Record<HeroKit, RaidHeroDefinition>;
 export const heroCatalog = Object.fromEntries(
-  HERO_IDS.map((id) => [id, kits[heroKit(id)]]),
+  HERO_IDS.map((id) => [id, id === 'dwight' ? archiveAbyss : kits[heroKit(id)]]),
 ) as Record<RaidHero, RaidHeroDefinition>;
 export const HEROES = Object.fromEntries(
   HERO_IDS.map((id) => [id, heroCatalog[id].stats]),

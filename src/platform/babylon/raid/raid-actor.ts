@@ -1,5 +1,6 @@
 import { healthMeter, healthMeterPainter } from '../../../ui/raid-health-meter.ts';
 import { isJetFiring } from '../../../game/raid/air-movement.ts';
+import { sacrificeRadius } from '../../../content/raid/heroes/abyss.ts';
 import { createBladeWave } from './raid-blade-wave.ts';
 import { heroKit } from '../../../game/raid/heroes/hero-id.ts';
 import {
@@ -20,6 +21,7 @@ import {
   MeshBuilder,
   type StandardMaterial,
   TransformNode,
+  Vector3,
   type Scene,
 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
@@ -182,6 +184,20 @@ export function createRaidActor(
     scene,
   );
   ring.scaling.setAll(RAID_RUNNER_SCALE);
+  if (hero === 'abyss') {
+    const point = (angle: number) =>
+      new Vector3(sacrificeRadius * Math.sin(angle), 0, sacrificeRadius * Math.cos(angle));
+    const lines = Array.from({ length: 48 }, (_, i) => [
+      point((i * Math.PI) / 24),
+      point(((i + 0.65) * Math.PI) / 24),
+    ]);
+    const sacrifice = MeshBuilder.CreateLineSystem('Abyss sacrifice radius', { lines }, scene);
+    sacrifice.parent = ring;
+    sacrifice.scaling.setAll(1 / RAID_RUNNER_SCALE);
+    sacrifice.color = Color3.FromHexString('#cc9aed');
+    sacrifice.alpha = 0.65;
+    sacrifice.isPickable = false;
+  }
   const spinTrail = art.spinClip
     ? MeshBuilder.CreateTorus(
         hero + ' moving sweep',
