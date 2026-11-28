@@ -6,6 +6,37 @@ import { createRaidCounterVisual } from '../../src/platform/babylon/raid/raid-co
 import { RAID_ELECTRIC_GRID } from '../../src/game/raid/raid-boss.ts';
 import { createRaidEffects } from '../../src/platform/babylon/raid/raid-effects.ts';
 
+test('an incoming orb keeps its shape at first contact, then its pooled mesh switches to the next skill', (t) => {
+  const engine = new NullEngine();
+  t.after(() => engine.dispose());
+  const scene = new Scene(engine),
+    draw = createRaidEffects(scene);
+  for (const [hero, material] of [
+    ['abyss', 'Abyss dark orb'],
+    ['flare', 'Flare fireball'],
+  ]) {
+    const match = new RaidMatch(['hammer', 'hof', hero, 'jade']);
+    const [target, , caster] = match.runners;
+    target.x = caster.x - 1.12;
+    target.z = caster.z;
+    target.stunned = 2;
+    for (const runner of match.runners) runner.basic = 999;
+    assert.ok(match.cast(caster.slot, 0, { dx: -1, dz: 0 }));
+    match.step();
+    draw(match, 0.9);
+    const body = scene.getMeshByName('raid projectile');
+    const [contact] = match.endedProjectiles;
+    assert.ok(body.isEnabled());
+    assert.equal(body.material.name, material);
+    assert.deepEqual(body.position.asArray(), [contact.x, 1, contact.z]);
+    if (hero === 'abyss') assert.equal(body.scaling.x, body.scaling.z);
+    match.step();
+    draw(match, 0);
+    assert.ok(!body.isEnabled());
+  }
+  assert.equal(scene.meshes.filter((m) => m.name === 'raid projectile').length, 1);
+});
+
 test('blade waves reuse meshes, keep their contact width and switch between horizontal, upright and cross', (t) => {
   const engine = new NullEngine();
   t.after(() => engine.dispose());

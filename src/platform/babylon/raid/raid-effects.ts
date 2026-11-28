@@ -3,13 +3,13 @@ import { lungeTicks } from '../../../content/raid/heroes/swift.ts';
 import { heroKit, KIT_IDS } from '../../../game/raid/heroes/hero-id.ts';
 import { appearance } from './hero-appearance.ts';
 import { raidProjectileProfile, raidSkill } from '../../../game/raid/heroes/hero-catalog.ts';
-import { createFlyingBlade, createBladeWave } from './raid-blade-wave.ts';
+import { createBladeWave } from './raid-blade-wave.ts';
 import { createHofTurrets } from './raid-hof-turrets.ts';
 import { createAirArrows } from './raid-air-arrows.ts';
 import { createRaidArrowRain } from './raid-arrow-rain.ts';
 import { createSwiftDaggerFx } from './raid-swift-dagger.ts';
 import { createIgnitionFx, createFlame, createFlameMaterial } from './raid-ignition.ts';
-import { createRaidArrow } from './raid-arrow.ts';
+import { createFlyingShots } from './raid-flying-shots.ts';
 import { createShadowBlades } from './raid-shadow-blades.ts';
 import {
   Color3,
@@ -265,10 +265,7 @@ export function createRaidEffects(scene: Scene) {
   }
   const active = new Map<number, ReturnType<typeof allocate>>();
   const pool: ReturnType<typeof allocate>[] = [];
-  const bolts: Mesh[] = [];
-  const swordWaves: ReturnType<typeof createFlyingBlade>[] = [];
-  let arrowSource: Mesh | undefined;
-  const arrows: Mesh[] = [];
+  const drawFlyingShots = createFlyingShots(scene, (kit) => materials.get(kit)!.light);
   let match: RaidView | undefined;
   return (view: RaidView, subtick: number, outfits: readonly (string | undefined)[] = []) => {
     drawTurrets(view, subtick, outfits);
@@ -276,61 +273,7 @@ export function createRaidEffects(scene: Scene) {
     drawSwiftDagger(view, subtick);
     drawIgnition(view, subtick);
     const now = view.tick + subtick;
-    for (
-      let i = 0;
-      i < Math.max(arrows.length, bolts.length, swordWaves.length, view.projectiles.length);
-      i++
-    ) {
-      const p = view.projectiles[i];
-      if (!p) {
-        bolts[i]?.setEnabled(false);
-        arrows[i]?.setEnabled(false);
-        swordWaves[i]?.hide();
-        continue;
-      }
-      const form = appearance[heroKit(p.hero)].projectile?.[p.skill];
-      const advance = Math.min(p.remaining, p.metersPerTick * subtick);
-      if (form === 'arrow') {
-        arrowSource ??= createRaidArrow(scene);
-        const arrow = (arrows[i] ??= arrowSource.clone('raid flying arrow'));
-        arrow.setEnabled(true);
-        arrow.material = materials.get(heroKit(p.hero))!.light;
-        arrow.position.set(p.x + p.dx * advance, 0.95, p.z + p.dz * advance);
-        arrow.rotation.set(-Math.PI / 2, Math.atan2(p.dx, p.dz), 0);
-        arrow.scaling.setAll(p.skill === 3 ? 1.6 : 1);
-        bolts[i]?.setEnabled(false);
-        swordWaves[i]?.hide();
-        continue;
-      }
-      arrows[i]?.setEnabled(false);
-      const x = p.x + p.dx * advance,
-        z = p.z + p.dz * advance;
-      if (form === 'horizontal' || form === 'upright' || form === 'cross') {
-        const wave = (swordWaves[i] ??= createFlyingBlade(scene));
-        wave.draw(
-          form,
-          x,
-          z,
-          Math.atan2(p.dx, p.dz),
-          raidProjectileProfile(p.hero, p.skill)!.contact.halfWidth,
-        );
-        bolts[i]?.setEnabled(false);
-        continue;
-      }
-      swordWaves[i]?.hide();
-      const bolt = (bolts[i] ??= MeshBuilder.CreateSphere(
-        'raid projectile',
-        { diameter: 1, segments: 8 },
-        scene,
-      ));
-      bolt.isPickable = false;
-      bolt.setEnabled(true);
-      bolt.position.set(x, 1, z);
-      bolt.rotation.y = Math.atan2(p.dx, p.dz);
-      bolt.scaling.set(0.14, 0.14, p.skill === 3 ? 1.25 : 0.78);
-      if (heroKit(p.hero) === 'flare' && p.skill === 0) bolt.scaling.set(0.65, 0.65, 0.85);
-      bolt.material = materials.get(heroKit(p.hero))!.light;
-    }
+    drawFlyingShots(view, subtick);
     const visible = view.actions.filter(
       (cue) =>
         now - cue.tick < lifetime(cue) &&

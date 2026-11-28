@@ -18,18 +18,39 @@ export interface HeroAppearance {
   dashTrail?: 'shadowBlades';
   landingChop?: boolean;
   particles?: 'spiral' | 'vortex' | 'arrows' | 'heavy';
-  projectile?: Partial<Record<Skill, 'horizontal' | 'upright' | 'cross' | 'arrow'>>;
+  projectile?: Partial<
+    Record<
+      Skill,
+      'horizontal' | 'upright' | 'cross' | 'arrow' | 'orb' | 'fireball' | 'pellet' | 'slug' | 'hand'
+    >
+  >;
 }
 // Model attachments and particle styles belong to the renderer. Combat never reads this table.
 export const appearance: Record<HeroKit, HeroAppearance> = {
-  flare: { cape: '#ff7544', sprite: 'scorch_01', particles: 'vortex' },
+  flare: {
+    cape: '#ff7544',
+    sprite: 'scorch_01',
+    particles: 'vortex',
+    projectile: { 0: 'fireball' },
+  },
   hof: { cape: '#e9bf63', sprite: 'scorch_01', particles: 'heavy' },
   froze: { cape: '#69d8fb', sprite: 'twirl_01', particles: 'spiral' },
   magnus: { cape: '#eab251', sprite: 'scorch_01', particles: 'heavy' },
   theresa: { cape: '#f0d168', sprite: 'spark_05', particles: 'heavy' },
-  vallet: { cape: '#ea9a8c', sprite: 'spark_05', particles: 'arrows' },
+  vallet: {
+    cape: '#ea9a8c',
+    sprite: 'spark_05',
+    particles: 'arrows',
+    projectile: { 1: 'pellet', 3: 'slug' },
+  },
   freesia: { cape: '#98efbc', sprite: 'magic_01', particles: 'spiral' },
-  drizz: { cape: '#75394e', sprite: 'scorch_01', dashClip: 'fury', particles: 'heavy' },
+  drizz: {
+    cape: '#75394e',
+    sprite: 'scorch_01',
+    dashClip: 'fury',
+    particles: 'heavy',
+    projectile: { 0: 'hand', 3: 'hand' },
+  },
   alice: { cape: '#f0cb8b', sprite: 'magic_01', particles: 'spiral' },
   kali: { cape: '#713594', sprite: 'twirl_01', dashClip: 'fury', dashTrail: 'shadowBlades' },
   rildin: { cape: '#a12f29', sprite: 'spark_05', empoweredMesh: '2H_Sword' },
@@ -50,7 +71,13 @@ export const appearance: Record<HeroKit, HeroAppearance> = {
     landingChop: true,
     particles: 'heavy',
   },
-  abyss: { cape: '#693bad', sprite: 'twirl_01', barHeight: 2.48, particles: 'vortex' },
+  abyss: {
+    cape: '#693bad',
+    sprite: 'twirl_01',
+    barHeight: 2.48,
+    particles: 'vortex',
+    projectile: { 0: 'orb' },
+  },
   longshot: {
     cape: '#a57629',
     sprite: 'spark_05',

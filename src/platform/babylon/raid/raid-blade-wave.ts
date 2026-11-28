@@ -8,7 +8,7 @@ import {
 } from '@babylonjs/core';
 
 /** A bowed blade of light with a white leading edge and a translucent wake. Unit half-width is one metre. */
-export function createBladeWave(scene: Scene, name: string, color: Color3) {
+export function createBladeWave(scene: Scene, name: string, color: Color3, ridgeHeight = 0) {
   const mesh = new Mesh(name, scene);
   const ink = new StandardMaterial(name + ' light', scene);
   ink.disableLighting = true;
@@ -23,7 +23,8 @@ export function createBladeWave(scene: Scene, name: string, color: Color3) {
     const x = i / 12 - 1;
     const width = 1 - x * x;
     for (const edge of [0, 0.78, 1]) {
-      positions.push(x, 0, width * (edge - 0.3));
+      // Give a flying blade a shallow bevel so its bright edge survives an end-on view.
+      positions.push(x, edge === 0.78 ? ridgeHeight * width : 0, width * (edge - 0.3));
       const bright = edge === 1 ? 1 : 0;
       colors.push(
         color.r + (1 - color.r) * bright,
@@ -50,7 +51,7 @@ export function createBladeWave(scene: Scene, name: string, color: Color3) {
 
 export function createFlyingBlade(scene: Scene) {
   const root = new TransformNode('travelling sword wave', scene);
-  const blade = createBladeWave(scene, 'sword wave', new Color3(0.53, 0.84, 1));
+  const blade = createBladeWave(scene, 'sword wave', new Color3(0.53, 0.84, 1), 0.12);
   const cross = blade.clone('crossing sword wave');
   blade.parent = cross.parent = root;
   cross.rotation.z = Math.PI / 2;

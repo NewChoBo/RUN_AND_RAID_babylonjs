@@ -43,8 +43,15 @@ function contact(x: number, z: number, dx: number, dz: number, rx: number, rz: n
 /** Fixed directions and reach in wagon-relative metres. Only contact during flight deals damage. */
 export class RaidProjectiles {
   #active: Projectile[] = [];
+  readonly #ended: RaidProjectile[] = [];
   get active(): readonly RaidProjectile[] {
     return this.#active;
+  }
+  get ended(): readonly RaidProjectile[] {
+    return this.#ended;
+  }
+  beginTick() {
+    this.#ended.length = 0;
   }
   launch(
     r: RaidRunner,
@@ -143,11 +150,18 @@ export class RaidProjectiles {
               strike(p.caster, 'wagon', p.skill, p.attack.hit);
           }
         }
-        if (!p.attack.flight.pierces) return false;
+        if (!p.attack.flight.pierces) {
+          p.x += dx * t;
+          p.z += dz * t;
+          p.remaining = 0;
+          this.#ended.push(p);
+          return false;
+        }
       }
       p.x += dx;
       p.z += dz;
       p.remaining -= step;
+      if (p.remaining === 0) this.#ended.push(p);
       return p.remaining > 0;
     });
   }

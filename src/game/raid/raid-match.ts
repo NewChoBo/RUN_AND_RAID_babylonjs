@@ -189,6 +189,9 @@ export class RaidMatch implements RaidView {
   get projectiles() {
     return this.#projectiles.active;
   }
+  get endedProjectiles() {
+    return this.#projectiles.ended;
+  }
   #sequence = 0;
   #actions: RaidAction[] = [];
   readonly #fields = new RaidFields();
@@ -631,6 +634,7 @@ export class RaidMatch implements RaidView {
   step() {
     if (this.#result) return;
     this.#tick++;
+    this.#projectiles.beginTick();
     const previous =
       this.projectiles.length || this.runners.some((r) => r.dash?.struck)
         ? this.runners.map((r) => ({ x: r.x, z: r.z, height: raidRunnerHeight(r) }))

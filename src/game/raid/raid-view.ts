@@ -136,6 +136,8 @@ export interface RaidView {
   readonly healthChanges: readonly RaidHealthChange[];
   readonly calls: readonly (RaidCall | null)[];
   readonly projectiles: readonly RaidProjectile[];
+  /** Last position of each shot that ended on this tick. Zero remaining travel prevents overshoot. */
+  readonly endedProjectiles: readonly RaidProjectile[];
   readonly actions: readonly RaidAction[];
   readonly runners: readonly RaidRunner[];
   readonly damage: readonly number[];
