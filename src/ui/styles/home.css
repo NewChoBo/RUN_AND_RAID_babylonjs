@@ -308,7 +308,7 @@ a:focus-visible {
   background: #49443c;
   border-color: #af9f87;
 }
-#items span {
+#items [data-kind] {
   flex: none;
   border-radius: 0.45cqw;
   padding: 0.22cqh 0.6cqw;
@@ -340,10 +340,15 @@ a:focus-visible {
   flex-wrap: wrap;
   column-gap: 0.6em;
 }
+#items time,
 .article-title time {
   color: #d1c3ad;
   font-size: clamp(10px, calc(1.65 * var(--unit)), 13px);
   white-space: nowrap;
+}
+#items time {
+  display: block;
+  font-weight: 400;
 }
 #details {
   flex-shrink: 0;

@@ -15,17 +15,24 @@ function notify(text: string, lang = document.documentElement.lang) {
 for (const entry of devLog) {
   const button = document.createElement('button');
   const tag = document.createElement('span');
+  const summary = document.createElement('span');
+  const time = document.createElement('time');
+  const timestamp = entry.updatedAt.replace('T', ' ').replace('+09:00', ' KST');
   button.lang = 'ko';
   tag.lang = document.documentElement.lang;
   tag.textContent = uiText(entry.tag);
   tag.dataset.kind = entry.tag;
-  button.append(tag, entry.title);
+  time.dateTime = entry.updatedAt;
+  time.textContent = timestamp;
+  summary.append(entry.title, time);
+  button.append(tag, summary);
   button.setAttribute('aria-pressed', 'false');
   button.onclick = () => {
     items.querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
     button.setAttribute('aria-pressed', 'true');
     subject.textContent = entry.title;
-    date.dateTime = date.textContent = entry.date;
+    date.dateTime = entry.updatedAt;
+    date.textContent = timestamp;
     body.textContent = entry.body;
     body.parentElement!.scrollTop = 0;
   };
@@ -43,5 +50,5 @@ for (const button of document.querySelectorAll('[data-wip]')) {
 document
   .querySelector('#details')!
   .addEventListener('click', () =>
-    notify(subject.textContent + '\n' + date.dateTime + '\n\n' + body.textContent, 'ko'),
+    notify(subject.textContent + '\n' + date.textContent + '\n\n' + body.textContent, 'ko'),
   );
