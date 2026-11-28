@@ -18,7 +18,10 @@ import { kali } from './kali.ts';
 import { drizz } from './drizz.ts';
 import { alice } from './alice.ts';
 import { hof } from './hof.ts';
-import { froze, theresa, vallet, freesia } from './archive-champions.ts';
+import { froze } from './froze.ts';
+import { theresa } from './theresa.ts';
+import { vallet } from './vallet.ts';
+import { freesia } from './freesia.ts';
 import { flare } from './flare.ts';
 import { magnus } from './magnus.ts';
 const kits = {
@@ -78,7 +81,7 @@ export function canUseRaidSkill(runner: RaidRunner, skill: Skill) {
   if (runner.dash)
     return runner.dash.skill === skill && rule.kind === 'pulse' && !!rule.recastDuringDash;
   return (
-    !runner.cooldowns[skill] &&
+    (!runner.cooldowns[skill] || (skill === 2 && !!runner.heroView.escapeTicks)) &&
     (!rule.available || rule.available(runner)) &&
     (!rule.requiresJump || runner.jumping > 0) &&
     !(rule.kind === 'leap' && runner.jumping) &&

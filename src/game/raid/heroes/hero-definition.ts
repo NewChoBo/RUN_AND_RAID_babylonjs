@@ -25,6 +25,8 @@ export interface HofTurret extends RaidPoint {
   shot?: RaidPoint & { tick: number };
 }
 export interface HeroView {
+  readonly escapeTicks?: number;
+  readonly concealedUntil?: number;
   readonly airArrows?: readonly AirArrow[];
   readonly turrets?: readonly HofTurret[];
   readonly blasts?: readonly (RaidPoint & { tick: number })[];
@@ -74,6 +76,7 @@ export interface HeroCombat extends CombatRead {
   allies(center: RaidPoint, radius: number): number[];
   controlImmune(): boolean;
   barrier(ally: number, amount: number, ticks: number): void;
+  guardControl(ally: number, ticks: number): void;
   canTarget(id: RaidTarget): boolean;
 }
 export interface Hit {
@@ -91,6 +94,8 @@ export interface HeroEvents {
   onCast?(combat: HeroCombat, skill: Skill): void;
   onTimersAdvanced?(combat: HeroCombat): void;
   onDashEnd?(combat: HeroCombat, target?: RaidTarget): void;
+  /** Return true when contact starts a secondary action that delivers the hit. */
+  onProjectileContact?(combat: HeroCombat, target: RaidTarget, skill: Skill): boolean;
   onBasicAttack?(combat: HeroCombat): { amount: number; cooldown: number };
   onIncomingHit?(combat: HeroCombat, hit: Hit): boolean;
   onIncomingDamage?(amount: number): number;

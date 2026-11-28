@@ -1,11 +1,9 @@
-import { raidRoadTravel } from '../runner-motion.ts';
-import { distance, RAID_HZ } from '../raid-rules.ts';
-import { chartStats } from '../../../content/raid/base-stats.ts';
 import { defineHero, type HeroCombat, type HeroEvents, type Hit } from './hero-definition.ts';
-import { bolt, field, sweep } from '../skills/skill-effects.ts';
-import { silence, slow, stun } from '../raid-control.ts';
 import { noAttack } from '../skills/attack-rule.ts';
-import { aid, barrage, rush, shot } from './archive-skills.ts';
+import { chartStats } from '../../../content/raid/base-stats.ts';
+import { RAID_HZ } from '../raid-rules.ts';
+import { slow, stun } from '../raid-control.ts';
+import { bolt, sweep } from '../skills/skill-effects.ts';
 
 class Frostbite implements HeroEvents {
   private recharge = 3 * RAID_HZ;
@@ -43,7 +41,7 @@ export const froze = defineHero(
   () => new Frostbite(),
   [
     {
-      ...shot({ powerScale: 3, control: [slow(30, 6)] }, [0], true),
+      ...bolt({ powerScale: 3, control: [slow(30, 6)] }, { range: 12 }),
       cooldownTicks: 15,
       available: (r) => (r.heroView.iceCrystals ?? 0) >= 1,
     },
@@ -76,61 +74,5 @@ export const froze = defineHero(
     },
     // Fifteen ticks stunned, then sixty ticks of slowed movement.
     sweep({ powerScale: 3, control: [stun(15), slow(60, 40, 15)] }, { kind: 'circle', radius: 12 }),
-  ],
-);
-export const theresa = defineHero(
-  { ...chartStats.theresa, power: 10, reach: 3.5, radius: 3.6 },
-  () => ({}),
-  [
-    aid(28, 0, 7),
-    {
-      kind: 'target',
-      range: 5,
-      attack: {
-        kind: 'direct',
-        on: 'dashEnd',
-        contactRange: 2.2,
-        hit: { powerScale: 3, control: [stun(Math.ceil(0.75 * RAID_HZ))] },
-      },
-      apply(c, cast) {
-        const gap = distance(c.self, cast.point);
-        const ticks = Math.max(1, Math.ceil((14 * gap) / 5));
-        const travel = Math.max(0, gap - 0.65) / Math.max(gap, 0.001);
-        c.dash(
-          1,
-          {
-            x: c.self.x + (cast.point.x - c.self.x) * travel,
-            z: c.self.z + (cast.point.z - c.self.z) * travel + raidRoadTravel(ticks),
-          },
-          ticks,
-          cast.target,
-        );
-      },
-    },
-    sweep({ powerScale: 3, launchTicks: RAID_HZ }),
-    barrage({ powerScale: 3 }, { powerScale: 2 }, 2, 15),
-  ],
-);
-export const vallet = defineHero(
-  { ...chartStats.vallet, power: 10, reach: 10, radius: 3.8 },
-  () => ({}),
-  [
-    shot({ powerScale: 2 }, [-0.075, 0.075]),
-    rush({ powerScale: 2 }, 6),
-    barrage({ powerScale: 2 }, { powerScale: 1 }, 3, 9),
-    shot({ powerScale: 6, piercesShield: true }, [0], true, 20),
-  ],
-);
-export const freesia = defineHero(
-  { hp: 96, basicAttack: 10, power: 10, reach: 8, cooldown: 22, radius: 4 },
-  () => ({}),
-  [
-    shot({ powerScale: 2, control: [slow(48)] }, [-0.1, 0.1]),
-    aid(20, 12),
-    field(
-      { powerScale: 2 },
-      { count: 3, intervalTicks: 12, effect: { kind: 'healAllies', powerScale: 1 } },
-    ),
-    bolt({ powerScale: 6, control: [silence(32)] }),
   ],
 );

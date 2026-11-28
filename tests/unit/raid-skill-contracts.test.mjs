@@ -62,7 +62,7 @@ test('a frontal sector includes its angular edge but excludes a jumper exactly a
 test('two impacts of one skill carry independent shield and crowd control rules', () => {
   const { runners } = new RaidMatch(['rime', 'jade', 'rend', 'hammer']);
   const damage = new RaidHitResolution(
-    runners.map((self) => ({ self })),
+    runners.map((self) => ({ self, controlImmune: () => false })),
     () => ({}),
     () => {},
   );

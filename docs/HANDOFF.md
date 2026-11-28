@@ -17,7 +17,7 @@
 
 ## 2. 새 Photon Realtime 앱 연결
 
-사용자가 [Photon 대시보드](https://dashboard.photonengine.com/en-US/Applications)에서 **Realtime** 앱을 만든다. 리전 허용 목록을 사용한다면 `asia`를 허용한다. 현재 클라이언트는 `src/platform/photon/raid-room.ts`에서 이 리전에 접속하며 앱 버전은 `run-and-raid-17`이다. 방 연결과 이벤트 전송은 Photon이 담당하고 경기 상태는 호스트 클라이언트가 진행한다.
+사용자가 [Photon 대시보드](https://dashboard.photonengine.com/en-US/Applications)에서 **Realtime** 앱을 만든다. 리전 허용 목록을 사용한다면 `asia`를 허용한다. 현재 클라이언트는 `src/platform/photon/raid-room.ts`에서 이 리전에 접속하며 앱 버전은 `run-and-raid-18`이다. 방 연결과 이벤트 전송은 Photon이 담당하고 경기 상태는 호스트 클라이언트가 진행한다.
 
 1. 공개 빌드에는 [저장소 Actions 변수](https://github.com/NewChoBo/RUN_AND_RAID_babylonjs/settings/variables/actions)에 `VITE_PHOTON_APP_ID`를 등록한다. 로컬 개발에는 프로젝트 루트의 `.env.local`에 같은 이름을 사용한다. Vite가 웹 클라이언트에 포함하는 값은 Realtime **App ID**다.
 2. 변수 등록 후 Pages 워크플로를 다시 실행한다. 이미 배포된 JavaScript에는 새 값이 자동으로 반영되지 않는다.
@@ -58,3 +58,5 @@ Pages 배포 소스를 GitHub Actions로 전환했다. [검증 커밋 74d4f0d의
 ## 2026-11-28 이동기와 호프 설치물
 
 원작 17명·68개 스킬의 클립과 시전자·대상 이동을 대조했다. 롱샷 E의 체공 사격, 프로즈 W의 점멸, 테레사 W의 돌진과 호프의 원본 포탑 9종을 경기와 봇에 반영했다. 결정론적 경기 규칙이 바뀌어 온라인 매칭 버전을 `run-and-raid-17`로 올렸다. 피해 환산과 동작 시점을 포함한 남은 차이는 [전투 대조 기록](COMBAT-AUDIT.md)에 있다.
+
+원작 17명 68칸의 입력 표와 영상 재확인 대상은 [전투 대조 기록](COMBAT-AUDIT.md)에 있다. 버전 18에서 조준 아이콘을 밖으로 끌어 놓으면 이전 대상·방향으로 빠르게 시전한다.

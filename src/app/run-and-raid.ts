@@ -120,19 +120,15 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   }
   function repeatCast(skill: Skill) {
     if (state !== 'playing') return;
-    const r = match.runners[slot]!;
-    const kind = raidRunnerAimKind(r, skill);
-    if (kind !== 'target' && kind !== 'ward') return;
-    const target = kind === 'ward' ? r.lastWard : r.lastStrike;
-    if (target === null || match.previewSkill(slot, skill, null, target).status !== 'ready') {
-      hud.showFeedback(raidText(target === null ? 'repeatMissing' : 'repeatUnavailable'));
-      return;
-    }
-    order('cast', { skill, repeat: true });
+    if (raidRunnerAimKind(match.runners[slot]!, skill) === 'pulse') return;
+    const preview = match.previewRepeat(slot, skill);
     aiming = null;
+    aimPointer = null;
     hud.aimPad.close();
     course.showAim(null);
     hud.update(match, null, slot);
+    if (preview?.status === 'ready') order('cast', { skill, repeat: true });
+    else hud.showFeedback(raidText(preview ? 'repeatUnavailable' : 'repeatMissing'));
   }
   function evade() {
     if (state !== 'playing') return;

@@ -112,7 +112,9 @@ export class RaidHitResolution {
         contributors.set(attacker.slot, tick);
         // Fury can charge its victim, but cannot refund its own cost.
         if (hit.skill !== 3) gainRage(attacker, damage);
-        if (hit.rule && !this.events(victim.slot).resistsControl?.(victim)) {
+        if (hit.rule && !this.contexts[victim.slot]!.controlImmune()) {
+          if (hit.rule.blindTicks)
+            victim.blindUntil = Math.max(victim.blindUntil, tick + hit.rule.blindTicks);
           if (hit.rule.control) applyCrowdControl(victim, hit.rule.control);
           if (hit.rule.tauntTicks)
             victim.taunt = { from: attacker.slot, until: tick + hit.rule.tauntTicks };
@@ -120,14 +122,15 @@ export class RaidHitResolution {
             victim.dash = victim.leap = null;
             if (hit.rule.launchTicks) victim.jumping = victim.launchDuration = hit.rule.launchTicks;
             else {
-              const dx = victim.x - attacker.x;
-              const dz = victim.z - attacker.z;
+              const origin = hit.rule.displacementOrigin ?? attacker;
+              const dx = victim.x - origin.x;
+              const dz = victim.z - origin.z;
               const separation = Math.hypot(dx, dz);
               const push = hit.rule.displacement === 'push';
               const reach = push ? separation + 2.5 : Math.min(1, separation);
               const to = limitRaidPlacement({
-                x: attacker.x + (separation ? dx / separation : 0) * reach,
-                z: attacker.z + (separation ? dz / separation : 1) * reach,
+                x: origin.x + (separation ? dx / separation : 0) * reach,
+                z: origin.z + (separation ? dz / separation : 1) * reach,
               });
               victim.x = Math.min(RAID_RUN_LIMIT_X, Math.max(-RAID_RUN_LIMIT_X, to.x));
               victim.z = to.z;
@@ -150,6 +153,7 @@ export class RaidHitResolution {
         victim.stunned = victim.launchDuration = 0;
         victim.staggered = victim.staggerGuard = 0;
         victim.hasteTicks = 0;
+        victim.blindUntil = victim.controlGuardUntil = 0;
         victim.respawn = raidRespawnTicks(victim.deaths);
         victim.jumping = 0;
         victim.barrier = null;

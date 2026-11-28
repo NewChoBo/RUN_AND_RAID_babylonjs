@@ -81,7 +81,10 @@ export function raidRunnerHeight(r: RaidRunner, subtick = 0) {
   }
   return r.leap
     ? raidLeapHeight(Math.min(1, (r.leap.elapsed + subtick) / RAID_LEAP_TICKS))
-    : jumpHeight(Math.max(0, r.jumping - subtick), r.launchDuration || RAID_JUMP_TICKS);
+    : jumpHeight(
+        Math.max(0, r.jumping - subtick),
+        r.launchDuration || (r.heroView.escapeTicks ? 2 * RAID_HZ : RAID_JUMP_TICKS),
+      );
 }
 /** Predict up to one tick from the current ground position for both the match and the camera. */
 export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint {

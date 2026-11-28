@@ -1,13 +1,16 @@
 import type { CrowdControlEffect } from '../raid-control.ts';
 import type { AttackArea, CircleArea } from './attack-area.ts';
+import type { RaidPoint } from '../raid-view.ts';
 
 /** Resolve base damage against the attacker's power at impact, then apply the defender's rules. */
 export interface HitRule {
   readonly powerScale: number;
   readonly control?: readonly CrowdControlEffect[];
   readonly displacement?: 'pull' | 'push';
+  readonly displacementOrigin?: RaidPoint;
   readonly launchTicks?: number;
   readonly tauntTicks?: number;
+  readonly blindTicks?: number;
   readonly piercesShield?: true;
 }
 export interface AreaHit {
@@ -62,7 +65,7 @@ export interface ProjectileAttack {
   readonly hit: HitRule;
 }
 export type FieldEffect =
-  | { readonly kind: 'damageEnemies'; readonly hit: HitRule }
+  | { readonly kind: 'damageEnemies'; readonly hit: HitRule; readonly pullToCenter?: true }
   | { readonly kind: 'controlEnemies'; readonly control: readonly CrowdControlEffect[] }
   | { readonly kind: 'healAllies'; readonly powerScale: number };
 export interface FieldPulse {
@@ -73,11 +76,12 @@ export interface FieldPulse {
 export interface FieldAttack {
   readonly kind: 'field';
   readonly area: CircleArea;
-  readonly hit: HitRule;
+  readonly hit?: HitRule;
   readonly pulse?: FieldPulse;
 }
 export interface NonAttacking {
   readonly kind: 'none';
+  readonly area?: CircleArea;
 }
 export type SkillAttack =
   | NonAttacking
@@ -93,6 +97,7 @@ export function attackArea(attack: SkillAttack) {
   switch (attack.kind) {
     case 'area':
     case 'field':
+    case 'none':
       return attack.area;
     case 'direct':
       return attack.on === 'cast' ? attack.splash?.area : undefined;

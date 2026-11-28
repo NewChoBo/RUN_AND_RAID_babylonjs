@@ -20,7 +20,6 @@ import {
   HEROES,
   heroCatalog,
   raidBasicReach,
-  raidAimKind,
   canUseRaidSkill,
   raidSkill,
   raidSkillCooldown,
@@ -28,6 +27,7 @@ import {
 import type { RaidHero } from './heroes/hero-id.ts';
 import type { HeroCombat, HeroView, RaidHeroRuntime } from './heroes/hero-definition.ts';
 import { castInput, resolveSkill, type TargetRead } from './skills/skill-targeting.ts';
+import { LastAim } from './skills/last-aim.ts';
 import {
   RAID_HZ,
   RAID_LEAP_TICKS,
@@ -135,6 +135,8 @@ const makeRunner = (hero: RaidHero, slot: number, view: () => HeroView): Runner 
   staggered: 0,
   staggerGuard: 0,
   hasteTicks: 0,
+  blindUntil: 0,
+  controlGuardUntil: 0,
   cooldownDurations: [0, 0, 0, 0],
   kills: 0,
   wagonDamage: 0,
@@ -147,6 +149,7 @@ export class RaidMatch implements RaidView {
   readonly #runners: Runner[];
   readonly #heroes: RaidHeroRuntime[];
   readonly #contexts: (HeroCombat & TargetRead)[];
+  readonly #lastAim: LastAim[];
 
   readonly #playerAspect: () => number;
 
@@ -201,10 +204,13 @@ export class RaidMatch implements RaidView {
       makeRunner(id, slot, () => this.#heroes[slot]!.events.view ?? emptyView),
     );
     this.#contexts = this.#runners.map((r) => this.#combat(r));
+    this.#lastAim = heroes.map(() => new LastAim());
     this.#hits = new RaidHitResolution(
       this.#contexts,
       (slot) => this.#heroes[slot]!.events,
       (slot) => {
+        this.#lastAim[slot] = new LastAim();
+        for (const aim of this.#lastAim) aim.forgetTarget(slot);
         const events = this.#heroes[slot]!.events;
         if (events.onKnockout) return events.onKnockout(this.#contexts[slot]!);
         this.#heroes[slot] = heroCatalog[this.#runners[slot]!.hero].create();
@@ -267,6 +273,7 @@ export class RaidMatch implements RaidView {
     if (target === null) return;
     const point = this.#position(r, target);
     if (!point) return;
+    if ('heroView' in point && (point.heroView.concealedUntil ?? 0) > this.tick) return;
     const height = 'jumping' in point ? 1 + raidRunnerHeight(point) : 2;
     if (this.#inSight(r, point, height, pullback)) return point;
   }
@@ -335,7 +342,8 @@ export class RaidMatch implements RaidView {
         this.#runners
           .filter((ally) => this.#inHealingArea(r, ally, p, radius))
           .map((ally) => ally.slot),
-      controlImmune: () => !!this.#heroes[r.slot]!.events.resistsControl?.(r),
+      controlImmune: () =>
+        r.controlGuardUntil > this.tick || !!this.#heroes[r.slot]!.events.resistsControl?.(r),
       height: raidRunnerHeight,
       targetPoint: (id) => (id === 'wagon' ? WAGON : (this.#runners[id] ?? null)),
       canTarget: (id) =>
@@ -387,6 +395,10 @@ export class RaidMatch implements RaidView {
       barrier: (id, amount, ticks) => {
         this.#runners[id]!.barrier = { amount, until: this.tick + ticks };
       },
+      guardControl: (id, ticks) => {
+        const ally = this.#runners[id]!;
+        ally.controlGuardUntil = Math.max(ally.controlGuardUntil, this.tick + ticks);
+      },
     };
   }
   skillRange(slot: number, skill: Skill) {
@@ -424,12 +436,25 @@ export class RaidMatch implements RaidView {
     }
     return true;
   }
+  #repeatInput(slot: number, skill: Skill) {
+    const c = this.#contexts[slot];
+    if (!c) return undefined;
+    return this.#lastAim[slot]!.input(
+      c,
+      raidSkill(c.self.hero, skill),
+      this.skillRange(slot, skill).range,
+    );
+  }
+  previewRepeat(slot: number, skill: Skill) {
+    const aim = this.#repeatInput(slot, skill);
+    if (aim === undefined) return null;
+    const r = this.#runners[slot]!;
+    const input = castInput(raidSkill(r.hero, skill), r, aim)!;
+    return this.previewSkill(slot, skill, input.point, input.target);
+  }
   repeatCast(slot: number, skill: Skill) {
-    const r = this.#active(slot);
-    if (!r) return false;
-    const kind = raidAimKind(r.hero, skill);
-    const target = kind === 'ward' ? r.lastWard : kind === 'target' ? r.lastStrike : null;
-    return target !== null && this.cast(slot, skill, target);
+    const aim = this.#repeatInput(slot, skill);
+    return aim !== undefined && this.cast(slot, skill, aim);
   }
   #strike(
     r: Runner,
@@ -528,14 +553,16 @@ export class RaidMatch implements RaidView {
       input.direction,
     );
     if (!resolved) return false;
+    this.#lastAim[slot]!.remember(c, rule.kind, resolved);
     const hero = this.#heroes[slot]!;
     const spendRage = skill === 3 && !rule.noRageCost && !r.heroView.ultimateRecasts;
     this.#cancelCharge(slot);
     const finishingDash = !!r.dash && rule.kind === 'pulse' && rule.recastDuringDash;
+    const landing = skill === 2 && !!r.heroView.escapeTicks;
     const cooldown = hero.cast(c, resolved) ?? raidSkillCooldown(r.hero, skill);
     if (spendRage) r.rage = 0;
     hero.events.onCast?.(c, skill);
-    if (!finishingDash) r.cooldownDurations[skill] = r.cooldowns[skill] = cooldown;
+    if (!finishingDash && !landing) r.cooldownDurations[skill] = r.cooldowns[skill] = cooldown;
     return true;
   }
   #impact(r: Runner, skill: Skill, event: Exclude<AreaAttack['on'], 'cast'>, target?: RaidTarget) {
@@ -650,6 +677,7 @@ export class RaidMatch implements RaidView {
         !r.respawn &&
         !r.leap &&
         !r.basic &&
+        r.blindUntil <= this.tick &&
         !actionLocked(r) &&
         !r.spinTicks &&
         !this.#charging.has(r.slot)
@@ -675,7 +703,11 @@ export class RaidMatch implements RaidView {
         previous,
         WAGON,
         raidRunnerHeight,
-        (slot, target, skill, hit) => this.#contexts[slot]!.strike(target, hit, skill),
+        (slot, target, skill, hit) => {
+          const c = this.#contexts[slot]!;
+          if (!this.#heroes[slot]!.events.onProjectileContact?.(c, target, skill))
+            c.strike(target, hit, skill);
+        },
       );
     this.#fields.step(this.tick, this.#contexts);
     this.#hits.resolve(this.tick);

@@ -187,7 +187,7 @@ test('persistent ground rings and sigils stay on the same road tile between tick
   const roadZ = aim.z + raidRoadTravel(match.tick);
   const casters = match.runners.filter((runner) => runner.hero !== 'hammer');
   for (const caster of casters)
-    assert.ok(match.cast(caster.slot, caster.hero === 'longshot' ? 1 : 2, aim));
+    assert.ok(match.cast(caster.slot, caster.hero === 'freesia' ? 0 : 1, aim));
   for (const now of [38, 38.5, 38.5, 40, 53, 68]) {
     while (match.tick < Math.floor(now)) match.step();
     renderEffects(match, now - match.tick);

@@ -50,14 +50,6 @@ const originalCooldowns = {
 type OriginalHero = keyof typeof originalCooldowns;
 type BasicSlot = 0 | 1 | 2;
 
-// Adapted kits can move a source skill to another slot or have no corresponding source skill.
-type SourceSlot = BasicSlot | null;
-const adaptedSlots: Partial<Record<OriginalHero, readonly [SourceSlot, SourceSlot, SourceSlot]>> = {
-  abyss: [null, 0, 1],
-  vallet: [null, 2, null],
-  freesia: [null, null, null],
-};
-
 export function originalCooldownSeconds(hero: OriginalHero, slot: BasicSlot, rank = 1) {
   const times: readonly number[] = originalCooldowns[hero][slot];
   return times.length === 1 ? times[0] : times[rank - 1];
@@ -67,9 +59,6 @@ export function matchedCooldownTicks(hero: RaidHero, skill: Skill) {
   const kit = heroKit(hero);
   if (skill === 3 || !Object.hasOwn(originalCooldowns, kit)) return;
   const original = kit as OriginalHero;
-  const slots = adaptedSlots[original];
-  const source = slots ? slots[skill] : skill;
-  if (source == null) return;
-  const seconds = originalCooldownSeconds(original, source);
+  const seconds = originalCooldownSeconds(original, skill);
   if (seconds !== undefined) return Math.round(seconds * RAID_HZ);
 }

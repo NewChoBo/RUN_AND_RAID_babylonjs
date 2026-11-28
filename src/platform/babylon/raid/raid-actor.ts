@@ -274,10 +274,13 @@ export function createRaidActor(
     }
     spinTrail?.setEnabled(r.spinTicks > 0 && !r.respawn);
     const fallAge = raidRespawnTicks(r.deaths) - r.respawn;
-    root.setEnabled(!r.respawn || fallAge < (motion?.duration('fall') || 0.6) * RAID_HZ);
-    hit.setEnabled(!r.respawn);
+    const concealed = r.team !== localTeam && (r.heroView.concealedUntil ?? 0) > tick;
+    root.setEnabled(
+      !concealed && (!r.respawn || fallAge < (motion?.duration('fall') || 0.6) * RAID_HZ),
+    );
+    hit.setEnabled(!r.respawn && !concealed);
     hit.material = ring.material = r.team === localTeam ? blue : red;
-    ring.setEnabled(!r.respawn);
+    ring.setEnabled(!r.respawn && !concealed);
     shadow.setEnabled(root.isEnabled());
     if (!root.isEnabled()) return;
     bar.setEnabled(!r.respawn);
@@ -354,7 +357,10 @@ export function createRaidActor(
     } else if (r.jumping)
       motion?.once(
         modeClip('shieldJump', 'jump'),
-        ((r.launchDuration || RAID_JUMP_TICKS) - r.jumping + subtick) / RAID_HZ,
+        ((r.launchDuration || (r.heroView.escapeTicks ? 2 * RAID_HZ : RAID_JUMP_TICKS)) -
+          r.jumping +
+          subtick) /
+          RAID_HZ,
         dt,
       );
     else if (r.heroView.orbTicks && motion?.has('orbLoop')) {

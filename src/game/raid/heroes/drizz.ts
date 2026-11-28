@@ -1,10 +1,25 @@
 import { RAID_JUMP_TICKS } from '../runner-motion.ts';
 import { grasp, stats } from '../../../content/raid/heroes/drizz.ts';
-import { slow } from '../raid-control.ts';
+import { actionLocked, slow } from '../raid-control.ts';
+import { distance } from '../raid-rules.ts';
+import { shot } from './archive-skills.ts';
 import { projectile, sweep } from '../skills/skill-effects.ts';
 import { defineHero, type HeroEvents } from './hero-definition.ts';
 
 const darkHand: HeroEvents = {
+  onProjectileContact(c, target, skill) {
+    if (skill !== 3) return false;
+    const point = c.position(target);
+    if (point && !c.self.respawn && !c.self.dash && !c.self.leap && !actionLocked(c.self))
+      c.dash(skill, point, 6, target);
+    return true;
+  },
+  onDashEnd(c, target) {
+    if (target === undefined) return;
+    const point = c.position(target);
+    if (point && distance(c.self, point) <= stats.reach)
+      c.strike(target, { powerScale: 6, piercesShield: true }, 3);
+  },
   onOutgoingHit(combat, hit, victim) {
     return victim && combat.height(victim) > 0 ? Math.round(hit.amount * 1.1) : hit.amount;
   },
@@ -30,17 +45,5 @@ export const drizz = defineHero(stats, () => darkHand, [
       combat.record(cast.skill, combat.self, 'ground');
     },
   },
-  {
-    kind: 'target',
-    range: 12,
-    attack: {
-      kind: 'direct',
-      on: 'dashEnd',
-      contactRange: stats.reach,
-      hit: { powerScale: 6, piercesShield: true },
-    },
-    apply(combat, cast) {
-      combat.dash(cast.skill, cast.point, 6, cast.target);
-    },
-  },
+  shot({ powerScale: 6 }, [0], false, 15),
 ]);

@@ -50,7 +50,7 @@ export function resolveSkill(
   if (!available) status = 'unavailable';
   else if (kind === 'direction') {
     if (!direction) status = 'needDirection';
-  } else if (requested && distance(origin, requested) > range) status = 'outOfRange';
+  } else if (requested && distance(origin, requested) > range + 1e-9) status = 'outOfRange';
   else if ((kind === 'field' || kind === 'leap') && (metres === null || !Number.isFinite(metres)))
     status = 'invalidGround';
   else if (
@@ -69,7 +69,7 @@ export function resolveSkill(
     status = 'needTarget';
   // Counts describe immediate hits only. Travel, landings and future pulses resolve on their own ticks.
   const immediate =
-    attack.kind === 'field' ||
+    (attack.kind === 'field' && !!attack.hit) ||
     (attack.kind === 'area' &&
       (attack.on === 'cast' || (attack.on === 'dashEnd' && !!combat.self.dash)));
   const enemies =

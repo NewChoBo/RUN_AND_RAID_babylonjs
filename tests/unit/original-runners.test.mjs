@@ -8,8 +8,8 @@ import { RaidSimulation } from '../../src/game/raid/raid-simulation.ts';
 import { driveRaidBots } from '../../src/game/raid/raid-bots.ts';
 import { HERO_IDS, ORIGINAL_HERO_IDS, borrowedKits } from '../../src/game/raid/heroes/hero-id.ts';
 
-function arena(hero) {
-  const match = new RaidMatch([hero, 'jade', 'abyss', 'longshot']);
+function arena(hero, rival = 'abyss') {
+  const match = new RaidMatch([hero, 'jade', rival, 'longshot']);
   for (const r of match.runners)
     Object.assign(r, { basic: 10000, x: 0, z: 0, brake: 0.4, appliedBrake: 0.4 });
   match.runners[2].z = 4;
@@ -44,7 +44,7 @@ test('Ignite follows its target for four one-second ticks and another skill adds
 });
 
 test('Fireball explodes on collision and Flame Burst protects against control for fifteen ticks', () => {
-  const m = arena('flare');
+  const m = arena('flare', 'alice');
   const [caster, , primary, nearby] = m.runners;
   nearby.x = 1.5;
   nearby.z = primary.z;
@@ -64,7 +64,7 @@ test('Fireball explodes on collision and Flame Burst protects against control fo
   primary.cooldowns[1] = 0;
   assert.ok(m.cast(2, 1, 0));
   m.step();
-  assert.equal(caster.silenced, RAID_HZ);
+  assert.equal(caster.silenced, 15);
 });
 
 test('Piercing Shot deals half the previous damage after each target', () => {
@@ -126,13 +126,15 @@ test('Drizz pulls a rival, launches them, lands from his own jump and punches th
   const target = n.runners[2];
   target.shield = 75;
   n.runners[0].rage = 100;
-  assert.ok(n.cast(0, 3, 2));
-  advance(n, 6);
+  assert.equal(n.cast(0, 3, 2), false);
+  assert.ok(n.cast(0, 3, { dx: 0, dz: 1 }));
+  assert.equal(n.runners[0].dash, null);
+  advance(n, 13);
   assert.equal(HEROES.abyss.hp - target.hp, HEROES.drizz.power * 6);
 });
 
 test('Alice can heal or ward herself and her partner, silence or slow enemies, and repel grounded targets', () => {
-  const m = arena('alice');
+  const m = arena('alice', 'bastion');
   const [r, ally, enemy] = m.runners;
   ally.hp -= 40;
   assert.ok(m.cast(0, 1, 1));
@@ -162,7 +164,7 @@ test('Alice can heal or ward herself and her partner, silence or slow enemies, a
 });
 
 test('Holy Orb follows Alice for five pulses, healing allies and resisting control until it ends', () => {
-  const m = arena('alice');
+  const m = arena('alice', 'alice');
   const [r, ally, enemy] = m.runners;
   r.rage = 100;
   ally.hp = 5;
@@ -202,14 +204,14 @@ test('Alice bot prioritizes a wounded partner', () => {
 });
 
 test('Froze spends ice crystals, flashes only chilled targets and absorbs one hostile skill', () => {
-  const m = arena('froze'),
+  const m = arena('froze', 'alice'),
     [r, , enemy] = m.runners;
   const hp = enemy.hp;
   assert.ok(m.cast(0, 1, enemy.slot));
   m.step();
   assert.equal(enemy.hp, hp);
   assert.ok(Math.abs(r.z - (enemy.z - 0.85)) < 0.01);
-  assert.ok(m.cast(0, 0, { dx: 0, dz: 1 }));
+  assert.ok(m.cast(0, 0, enemy.slot));
   advance(m, 25);
   assert.equal(r.heroView.iceCrystals, 2);
   assert.ok(m.cast(0, 1, enemy.slot));
@@ -217,7 +219,7 @@ test('Froze spends ice crystals, flashes only chilled targets and absorbs one ho
   assert.ok(enemy.hp < hp - 30);
   assert.equal(r.heroView.iceCrystals, 0);
   assert.equal(m.cast(0, 2), false);
-  enemy.x = 3; // Leave the first boss lane so Abyss survives to test the shield.
+  enemy.x = 3; // Leave the first boss lane so the rival survives to test the shield.
   advance(m, 63);
   assert.equal(r.heroView.iceCrystals, 1);
   assert.ok(m.cast(0, 2));
@@ -357,10 +359,10 @@ test('matched slots use rank-one timing, patched values and the actual borrowed 
     ['kaiken', [6, 7, 16]],
     ['magnus', [17, 17, 17]],
     ['drizz', [15, 8, 8]],
-    ['abyss', [5, 9, 12]],
+    ['abyss', [9, 12, 23]],
     ['hof', [15, 15, 16]],
-    ['vallet', [5, 21, 7]],
-    ['freesia', [5, 3.5, 7]],
+    ['vallet', [7, 9, 21]],
+    ['freesia', [12, 9, 18]],
   ])
     assert.deepEqual(
       [0, 1, 2].map((i) => raidSkillCooldown(hero, i) / RAID_HZ),

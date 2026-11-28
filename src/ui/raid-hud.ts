@@ -221,14 +221,14 @@ export function createRaidHud(
       const dragged = gesture.dragged;
       endGesture();
       if (b.disabled) return;
-      if (dragged) {
-        if (!b.contains(document.elementFromPoint(e.clientX, e.clientY))) actions.repeatCast(slot);
+      if (!b.contains(document.elementFromPoint(e.clientX, e.clientY))) {
+        actions.repeatCast(slot);
         return;
       }
-      if (!displayedRunner) return;
+      if (dragged || !displayedRunner) return;
       const kind = raidRunnerAimKind(displayedRunner, slot);
       if (kind === 'pulse') {
-        if (b.contains(document.elementFromPoint(e.clientX, e.clientY))) actions.skill(slot);
+        actions.skill(slot);
         return;
       }
       actions.beginPadAim();
@@ -381,15 +381,26 @@ export function createRaidHud(
       );
       const rule = raidSkill(runner.hero, i as Skill);
       const instant = rule.kind === 'pulse';
-      const typeLabel = t(instant ? 'typeInstant' : 'typeAimed');
+      const typeLabel = t(
+        instant
+          ? 'typeInstant'
+          : rule.kind === 'direction'
+            ? 'typeDirection'
+            : rule.kind === 'field' || rule.kind === 'leap'
+              ? 'typeGround'
+              : 'typeTarget',
+      );
       if (type.textContent !== typeLabel) {
         glyph.textContent = instant ? '✴' : '◎';
         type.textContent = typeLabel;
       }
       const recastMoon = runner.dash?.skill === i && instant && !!rule.recastDuringDash;
-      name.textContent = recastMoon
-        ? t('moonFinish')
-        : t(`${heroKit(runner.hero)}${skillNames[i]!}`);
+      const canLand = i === 2 && !!runner.heroView.escapeTicks;
+      name.textContent = canLand
+        ? t('valletLand')
+        : recastMoon
+          ? t('moonFinish')
+          : t(`${heroKit(runner.hero)}${skillNames[i]!}`);
       if (runner.heroView.shieldMode)
         name.textContent = t(
           (['magnusCharge', 'magnusTaunt', 'magnusCry', 'magnusBattle'] as const)[i]!,
@@ -405,10 +416,13 @@ export function createRaidHud(
           ? t('bladeCharges', { count: recasts }) + (cd ? ' · ' + cd + 's' : '')
           : runner.rage + '%';
       } else {
-        const fraction = runner.cooldowns[i]! / Math.max(1, runner.cooldownDurations[i]!);
+        const fraction = canLand
+          ? 0
+          : runner.cooldowns[i]! / Math.max(1, runner.cooldownDurations[i]!);
         b.style.setProperty('--cooldown', Math.round(fraction * 360) + 'deg');
         const slashes = i === 0 ? (runner.heroView.slashes ?? 0) : 0;
-        charge.textContent = recastMoon ? '' : slashes ? 4 - slashes + '/4' : cd ? cd + 's' : '';
+        charge.textContent =
+          recastMoon || canLand ? '' : slashes ? 4 - slashes + '/4' : cd ? cd + 's' : '';
       }
       b.setAttribute(
         'aria-label',

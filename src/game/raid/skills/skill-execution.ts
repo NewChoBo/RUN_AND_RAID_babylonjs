@@ -74,7 +74,10 @@ export function applySkill<S>(
       const attack = rule.attack;
       if (attack.kind === 'field' && attack.pulse)
         combat.placeField(cast.skill, cast.point, cast.radius, attack.pulse);
-      if (attack.kind === 'field' || (attack.kind === 'area' && attack.on === 'cast')) {
+      if (
+        (attack.kind === 'field' || (attack.kind === 'area' && attack.on === 'cast')) &&
+        attack.hit
+      ) {
         for (const id of cast.enemies) combat.strike(id, attack.hit, cast.skill);
       }
       return cooldown;

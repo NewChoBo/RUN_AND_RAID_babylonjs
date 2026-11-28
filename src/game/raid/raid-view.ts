@@ -108,6 +108,8 @@ export interface Runner extends RaidPoint, RaidControl {
   barrier: { amount: number; until: number } | null;
   taunt: { from: number; until: number } | null;
   hasteTicks: number;
+  blindUntil: number;
+  controlGuardUntil: number;
   readonly slowed: number;
   launchDuration: number;
   cooldownDurations: number[];
