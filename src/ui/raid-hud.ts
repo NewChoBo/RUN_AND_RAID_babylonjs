@@ -5,6 +5,7 @@ import { createSkillRack } from './raid-skill-rack.ts';
 import { healthMeter, healthMeterPainter } from './raid-health-meter.ts';
 import { activeSlow } from '../game/raid/raid-control.ts';
 import { canPressJump, JET_CAPACITY } from '../game/raid/air-movement.ts';
+import { raidRageDamageToFull } from '../content/raid/rage.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { RAID_HZ, type RaidView, type Skill } from '../game/raid/raid-match.ts';
 import { createRaidPing } from './raid-ping.ts';
@@ -187,16 +188,19 @@ export function createRaidHud(
       hp.setAttribute('aria-valuenow', String(vitals.hp));
       hp.setAttribute('aria-valuetext', [hpText.textContent, status].filter(Boolean).join(' · '));
     }
-    rage.textContent = t('rage') + ' ' + runner.rage + '%';
+    const resources: string[] = [];
+    if (raidRageDamageToFull(runner.hero) !== null)
+      resources.push(t('rage') + ' ' + Math.floor(runner.rage) + '%');
     if (runner.heroView.comboPoints !== undefined)
-      rage.textContent += ' · ' + t('shadowCombo', { count: runner.heroView.comboPoints });
-    if (runner.heroView.poisonArmed) rage.textContent += ' · ' + t('poisonArmed');
+      resources.push(t('shadowCombo', { count: runner.heroView.comboPoints }));
+    if (runner.heroView.poisonArmed) resources.push(t('poisonArmed'));
     if (runner.heroView.firingStacks)
-      rage.textContent += ' · ' + t('firingStacks', { count: runner.heroView.firingStacks });
+      resources.push(t('firingStacks', { count: runner.heroView.firingStacks }));
     if (runner.heroView.iceCrystals !== undefined)
-      rage.textContent += ' · ' + t('iceCrystals', { count: runner.heroView.iceCrystals });
+      resources.push(t('iceCrystals', { count: runner.heroView.iceCrystals }));
     if (runner.heroView.shieldMode !== undefined)
-      rage.textContent += ' · ' + t(runner.heroView.shieldMode ? 'magnusFury' : 'magnusBattle');
+      resources.push(t(runner.heroView.shieldMode ? 'magnusFury' : 'magnusBattle'));
+    rage.textContent = resources.join(' · ');
     const target =
       runner.target === null
         ? 'noTarget'

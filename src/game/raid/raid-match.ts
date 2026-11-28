@@ -1,3 +1,4 @@
+import { normalizeRaidRageLoadout, type RaidRageLoadout } from '../../content/raid/rage.ts';
 import { actionLocked, activeSlow, advanceSlows } from './raid-control.ts';
 import { advanceRaidAir, JET_CAPACITY, startRaidJump } from './air-movement.ts';
 import { triggerAttack } from './skills/skill-execution.ts';
@@ -12,7 +13,7 @@ import {
 } from './skills/attack-rule.ts';
 import { RaidProjectiles, type RaidDirection } from './raid-projectiles.ts';
 import { RaidFields } from './combat/active-fields.ts';
-import { RaidHitResolution, gainRage } from './combat/hit-resolution.ts';
+import { RaidHitResolution } from './combat/hit-resolution.ts';
 export { raidBossBonusPercent } from './combat/hit-resolution.ts';
 import { RaidBoss } from './raid-boss.ts';
 import { inBasicAttackArc, inRaidSight, raidAimPullback } from './raid-sight.ts';
@@ -95,7 +96,12 @@ export function inRaidCastRange(caster: RaidPoint, point: RaidPoint, skill: Skil
   return distance(caster, point) <= (skill === 2 ? RAID_SKILL_RANGE.field : RAID_SKILL_RANGE.shot);
 }
 const spawnX = [-1.6, -3.3, 1.6, 3.3];
-const makeRunner = (hero: RaidHero, slot: number, view: () => HeroView): Runner => ({
+const makeRunner = (
+  hero: RaidHero,
+  slot: number,
+  view: () => HeroView,
+  rageLoadout: RaidRageLoadout,
+): Runner => ({
   spin: null,
   get spinTicks() {
     return this.spin?.remaining ?? 0;
@@ -111,6 +117,7 @@ const makeRunner = (hero: RaidHero, slot: number, view: () => HeroView): Runner 
   z: slot % 2 === 0 ? 0 : -2,
   hp: HEROES[hero].hp,
   rage: 0,
+  rageLoadout,
   target: 'wagon',
   lastStrike: null,
   lastWard: null,
@@ -191,6 +198,7 @@ export class RaidMatch implements RaidView {
   constructor(
     hero: RaidHero | readonly RaidHero[] = 'hammer',
     playerAspect: () => number = () => standardAspect,
+    loadouts: readonly RaidRageLoadout[] = [],
   ) {
     const heroes =
       typeof hero === 'string'
@@ -203,7 +211,12 @@ export class RaidMatch implements RaidView {
         : hero;
     this.#heroes = heroes.map((id) => heroCatalog[id].create());
     this.#runners = heroes.map((id, slot) =>
-      makeRunner(id, slot, () => this.#heroes[slot]!.events.view ?? emptyView),
+      makeRunner(
+        id,
+        slot,
+        () => this.#heroes[slot]!.events.view ?? emptyView,
+        normalizeRaidRageLoadout(id, loadouts[slot]),
+      ),
     );
     this.#contexts = this.#runners.map((r) => this.#combat(r));
     this.#lastAim = heroes.map(() => new LastAim());
@@ -393,8 +406,7 @@ export class RaidMatch implements RaidView {
           });
         else this.#projectiles.launch(r, skill, direction, attack, RAID_HZ);
       },
-      gainRage: (amount) => gainRage(r, amount),
-      heal: (id, amount, mode) => this.#hits.heal(this.tick, r, id, amount, mode),
+      heal: (id, amount) => this.#hits.heal(this.tick, r, id, amount),
       barrier: (id, amount, ticks) => {
         this.#runners[id]!.barrier = { amount, until: this.tick + ticks };
       },

@@ -1,5 +1,6 @@
 import { HERO_IDS, type RaidHero } from './heroes/hero-id.ts';
 import { battleOutfit } from '../../content/raid/battle-outfits.ts';
+import type { RaidRageLoadout } from '../../content/raid/rage.ts';
 
 export function practiceRoster(hero: RaidHero): RaidHero[] {
   const start = HERO_IDS.findIndex((id) => id === hero) + 1;
@@ -15,6 +16,7 @@ export interface DraftSeat {
   hero: RaidHero | null;
   preferred?: RaidHero;
   outfit?: string;
+  rageLoadout?: RaidRageLoadout;
 }
 export interface RaidSeat extends DraftSeat {
   hero: RaidHero;
@@ -45,7 +47,8 @@ export function nextDraftClock(seats: DraftSeat[], previous: DraftClock | null, 
 
 export function timeoutPick(seats: DraftSeat[], actor: number) {
   const seat = seats.find((s) => s.actor === actor);
-  if (seat?.preferred && applyPick(seats, actor, seat.preferred, seat.outfit)) return;
+  if (seat?.preferred && applyPick(seats, actor, seat.preferred, seat.outfit, seat.rageLoadout))
+    return;
   const hero = HERO_IDS.find((id) => !seats.some((s) => s.hero === id));
   applyPick(seats, actor, hero);
 }
@@ -56,9 +59,10 @@ export function applyTurnPick(
   actor: number,
   hero: unknown,
   outfit?: string,
+  rageLoadout?: RaidRageLoadout,
 ) {
   if (hero !== null && clock && clock.actor !== actor) return false;
-  return applyPick(seats, actor, hero, outfit);
+  return applyPick(seats, actor, hero, outfit, rageLoadout);
 }
 
 export function draftMessage(value: unknown): string {
@@ -76,6 +80,15 @@ export function draftTeammates(seats: readonly DraftSeat[], actor: number) {
 export function isHero(value: unknown): value is RaidHero {
   return HERO_IDS.some((hero) => hero === value);
 }
+
+function isRageLoadout(hero: unknown, value: unknown): value is RaidRageLoadout {
+  if (!isHero(hero) || !value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.entries(value).every(([key, field]) => {
+    if (key === 'counterRank')
+      return hero === 'rildin' && Number.isInteger(field) && field >= 1 && field <= 4;
+    return key === 'swiftRageBonus' && hero === 'swift' && typeof field === 'boolean';
+  });
+}
 export function isDraft(value: unknown): value is DraftSeat[] {
   if (!Array.isArray(value) || value.length < 1 || value.length > 4) return false;
   const claimed = new Set<RaidHero>();
@@ -83,6 +96,11 @@ export function isDraft(value: unknown): value is DraftSeat[] {
     if (!seat || !Number.isSafeInteger(seat.actor) || seat.actor <= (i ? value[i - 1].actor : 0))
       return false;
     if (seat.preferred !== undefined && !isHero(seat.preferred)) return false;
+    if (
+      seat.rageLoadout !== undefined &&
+      !isRageLoadout(seat.hero ?? seat.preferred, seat.rageLoadout)
+    )
+      return false;
     if (
       seat.outfit !== undefined &&
       (!isHero(seat.hero ?? seat.preferred) ||
@@ -134,6 +152,7 @@ export function applyPick(
   actor: number,
   hero: unknown,
   outfit?: string,
+  rageLoadout?: RaidRageLoadout,
 ): boolean {
   const seat = seats.find((s) => s.actor === actor);
   if (
@@ -142,12 +161,15 @@ export function applyPick(
       (!isHero(hero) ||
         seat.hero !== null ||
         seats.some((s) => s.hero === hero) ||
+        (rageLoadout !== undefined && !isRageLoadout(hero, rageLoadout)) ||
         (outfit !== undefined && !battleOutfit(hero, outfit))))
   )
     return false;
   if (hero === null && seat.hero) seat.preferred = seat.hero;
   seat.hero = hero;
   if (hero !== null) {
+    if (rageLoadout === undefined) delete seat.rageLoadout;
+    else seat.rageLoadout = rageLoadout;
     if (outfit === undefined) delete seat.outfit;
     else {
       seat.outfit = outfit;
@@ -162,5 +184,9 @@ export function readDraftChoice(value: unknown) {
   const outfit = 'outfit' in value ? value.outfit : undefined;
   if (outfit !== undefined && (typeof outfit !== 'string' || !battleOutfit(value.hero, outfit)))
     return null;
-  return { hero: value.hero, outfit };
+  if (!('rageLoadout' in value) || value.rageLoadout === undefined)
+    return { hero: value.hero, outfit };
+  return isRageLoadout(value.hero, value.rageLoadout)
+    ? { hero: value.hero, outfit, rageLoadout: value.rageLoadout }
+    : null;
 }

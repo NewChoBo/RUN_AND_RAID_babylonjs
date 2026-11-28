@@ -286,6 +286,7 @@ export const raidText = defineMessages(
     guardActive: 'Guarding',
     hp: 'Health',
     rage: 'Rage',
+    rageThreshold: 'Base rage meter fills after losing {hp} HP in total',
     target: 'Basic target',
     noTarget: 'None',
     wagon: 'Wagon',

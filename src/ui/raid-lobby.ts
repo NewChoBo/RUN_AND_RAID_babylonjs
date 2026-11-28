@@ -2,6 +2,8 @@ import { uiText } from '../content/locales/ui.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { createDraftLoadout } from './raid-draft-loadout.ts';
 import { hasDraftCatalog } from '../content/raid/draft-loadout.ts';
+import type { RaidRageLoadout } from '../content/raid/rage.ts';
+import { raidRageDamageToFull } from '../content/raid/rage.ts';
 import { addPickFace } from './raid-pick-face.ts';
 import { characterArt } from '../content/raid/gallery.ts';
 import { officialGuides } from '../content/raid/official-guides.ts';
@@ -58,8 +60,8 @@ export function createRaidLobby(
     practice(): void;
     chat(text: string): void;
     leave(): void;
-    pick(hero: RaidHero | null, outfit?: string): void;
-    prefer(hero: RaidHero, outfit?: string): void;
+    pick(hero: RaidHero | null, outfit?: string, rageLoadout?: RaidRageLoadout): void;
+    prefer(hero: RaidHero, outfit?: string, rageLoadout?: RaidRageLoadout): void;
     selected(): RaidHero;
   },
 ) {
@@ -171,7 +173,7 @@ export function createRaidLobby(
   moreTitle.textContent = uiText('championDetails');
   more.append(moreTitle, baseStats, detail, skills, guide);
   function changePreference() {
-    actions.prefer(preview, loadout.outfit());
+    actions.prefer(preview, loadout.outfit(), loadout.rageLoadout());
     paint();
   }
   caption.append(heroName, loadout.settings, more);
@@ -234,7 +236,7 @@ export function createRaidLobby(
           ? uiText('soloReady')
           : t(soloRoom ? 'pickSolo' : 'pickPlayers');
     if (mine) preview = mine;
-    loadout.show(preview, !!mine, own?.outfit);
+    loadout.show(preview, !!mine, own?.outfit, own?.rageLoadout);
     const selectedOutfit = battleOutfit(preview, loadout.outfit());
     setDraftArt(portrait, preview, false, selectedOutfit);
     for (const [i, { item, team, name, runner, image, state, ready }] of seatViews.entries()) {
@@ -325,6 +327,8 @@ export function createRaidLobby(
       seconds: (stats.cooldown / RAID_HZ).toFixed(2),
       range: stats.reach,
     });
+    const threshold = raidRageDamageToFull(preview);
+    if (threshold !== null) baseStats.textContent += ' · ' + t('rageThreshold', { hp: threshold });
     detail.textContent =
       kit === preview
         ? t(`${kit}Info`)
@@ -335,7 +339,11 @@ export function createRaidLobby(
       !mine && ((!!clock && active !== self) || seats.some((s) => s.hero === preview));
   }
   lock.onclick = () => {
-    actions.pick(seats.find((s) => s.actor === self)?.hero ? null : preview, loadout.outfit());
+    actions.pick(
+      seats.find((s) => s.actor === self)?.hero ? null : preview,
+      loadout.outfit(),
+      loadout.rageLoadout(),
+    );
   };
   const choose = document.createElement('button');
   choose.textContent = uiText('chooseCharacter');
@@ -487,7 +495,7 @@ export function createRaidLobby(
       nextClock: DraftClock | null,
       offline = false,
     ) {
-      const enterQuickDraft = quickMatch && group.dataset.stage !== 'draft';
+      const enteringDraft = group.dataset.stage !== 'draft';
       const ownSeat = seats.findIndex((seat) => seat.actor === self);
       const nextSeat = members.findIndex((seat) => seat.actor === actor);
       if (ownSeat >= 0 && ownSeat % 2 !== nextSeat % 2) chat.reset();
@@ -499,7 +507,9 @@ export function createRaidLobby(
       show('draft');
       paint();
       paintClock();
-      if (enterQuickDraft) picker.showModal();
+      if (enteringDraft && quickMatch) picker.showModal();
+      if (enteringDraft && !offline && !seats[nextSeat]?.hero && !seats[nextSeat]?.preferred)
+        actions.prefer(preview, loadout.outfit(), loadout.rageLoadout());
       const roomStatus = offline
         ? uiText('offlinePractice')
         : roomCode

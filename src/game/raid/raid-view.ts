@@ -1,3 +1,4 @@
+import type { RaidRageLoadout } from '../../content/raid/rage.ts';
 import type { SkillKind } from './skills/skill-rule.ts';
 import type { AirMovement } from './air-movement.ts';
 import type { HeroView } from './heroes/hero-definition.ts';
@@ -96,6 +97,7 @@ export interface Runner extends RaidPoint, RaidControl {
   hero: RaidHero;
   hp: number;
   rage: number;
+  readonly rageLoadout: RaidRageLoadout;
   target: RaidTarget | null;
   lastStrike: RaidTarget | null;
   lastWard: number | null;

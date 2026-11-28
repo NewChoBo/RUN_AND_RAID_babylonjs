@@ -3,7 +3,8 @@ export const RAID_ROAD_WIDTH = 18;
 // Runner centre to paving edge, estimated from the near-wall chase in docs/CAMERA.md.
 export const RAID_RUN_LIMIT_X = RAID_ROAD_WIDTH / 2 - 2.4;
 export const ROUND_TICKS = 180 * RAID_HZ;
-export const WAGON_HP = 7600;
+// Calibrated for the three-minute chase with ultimates charged by incoming damage.
+export const WAGON_HP = 6300;
 /** Count this knockout. Each runner starts a fresh progression in the next match. */
 export const raidRespawnTicks = (deaths: number) =>
   Math.min(35, 10 + 5 * Math.max(0, deaths - 1)) * RAID_HZ;

@@ -1,6 +1,7 @@
 import entries from './draft-catalog.json' with { type: 'json' };
 import { battleOutfit } from './battle-outfits.ts';
 import type { RaidHero } from '../../game/raid/heroes/hero-id.ts';
+import { swiftRageBonusPercent, type RaidRageLoadout } from './rage.ts';
 
 export type CatalogHero = keyof typeof entries;
 export function hasDraftCatalog(hero: RaidHero): hero is CatalogHero {
@@ -24,7 +25,7 @@ export const skinEffects = {
   cooldown: ['statCooldown', '−3%'],
   move: ['statMove', '+0.9%'],
   drain: ['statDrain', '+1.88% × 2'],
-  rage: ['statRage', '+20%'],
+  rage: ['statRage', `+${swiftRageBonusPercent}%`],
 } as const;
 export function effectFor(key: string | null) {
   if (key && Object.hasOwn(skinEffects, key)) return skinEffects[key as keyof typeof skinEffects];
@@ -104,4 +105,16 @@ export function draftPreset(hero: CatalogHero, saved?: Partial<DraftPreset> | nu
 }
 export function remainingPoints(preset: DraftPreset) {
   return 6 - preset.ranks.reduce((sum, n) => sum + n, 0);
+}
+
+export function draftRageLoadout(
+  hero: CatalogHero,
+  preset: DraftPreset,
+): RaidRageLoadout | undefined {
+  if (hero === 'rildin' && preset.ranks[1] > 1) return { counterRank: preset.ranks[1] };
+  if (
+    hero === 'swift' &&
+    draftCatalog.swift.skins.some((s) => s.art === preset.option && s.effect === 'rage')
+  )
+    return { swiftRageBonus: true };
 }

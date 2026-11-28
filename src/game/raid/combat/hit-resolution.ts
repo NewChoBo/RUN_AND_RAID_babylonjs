@@ -1,3 +1,4 @@
+import { raidRageGain } from '../../../content/raid/rage.ts';
 import type { HeroCombat, HeroEvents, Hit } from '../heroes/hero-definition.ts';
 import { RAID_HZ, RAID_RUN_LIMIT_X, raidRespawnTicks, WAGON, WAGON_HP } from '../raid-rules.ts';
 import { limitRaidPlacement, raidRunnerHeight } from '../runner-motion.ts';
@@ -8,8 +9,11 @@ export function raidBossBonusPercent(runners: readonly RaidRunner[], attackingTe
     15 * runners.filter((runner) => runner.team !== attackingTeam && runner.respawn > 0).length
   );
 }
-export function gainRage(runner: Runner, amount: number) {
-  runner.rage = Math.min(100, runner.rage + amount);
+
+function chargeRageFromDamage(runner: Runner, damage: number) {
+  const rage = runner.rage + raidRageGain(runner.hero, damage, runner.rageLoadout);
+  // Many small hits must fill the meter at the same HP threshold as a single hit.
+  runner.rage = rage >= 100 - 1e-9 ? 100 : rage;
 }
 
 /** Owns the damage ledger and resolves queued hits in insertion order, including parries. */
@@ -51,11 +55,10 @@ export class RaidHitResolution {
       elevation: runner ? raidRunnerHeight(runner) : 0,
     });
   }
-  heal(tick: number, from: Runner, target: number, amount: number, mode?: 'lifesteal' | 'aura') {
+  heal(tick: number, from: Runner, target: number, amount: number) {
     const { self, stats } = this.contexts[target]!;
     const healed = Math.min(amount, stats.hp - self.hp);
     self.hp += healed;
-    if (!mode) gainRage(from, healed);
     this.#record(tick, from.slot, target, healed);
   }
   resolve(tick: number) {
@@ -69,12 +72,14 @@ export class RaidHitResolution {
       const victim = hit.target === 'wagon' ? undefined : this.contexts[hit.target]?.self;
       const source = attacker && this.contexts[attacker.slot];
       const outgoing = attacker && this.events(attacker.slot);
-      if (
-        victim &&
-        (victim.respawn ||
-          this.events(victim.slot).onIncomingHit?.(this.contexts[victim.slot]!, hit))
-      )
-        continue;
+      if (victim) {
+        if (victim.respawn) continue;
+        const blocked = this.events(victim.slot).onIncomingHit?.(this.contexts[victim.slot]!, hit);
+        if (blocked) {
+          if (blocked !== true) chargeRageFromDamage(victim, hit.amount * blocked.rageMultiplier);
+          continue;
+        }
+      }
       const base =
         source && outgoing?.onOutgoingHit
           ? outgoing.onOutgoingHit(source, hit, victim)
@@ -87,7 +92,6 @@ export class RaidHitResolution {
           attacker.wagonDamage += damage;
           this.#record(tick, attacker.slot, hit.target, -damage);
           if (hit.designated && damage > 0) attacker.lastStrike = 'wagon';
-          if (hit.skill !== 3) gainRage(attacker, damage);
         }
         continue;
       }
@@ -106,12 +110,10 @@ export class RaidHitResolution {
       victim.hp -= damage;
       this.#record(tick, hit.from, hit.target, -damage);
       if (attacker && hit.designated && damage > 0) attacker.lastStrike = victim.slot;
-      gainRage(victim, damage);
+      chargeRageFromDamage(victim, damage);
       const contributors = this.#contributors[victim.slot]!;
       if (attacker) {
         contributors.set(attacker.slot, tick);
-        // Fury can charge its victim, but cannot refund its own cost.
-        if (hit.skill !== 3) gainRage(attacker, damage);
         if (hit.rule && !this.contexts[victim.slot]!.controlImmune()) {
           if (hit.rule.blindTicks)
             victim.blindUntil = Math.max(victim.blindUntil, tick + hit.rule.blindTicks);

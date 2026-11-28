@@ -9,8 +9,7 @@ class Theresa implements HeroEvents {
   auraTicks = 0;
   onBeforeHits(c: HeroCombat) {
     if (this.auraTicks && --this.auraTicks % RAID_HZ === 0) {
-      for (const ally of c.allies(c.self, 6))
-        if (ally !== c.self.slot) c.heal(ally, c.stats.power, 'aura');
+      for (const ally of c.allies(c.self, 6)) if (ally !== c.self.slot) c.heal(ally, c.stats.power);
       for (const enemy of c.enemies(c.self, 6)) c.strike(enemy, { powerScale: 1.5 }, 3);
     }
   }

@@ -15,11 +15,11 @@ class Alice implements HeroEvents {
     if (this.orbTicks && --this.orbTicks % RAID_HZ === 0) {
       for (const enemy of combat.enemies(combat.self, 14))
         combat.strike(enemy, { powerScale: 1.4 }, 3);
-      for (const ally of combat.allies(combat.self, 14)) combat.heal(ally, 12, 'aura');
+      for (const ally of combat.allies(combat.self, 14)) combat.heal(ally, 12);
     }
     if (combat.tick() % (12 * RAID_HZ) === 0) {
       for (const ally of combat.allies(combat.self, 10)) {
-        if (ally !== combat.self.slot) combat.heal(ally, 1, 'aura');
+        if (ally !== combat.self.slot) combat.heal(ally, 1);
       }
     }
   }

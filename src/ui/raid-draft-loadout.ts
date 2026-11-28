@@ -6,9 +6,11 @@ import { uiText as t, type UiMessage } from '../content/locales/ui.ts';
 import { battleOutfit, outfitName } from '../content/raid/battle-outfits.ts';
 import { getLocale } from '../content/locales/locale.ts';
 import type { RaidHero } from '../game/raid/heroes/hero-id.ts';
+import type { RaidRageLoadout } from '../content/raid/rage.ts';
 import {
   draftCatalog,
   draftPreset,
+  draftRageLoadout,
   effectFor,
   equipmentPages,
   gearIcon,
@@ -31,7 +33,7 @@ function selectField(parent: HTMLElement, label: UiMessage) {
   return select;
 }
 
-export function createDraftLoadout(changeAppearance: () => void) {
+export function createDraftLoadout(changePreference: () => void) {
   const skills = document.createElement('section');
   skills.className = 'draft-ranks';
   const header = document.createElement('header');
@@ -67,17 +69,18 @@ export function createDraftLoadout(changeAppearance: () => void) {
   items.className = 'draft-gear-items';
   equipped.append(bonuses, items);
   const note = document.createElement('small');
-  note.textContent = t('draftPreview');
+  const previewNote = document.createTextNode('');
   const reference = document.createElement('a');
   reference.textContent = t('skinReference');
   reference.target = '_blank';
   reference.rel = 'noopener noreferrer';
-  note.append(' · ', reference);
+  note.append(previewNote, ' · ', reference);
   settings.append(equipped, note);
 
   const presets = new Map<CatalogHero, DraftPreset>();
   let selected: CatalogHero | undefined;
   let preset: DraftPreset;
+  let isLocked = false;
   const keyFor = (hero: CatalogHero) => 'run-and-raid.draft.v1.' + hero;
   function save() {
     if (!selected) return;
@@ -130,6 +133,7 @@ export function createDraftLoadout(changeAppearance: () => void) {
         updateRanks();
         explainRank(i);
         save();
+        if (selected === 'rildin' && i === 1) changePreference();
       };
       return button;
     };
@@ -160,12 +164,12 @@ export function createDraftLoadout(changeAppearance: () => void) {
   function updateRanks() {
     const left = remainingPoints(preset);
     remaining.textContent = t('pointsLeft', { n: left });
-    reset.disabled = left === 3;
+    reset.disabled = isLocked || left === 3;
     for (let i = 0; i < 3; i++) {
       const slot = slots[i + 1]!;
       slot.level.textContent = String(preset.ranks[i]);
-      slot.up.disabled = !left || preset.ranks[i] === 4;
-      slot.down.disabled = preset.ranks[i] === 1;
+      slot.up.disabled = isLocked || !left || preset.ranks[i] === 4;
+      slot.down.disabled = isLocked || preset.ranks[i] === 1;
       slot.icon.setAttribute(
         'aria-label',
         t('rankValue', { skill: slot.icon.title, n: preset.ranks[i]! }),
@@ -174,9 +178,11 @@ export function createDraftLoadout(changeAppearance: () => void) {
   }
   reset.onclick = () => {
     info.hidden = true;
+    const changedCounter = selected === 'rildin' && preset.ranks[1] > 1;
     preset.ranks = [1, 1, 1];
     updateRanks();
     save();
+    if (changedCounter) changePreference();
   };
   function updateGear() {
     bonuses.replaceChildren();
@@ -221,12 +227,13 @@ export function createDraftLoadout(changeAppearance: () => void) {
     preset.art = skin.art;
     paintBonus();
     save();
-    changeAppearance();
+    changePreference();
   };
   option.onchange = () => {
     preset.option = option.value;
     paintBonus();
     save();
+    if (selected === 'swift') changePreference();
   };
   gear.onchange = () => {
     preset.gear = gear.value as GearPage;
@@ -237,7 +244,8 @@ export function createDraftLoadout(changeAppearance: () => void) {
     skills,
     settings,
     outfit: () => (selected ? art.value || undefined : undefined),
-    show(hero: RaidHero, locked: boolean, seatOutfit?: string) {
+    rageLoadout: () => (selected ? draftRageLoadout(selected, preset) : undefined),
+    show(hero: RaidHero, locked: boolean, seatOutfit?: string, seatLoadout?: RaidRageLoadout) {
       const active = hasDraftCatalog(hero);
       skills.hidden = settings.hidden = !active;
       if (!active) {
@@ -245,13 +253,35 @@ export function createDraftLoadout(changeAppearance: () => void) {
         return;
       }
       art.disabled = locked;
-      if (selected === hero) {
+      if (selected === hero && locked === isLocked) {
         if (locked) art.value = battleOutfit(hero, seatOutfit)?.id ?? hero + '/default';
         paintBonus();
         return;
       }
       selected = hero;
+      isLocked = locked;
       preset = read(hero);
+      // A timeout can assign an unpreviewed champion. Show the settings the host actually locked.
+      if (locked && hero === 'rildin' && preset.ranks[1] !== (seatLoadout?.counterRank ?? 1))
+        preset = { ...preset, ranks: [1, seatLoadout?.counterRank ?? 1, 1] };
+      if (
+        locked &&
+        hero === 'swift' &&
+        !!draftRageLoadout(hero, preset)?.swiftRageBonus !== !!seatLoadout?.swiftRageBonus
+      )
+        preset = {
+          ...preset,
+          option: draftCatalog.swift.skins.find(
+            (s) => (s.effect === 'rage') === !!seatLoadout?.swiftRageBonus,
+          )!.art,
+        };
+      previewNote.data = t(
+        hero === 'rildin'
+          ? 'draftCounterApplied'
+          : hero === 'swift'
+            ? 'draftRageApplied'
+            : 'draftPreview',
+      );
       info.hidden = true;
       reference.href = 'https://cafe.naver.com/runandraid/' + draftCatalog[hero].article;
       const guide = officialGuides[hero]!;
@@ -281,8 +311,9 @@ export function createDraftLoadout(changeAppearance: () => void) {
         );
         if (effect) option.add(new Option(name + ' · ' + bonus, skin.art));
       }
-      option.disabled = !option.length;
-      if (option.disabled) option.add(new Option(t('unconfirmedEffect'), preset.option));
+      option.disabled = locked || !option.length;
+      if (!option.length) option.add(new Option(t('unconfirmedEffect'), preset.option));
+      gear.disabled = locked;
       const saved = selectableSkins(hero).find((s) => s.art === preset.art);
       art.value = locked
         ? (battleOutfit(hero, seatOutfit)?.id ?? hero + '/default')

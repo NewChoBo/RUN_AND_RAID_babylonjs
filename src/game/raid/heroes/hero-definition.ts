@@ -74,8 +74,7 @@ export interface HeroCombat extends CombatRead {
   finishDash(): void;
   counter(skill: Skill): void;
   fire(skill: Skill, direction: RaidDirection, attack: ProjectileAttack): void;
-  gainRage(amount: number): void;
-  heal(ally: number, amount: number, mode?: 'lifesteal' | 'aura'): void;
+  heal(ally: number, amount: number): void;
   allies(center: RaidPoint, radius: number): number[];
   controlImmune(): boolean;
   barrier(ally: number, amount: number, ticks: number): void;
@@ -100,7 +99,8 @@ export interface HeroEvents {
   /** Return true when contact starts a secondary action that delivers the hit. */
   onProjectileContact?(combat: HeroCombat, target: RaidTarget, skill: Skill): boolean;
   onBasicAttack?(combat: HeroCombat): { amount: number; cooldown: number };
-  onIncomingHit?(combat: HeroCombat, hit: Hit): boolean;
+  /** A parry can convert the blocked hit to rage at its skill-specific multiplier. */
+  onIncomingHit?(combat: HeroCombat, hit: Hit): boolean | { rageMultiplier: number };
   onIncomingDamage?(amount: number): number;
   onOutgoingHit?(combat: HeroCombat, hit: Hit, victim?: Runner): number;
   onDamageDealt?(combat: HeroCombat, hit: Hit, victim: Runner, damage: number): void;

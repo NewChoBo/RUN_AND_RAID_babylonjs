@@ -31,13 +31,17 @@ export class RaidRound {
   constructor(roster: RaidSeat[]) {
     if (!isRaidRoster(roster)) throw new Error('Invalid raid roster');
     const vacant = HERO_IDS.filter((hero) => !roster.some((p) => p.hero === hero));
-    const heroes = Array.from({ length: 4 }, (_, slot) => {
-      const seat = roster[seatOrder.findIndex((s) => s === slot)];
+    const seats = Array.from(
+      { length: 4 },
+      (_, slot) => roster[seatOrder.findIndex((s) => s === slot)],
+    );
+    const heroes = seats.map((seat, slot) => {
       if (!seat) return vacant.shift()!;
       this.#slots.set(seat.actor, slot);
       return seat.hero;
     });
-    this.match = new RaidMatch(heroes);
+    const loadouts = seats.map((seat) => seat?.rageLoadout ?? {});
+    this.match = new RaidMatch(heroes, undefined, loadouts);
     this.#human = new Set(this.#slots.values());
     this.#simulation = new RaidSimulation(this.match, this.#human);
   }

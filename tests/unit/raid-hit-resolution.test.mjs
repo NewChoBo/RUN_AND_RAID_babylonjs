@@ -42,7 +42,7 @@ test('combat numbers report applied health changes, including lethal hits, overh
   assert.deepEqual(resolution.healthChanges, []);
 });
 
-test('life steal shows the actual self-heal alongside the hit without changing its fury cost', () => {
+test('life steal shows the actual self-heal alongside the hit without charging its caster', () => {
   const match = new RaidMatch(['rend', 'jade', 'rime', 'bastion']);
   const [rend, , victim, other] = match.runners;
   rend.hp -= 2;
@@ -57,7 +57,7 @@ test('life steal shows the actual self-heal alongside the hit without changing i
       [rend.slot, 2],
     ],
   );
-  assert.equal(rend.rage, 2 * HEROES.rend.power);
+  assert.equal(rend.rage, 0);
 });
 
 test('a previous attacker gets an assist only within five seconds of their last hit', () => {

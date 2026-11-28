@@ -35,6 +35,10 @@ export const korean = {
   kaikenSet: '카이켄 · 원작 예시',
   emptySlot: '빈 슬롯',
   draftPreview: '스킨은 경기에 적용 · 능력 옵션과 장비는 미리보기',
+  draftCounterApplied:
+    '반격 랭크에 따라 막은 공격에서 얻는 분노가 늘어납니다. 장비와 능력 옵션은 미리보기입니다.',
+  draftRageApplied:
+    '어떤 스킨을 입어도 선택한 분노 충전 옵션이 적용됩니다. 다른 능력 옵션과 장비는 미리보기입니다.',
   championDetails: '주자 상세',
   statHp: '체력',
   statRegen: '체력 재생',

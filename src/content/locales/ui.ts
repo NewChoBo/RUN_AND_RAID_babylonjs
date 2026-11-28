@@ -38,6 +38,10 @@ const english = {
   kaikenSet: 'Kaiken · original example',
   emptySlot: 'Empty slot',
   draftPreview: 'Skin equipped in matches · stats and gear are previews',
+  draftCounterApplied:
+    'Counter rank determines Rage gained on a parry. Gear and stat options are previews.',
+  draftRageApplied:
+    'The Rage gain option works with any equipped skin. Other stats and gear are previews.',
   championDetails: 'Runner details',
   statHp: 'Health',
   statRegen: 'Health regeneration',

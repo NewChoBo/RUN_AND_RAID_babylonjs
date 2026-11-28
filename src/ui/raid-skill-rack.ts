@@ -135,7 +135,7 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
         b.style.setProperty('--rage-fill', recasts ? '100%' : runner.rage + '%');
         charge.textContent = recasts
           ? t('bladeCharges', { count: recasts }) + (cd ? ' · ' + cd + 's' : '')
-          : runner.rage + '%';
+          : Math.floor(runner.rage) + '%';
       } else {
         if (i === 3) rack.removeAttribute('data-rage');
         const fraction = canLand

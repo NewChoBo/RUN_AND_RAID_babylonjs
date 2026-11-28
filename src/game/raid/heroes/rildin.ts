@@ -1,5 +1,5 @@
 import { stats, chainSlash, advance, unboundSword } from '../../../content/raid/heroes/rildin.ts';
-import { defineHero, type HeroCombat, type HeroEvents, type Hit } from './hero-definition.ts';
+import { defineHero, type HeroCombat, type HeroEvents } from './hero-definition.ts';
 import type { RaidRunner, Skill } from '../raid-view.ts';
 import { matchedCooldownTicks } from '../../../content/raid/skill-cooldowns.ts';
 import { RAID_HZ } from '../raid-rules.ts';
@@ -57,12 +57,12 @@ class Rildin implements HeroEvents {
       )!;
     }
   }
-  onIncomingHit(combat: HeroCombat, hit: Hit) {
+  onIncomingHit(combat: HeroCombat) {
     if (this.view.guardUntil <= combat.tick()) return false;
     this.view.guardUntil = 0;
     combat.counter(1);
-    combat.gainRage(hit.amount);
-    return true;
+    const rank = combat.self.rageLoadout.counterRank ?? 1;
+    return { rageMultiplier: 2 + (rank - 1) * 0.5 };
   }
 }
 export const rildin = defineHero(

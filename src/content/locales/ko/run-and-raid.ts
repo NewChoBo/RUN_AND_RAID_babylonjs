@@ -283,6 +283,7 @@ export const korean = {
   guardActive: '방어 중',
   hp: '체력',
   rage: '분노',
+  rageThreshold: '기본 분노 완충에 필요한 누적 체력 손실 {hp}',
   target: '평타 표적',
   noTarget: '없음',
   wagon: '마차',

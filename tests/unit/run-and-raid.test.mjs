@@ -17,6 +17,7 @@ import {
   WAGON_HP,
 } from '../../src/game/raid/raid-match.ts';
 import { createRaidFeature } from '../../src/game/raid/raid-feature.ts';
+import { raidRageGain } from '../../src/content/raid/rage.ts';
 import { driveRaidBots } from '../../src/game/raid/raid-bots.ts';
 import { RAID_FRONT_Z } from '../../src/game/raid/runner-motion.ts';
 import { GameSession } from '../../src/game/session/game-session.ts';
@@ -675,7 +676,7 @@ test('a wounded ally heals inside the grove and receives no further healing afte
   assert.ok(send(0, 'cast', { skill: 0, x: ally.x, z: ally.z + 5 }));
   advance(match, RAID_HZ);
   assert.equal(ally.hp - before, 10);
-  assert.equal(match.runners[0].rage, 10);
+  assert.equal(match.runners[0].rage, 0);
   advance(match, RAID_HZ);
   assert.equal(ally.hp - before, 10);
 });
@@ -1098,38 +1099,44 @@ test('opposing hits unlock one ultimate and attacking the wagon spends the charg
   assert.ok(match.damage[0] > 0);
   assert.equal(player.rage, 0);
 });
-test('damage to the wagon and damage from its hazard both charge the runner', () => {
+test('a wagon hit gives no charge while its hazard charges from health lost', () => {
   const { match, send } = battle(['rend', 'abyss', 'longshot', 'jade']);
   const player = match.runners[0];
   send(0, 'move', { side: -1, walk: true });
   assert.ok(send(0, 'cast', { skill: 1, target: 'wagon' }));
   match.step();
   assert.equal(match.damage[0], 33);
-  assert.equal(player.rage, 33 + HEROES.rend.hp - player.hp);
+  assert.equal(player.rage, raidRageGain(player.hero, HEROES.rend.hp - player.hp));
   advance(match, 88);
   const { rage, hp } = player;
   match.step();
   assert.equal(hp - player.hp, 26);
-  assert.equal(player.rage, Math.min(100, rage + 26));
+  assert.equal(player.rage, Math.min(100, rage + raidRageGain(player.hero, 26)));
 });
-test('a rear ground strike can charge Fury, which can spend that charge on the visible rear rival', () => {
-  const { match, send } = battle(['rend', 'abyss', 'longshot', 'jade']);
+test('taking a ground strike can ready Fury for a visible rear rival', () => {
+  const { match, send } = battle(['rend', 'abyss', 'bastion', 'rime']);
   const [player, , flank, rear] = match.runners;
-  assert.ok(send(2, 'cast', { skill: 1, x: player.x, z: player.z }));
+  for (const r of match.runners) r.basic = 100;
+  rear.x = player.x;
+  assert.ok(send(2, 'cast', { skill: 1, target: player.slot }));
+  assert.ok(send(2, 'cast', { skill: 2, x: player.x, z: player.z }));
+  assert.ok(send(3, 'cast', { skill: 0 }));
+  assert.ok(send(3, 'cast', { skill: 1, target: player.slot }));
   assert.ok(send(0, 'cast', { skill: 1, target: flank.slot }));
   assert.ok(send(0, 'cast', { skill: 2, x: (flank.x + rear.x) / 2, z: -1 }));
   match.step();
-  assert.equal(player.hp, HEROES.rend.hp - 3 * HEROES.longshot.power);
+  assert.equal(player.hp, HEROES.rend.hp - 6 * HEROES.bastion.power - 5 * HEROES.rime.power);
   assert.equal(player.rage, 100);
-  assert.equal(rear.hp, HEROES.jade.hp - 33);
-  assert.equal(rear.rage, 33);
+  assert.equal(rear.hp, HEROES.rime.hp - 33);
+  assert.equal(rear.rage, raidRageGain(rear.hero, 33));
+  const { rage, hp } = rear;
   assert.ok(send(0, 'cast', { skill: 3, target: rear.slot }));
   match.step();
   assert.equal(rear.hp, 0);
-  assert.equal(rear.rage, 100);
+  assert.equal(rear.rage, Math.min(100, rage + raidRageGain(rear.hero, hp)));
   assert.equal(player.rage, 0);
 });
-test('a full-health shield gives no rage and a self-heal counts only the missing health', () => {
+test('a full shield block and a self-heal both leave rage unchanged', () => {
   const full = battle(['jade', 'hammer', 'bastion', 'longshot']);
   for (const r of full.match.runners) r.basic = 10;
   assert.ok(full.send(0, 'cast', { skill: 0, ally: 0 }));
@@ -1141,11 +1148,10 @@ test('a full-health shield gives no rage and a self-heal counts only the missing
   const { match, send } = battle('theresa');
   const caster = match.runners[0];
   caster.hp -= 12;
-  const missing = HEROES.theresa.hp - caster.hp;
   const before = caster.rage;
   assert.ok(send(0, 'cast', { skill: 0 }));
   assert.equal(caster.hp, HEROES.theresa.hp);
-  assert.equal(caster.rage - before, missing);
+  assert.equal(caster.rage, before);
 });
 test('Abyss aims the silencing orb and delays Distortion on its road tile; Jade shields a wounded ally', () => {
   const { match, send } = battle('jade');
