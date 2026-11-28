@@ -1,3 +1,4 @@
+import { actionLocked } from './raid-control.ts';
 import { RAID_BASIC_HALF_ANGLE } from './raid-sight.ts';
 import { RAID_RUN_LIMIT_X } from './raid-rules.ts';
 import { RAID_COUNTERS, inRaidCounter } from './raid-boss.ts';
@@ -102,7 +103,7 @@ export function driveRaidBots(
     }
     send(r.slot, 'lock', target?.slot ?? 'wagon');
     // Space casts just over a second apart. Steering and hazard reactions still run every eight ticks.
-    if (r.staggered || r.silenced || view.tick < RAID_HZ || (view.tick + rank * 20) % 32 !== 0)
+    if (actionLocked(r) || r.silenced || view.tick < RAID_HZ || (view.tick + rank * 20) % 32 !== 0)
       continue;
     const point = target ?? WAGON;
     const openingSkill = raidSkill(r.hero, 0);
@@ -171,9 +172,11 @@ export function driveRaidBots(
       windup && (needsEvasion || (counter && counter.ticks <= windup && inRaidCounter(counter, r)));
     if (!unsafeCharge && canUseRaidSkill(r, 3) && (r.hero !== 'jade' || orbGap <= 8)) skill = 3;
     else if (canLeap && canUseRaidSkill(r, 1) && distance > HEROES[r.hero].radius) skill = 1;
+    else if (r.heroView.iceCrystals !== undefined && nearestDistance <= 8 && canUseRaidSkill(r, 2))
+      skill = 2;
     else if (
       r.heroView.iceCrystals !== undefined &&
-      r.heroView.iceCrystals < 4 &&
+      r.heroView.iceCrystals < 5 &&
       distance <= 6 &&
       canUseRaidSkill(r, 1)
     )

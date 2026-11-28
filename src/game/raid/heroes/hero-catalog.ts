@@ -1,3 +1,6 @@
+import { SKILL_COOLDOWNS } from '../raid-rules.ts';
+import { matchedCooldownTicks } from '../../../content/raid/skill-cooldowns.ts';
+import { actionLocked } from '../raid-control.ts';
 import type { RaidHeroDefinition, HeroStats } from './hero-definition.ts';
 import { HERO_IDS, heroKit, type HeroKit, type RaidHero } from './hero-id.ts';
 import type { Skill, RaidRunner } from '../raid-view.ts';
@@ -45,6 +48,10 @@ export const HEROES = Object.fromEntries(
   HERO_IDS.map((id) => [id, heroCatalog[id].stats]),
 ) as Record<RaidHero, HeroStats>;
 export const raidSkill = (hero: RaidHero, skill: Skill) => heroCatalog[hero].skills[skill];
+export const raidSkillCooldown = (hero: RaidHero, skill: Skill) =>
+  matchedCooldownTicks(hero, skill) ??
+  raidSkill(hero, skill).cooldownTicks ??
+  SKILL_COOLDOWNS[skill];
 export const raidBasicReach = (runner: RaidRunner, tick: number) =>
   heroCatalog[runner.hero].basicReach(runner, tick);
 export const raidAimKind = (hero: RaidHero, skill: Skill) => raidSkill(hero, skill).kind;
@@ -60,7 +67,7 @@ export function canUseRaidSkill(runner: RaidRunner, skill: Skill) {
     runner.respawn ||
     runner.silenced ||
     runner.taunt ||
-    runner.staggered ||
+    actionLocked(runner) ||
     runner.leap ||
     runner.spinTicks
   )

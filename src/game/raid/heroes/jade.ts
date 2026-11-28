@@ -1,3 +1,4 @@
+import { slow } from '../raid-control.ts';
 import { stats } from '../../../content/raid/heroes/jade.ts';
 import { defineHero, type CombatRead } from './hero-definition.ts';
 import { distance, RAID_HZ } from '../raid-rules.ts';
@@ -14,7 +15,6 @@ export const jade = defineHero(stats, () => ({}), [
     kind: 'ward',
     attack: noAttack,
     range: 15,
-    cooldownTicks: 11 * RAID_HZ,
     apply(c, cast) {
       c.barrier(cast.target, Math.round(130 / 3), 75);
       c.self.lastWard = cast.target;
@@ -24,14 +24,13 @@ export const jade = defineHero(stats, () => ({}), [
   {
     kind: 'pulse',
     origin: carrier,
-    cooldownTicks: 11 * RAID_HZ,
     attack: {
       kind: 'area',
       on: 'cast',
       area: discharge,
       hit: {
         powerScale: 4,
-        control: [{ kind: 'lightningSlow', ticks: RAID_HZ }],
+        control: [slow(RAID_HZ, 20)],
       },
     },
     apply(c, cast) {
@@ -43,7 +42,6 @@ export const jade = defineHero(stats, () => ({}), [
     kind: 'pulse',
     origin: carrier,
     attack: noAttack,
-    cooldownTicks: 14 * RAID_HZ,
     apply(c, cast) {
       let current: RaidTarget = carrier(c).slot;
       let from = cast.point;

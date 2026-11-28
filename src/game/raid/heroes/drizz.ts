@@ -1,5 +1,6 @@
+import { RAID_JUMP_TICKS } from '../runner-motion.ts';
 import { grasp, stats } from '../../../content/raid/heroes/drizz.ts';
-import { silence, slow, stagger } from '../raid-control.ts';
+import { slow } from '../raid-control.ts';
 import { projectile, sweep } from '../skills/skill-effects.ts';
 import { defineHero, type HeroEvents } from './hero-definition.ts';
 
@@ -13,8 +14,8 @@ const darkHand: HeroEvents = {
 };
 
 export const drizz = defineHero(stats, () => darkHand, [
-  projectile(grasp, { powerScale: 2, control: [silence(24)], displacement: 'pull' }),
-  sweep({ powerScale: 3, control: [stagger(18)], displacement: 'launch' }),
+  projectile(grasp, { powerScale: 2, displacement: 'pull' }),
+  sweep({ powerScale: 3, launchTicks: RAID_JUMP_TICKS }),
   {
     kind: 'pulse',
     requiresJump: true,
@@ -22,7 +23,7 @@ export const drizz = defineHero(stats, () => darkHand, [
       kind: 'area',
       on: 'cast',
       area: { kind: 'circle', radius: 4.5 },
-      hit: { powerScale: 3, control: [slow(45)] },
+      hit: { powerScale: 3, control: [slow(30, 8)] },
     },
     apply(combat, cast) {
       combat.self.jumping = 0;

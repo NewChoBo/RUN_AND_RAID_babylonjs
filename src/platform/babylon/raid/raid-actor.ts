@@ -259,14 +259,14 @@ export function createRaidActor(
     shadow.position.set(x, 0.032, z);
     life.scaling.x = r.hp / HEROES[hero].hp;
     life.position.x = -0.39 * (1 - life.scaling.x);
-    rig.rotation.z = r.staggered ? 0.26 * Math.min(1, r.staggered / 4) : 0;
+    rig.rotation.z = 0.26 * Math.min(1, Math.max(r.staggered, r.stunned) / 4);
     if (!current) return;
     if (greatsword) greatsword.scaling.setAll((r.heroView.empoweredUntil ?? 0) > tick ? 1.45 : 1);
     if (r.respawn) {
       motion?.once('fall', (fallAge + subtick) / RAID_HZ, dt);
       return;
     }
-    if (r.staggered && !r.leap && !r.jumping) {
+    if ((r.staggered || r.stunned) && !r.leap && !r.jumping) {
       motion?.seek('fall', 0.13, dt);
       return;
     }
@@ -316,17 +316,14 @@ export function createRaidActor(
     } else if (r.jumping)
       motion?.once(
         modeClip('shieldJump', 'jump'),
-        (RAID_JUMP_TICKS - r.jumping + subtick) / RAID_HZ,
+        ((r.launchDuration || RAID_JUMP_TICKS) - r.jumping + subtick) / RAID_HZ,
         dt,
       );
     else if (r.heroView.orbTicks && motion?.has('orbLoop')) {
       const elapsed = (5 * RAID_HZ - r.heroView.orbTicks + subtick) / RAID_HZ;
       motion.loop('orbLoop', Math.max(0, elapsed - motion.duration('fury')), dt);
     } else {
-      const gait = modeClip(
-        'shieldRun',
-        r.slowed || r.lightningSlow || r.appliedBrake >= 0.5 ? 'walk' : 'run',
-      );
+      const gait = modeClip('shieldRun', r.slowed || r.appliedBrake >= 0.5 ? 'walk' : 'run');
       motion?.gait(
         gait,
         now / RAID_HZ + r.slot * 0.13,

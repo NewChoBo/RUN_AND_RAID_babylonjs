@@ -1,3 +1,4 @@
+import { actionLocked, activeSlow } from '../game/raid/raid-control.ts';
 import { uiText } from '../content/locales/ui.ts';
 import { heroKit } from '../game/raid/heroes/hero-id.ts';
 import { raidOutfits } from '../content/raid/outfits.ts';
@@ -13,7 +14,6 @@ import {
   raidBossBonusPercent,
   RAID_HZ,
   ROUND_TICKS,
-  SKILL_COOLDOWNS,
   WAGON_HP,
   type RaidView,
   type Skill,
@@ -306,7 +306,7 @@ export function createRaidHud(
       const text = t('runnerRespawn', { name: t(r.hero), seconds: Math.ceil(r.respawn / RAID_HZ) });
       if (row.textContent !== text) row.textContent = text;
     });
-    jump.disabled = !!runner.leap || !!runner.jumping || !!runner.respawn || !!runner.staggered;
+    jump.disabled = !!runner.leap || !!runner.jumping || !!runner.respawn || actionLocked(runner);
     const request = view.calls[runner.team];
     ping.update(
       view,
@@ -329,9 +329,11 @@ export function createRaidHud(
     const counterText = view.hazard ? t(counterLabels[view.hazard.kind]) : '';
     if (warning.textContent !== counterText) warning.textContent = counterText;
     warning.hidden = !counterText || !!view.result;
+    const slow = activeSlow(runner);
     const conditions = [
-      runner.staggered && t('stagger'),
-      (runner.slowed || runner.lightningSlow) && t('slow'),
+      runner.stunned ? t('stun') : runner.staggered && t('stagger'),
+      runner.launchDuration && t('knockedUp'),
+      slow && t('slow', { percent: slow.percent }),
       runner.silenced && t('silence'),
       runner.taunt && t('taunted'),
     ]
@@ -401,7 +403,7 @@ export function createRaidHud(
           ? t('bladeCharges', { count: recasts }) + (cd ? ' · ' + cd + 's' : '')
           : runner.rage + '%';
       } else {
-        const fraction = runner.cooldowns[i]! / (rule.cooldownTicks ?? SKILL_COOLDOWNS[i as Skill]);
+        const fraction = runner.cooldowns[i]! / Math.max(1, runner.cooldownDurations[i]!);
         b.style.setProperty('--cooldown', Math.round(fraction * 360) + 'deg');
         const slashes = i === 0 ? (runner.heroView.slashes ?? 0) : 0;
         charge.textContent = recastMoon ? '' : slashes ? 4 - slashes + '/4' : cd ? cd + 's' : '';

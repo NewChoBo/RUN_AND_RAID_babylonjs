@@ -1,11 +1,12 @@
 import { stats, chainSlash, advance, unboundSword } from '../../../content/raid/heroes/rildin.ts';
 import { defineHero, type HeroCombat, type HeroEvents, type Hit } from './hero-definition.ts';
 import type { RaidRunner, Skill } from '../raid-view.ts';
-import { RAID_HZ, SKILL_COOLDOWNS } from '../raid-rules.ts';
+import { matchedCooldownTicks } from '../../../content/raid/skill-cooldowns.ts';
+import { RAID_HZ } from '../raid-rules.ts';
 import { RAID_BASIC_HALF_ANGLE } from '../raid-sight.ts';
 
 import { noAttack, type AreaAttack } from '../skills/attack-rule.ts';
-import { stagger } from '../raid-control.ts';
+import { stun } from '../raid-control.ts';
 
 function swordReachBonus(runner: RaidRunner, tick: number) {
   return (runner.heroView.empoweredUntil ?? 0) > tick ? unboundSword.reachBonus : 0;
@@ -26,7 +27,7 @@ const counter: AreaAttack<'counter'> = {
   kind: 'area',
   on: 'counter',
   area: { kind: 'circle', radius: 5 },
-  hit: { powerScale: 1, control: [stagger(15)] },
+  hit: { powerScale: 1, control: [stun(30)] },
 };
 class Rildin implements HeroEvents {
   readonly view = {
@@ -43,11 +44,17 @@ class Rildin implements HeroEvents {
   onTimersAdvanced(combat: HeroCombat) {
     if (this.view.slashes && this.slashUntil <= combat.tick()) {
       this.view.slashes = 0;
-      combat.self.cooldowns[0] = SKILL_COOLDOWNS[0];
+      combat.self.cooldownDurations[0] = combat.self.cooldowns[0] = matchedCooldownTicks(
+        'rildin',
+        0,
+      )!;
     }
     if (this.strides && this.strideUntil <= combat.tick()) {
       this.strides = 0;
-      combat.self.cooldowns[2] = SKILL_COOLDOWNS[2];
+      combat.self.cooldownDurations[2] = combat.self.cooldowns[2] = matchedCooldownTicks(
+        'rildin',
+        2,
+      )!;
     }
   }
   onIncomingHit(combat: HeroCombat, hit: Hit) {

@@ -24,6 +24,7 @@ const english = {
   resetRanks: 'Reset',
   rankUp: 'Raise {skill} rank',
   rankDown: 'Lower {skill} rank',
+  battleCooldown: 'Match {skill} {seconds}s',
   originalCooldown: 'Original cooldown {seconds}s',
   rankValue: '{skill} · rank {n}',
   skinPreview: 'Skin preview',

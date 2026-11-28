@@ -1,3 +1,4 @@
+import { actionLocked } from '../../../game/raid/raid-control.ts';
 import { heroKit, KIT_IDS } from '../../../game/raid/heroes/hero-id.ts';
 import { appearance } from './hero-appearance.ts';
 import { raidProjectileProfile, raidSkill } from '../../../game/raid/heroes/hero-catalog.ts';
@@ -112,7 +113,7 @@ export function createRaidEffects(scene: Scene) {
       if (cue.phase === 'dash' && art.dashTrail === 'shadowBlades') {
         const runner = view.runners[cue.slot]!;
         blades ??= createShadowBlades(scene);
-        if (runner.respawn || runner.staggered) blades.hide();
+        if (runner.respawn || actionLocked(runner)) blades.hide();
         else
           blades.draw(
             raidRunnerPositionAfter(runner, subtick),

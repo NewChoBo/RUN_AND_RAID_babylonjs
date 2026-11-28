@@ -76,7 +76,7 @@ test('Counter negates one incoming hit and stuns enemies around Rildin', () => {
   match.step();
   assert.equal(r.hp, before - 3 * HEROES.rime.power);
   assert.equal(r.silenced, 0);
-  assert.ok(enemy.staggered);
+  assert.equal(enemy.stunned, RAID_HZ);
 });
 
 test('Chain Slash previews the same frontal, ground-level targets that it hits', () => {
@@ -166,7 +166,8 @@ test('Kaiken can cut Full Moon short and spin on the road tile at the interrupti
   match.step();
   assert.equal(r.x, stop.x);
   assert.ok(Math.abs(r.z + raidRoadTravel(1) - stop.z) < 1e-8);
-  assert.ok(victim.staggered);
+  assert.ok(victim.hp < HEROES[victim.hero].hp);
+  assert.equal(victim.staggered, 0);
   r.rage = 100;
   assert.ok(send(0, 'cast', { skill: 3 }));
 });
@@ -513,11 +514,11 @@ test('the wagon takes arrow rain on impact and at half a second, then moves beyo
   advance(match, 14);
   assert.equal(match.damage[0] - before, 24);
   match.step();
-  assert.equal(match.damage[0] - before, 32);
+  assert.equal(match.damage[0] - before, 48);
   advance(match, 15);
-  assert.equal(match.damage[0] - before, 32);
+  assert.equal(match.damage[0] - before, 48);
   advance(match, 15);
-  assert.equal(match.damage[0] - before, 32);
+  assert.equal(match.damage[0] - before, 48);
 });
 test('running into arrow rain or a dark vortex triggers a later pulse at the placed road point', () => {
   for (const hero of ['longshot', 'abyss']) {
@@ -531,8 +532,13 @@ test('running into arrow rain or a dark vortex triggers a later pulse at the pla
     assert.equal(rival.hp, hp);
     assert.equal(rival.slowed, 0);
     match.step();
-    if (hero === 'longshot') assert.equal(rival.hp, hp - HEROES.longshot.power);
-    else assert.equal(rival.slowed, 30);
+    if (hero === 'longshot') assert.equal(rival.hp, hp - 3 * HEROES.longshot.power);
+    assert.deepEqual(
+      rival.slows[0],
+      hero === 'longshot'
+        ? { percent: 18, ticks: 30, delay: 0 }
+        : { percent: 20, ticks: 60, delay: 0 },
+    );
   }
 });
 test('each charged ultimate applies its hero effect to the selected formation', () => {
@@ -561,7 +567,11 @@ test('each charged ultimate applies its hero effect to the selected formation', 
     advance(match, hero === 'longshot' ? RAID_HZ + 10 : 1);
     assert.equal(caster.rage, 0);
     assert.equal(rear.hp, beforeRear - 7 * HEROES[hero].power);
-    if (hero === 'hammer') assert.equal(flank.hp, beforeFlank - 24);
+    if (hero === 'hammer') {
+      assert.equal(flank.hp, beforeFlank - (beforeRear - rear.hp) / 2);
+      assert.equal(rear.stunned, 45);
+      assert.equal(flank.stunned, 0);
+    }
     if (hero === 'abyss') assert.equal(rear.silenced, 60);
     if (hero === 'rime') assert.equal(rear.slowed, 3 * RAID_HZ);
     if (hero === 'bastion') assert.equal(caster.shield, 3 * RAID_HZ);
@@ -1131,7 +1141,9 @@ test('Abyss can silence and slow a runner and Jade can shield a wounded partner'
   assert.equal(ally.hp, before.hp);
   assert.equal(jade.rage, before.jadeRage);
   assert.equal(ally.rage, before.allyRage);
-  advance(match, 25);
+  advance(match, 29);
+  assert.equal(send(1, 'cast', { skill: 1, x: ally.x, z: ally.z }), false);
+  match.step();
   assert.equal(send(1, 'cast', { skill: 1, x: ally.x, z: ally.z }), true);
 });
 test('lead changes count settled overtakes across ties, excluding first scores and within-tick hits', () => {
@@ -1302,11 +1314,11 @@ test('each loadout contests wagon damage per active team member with one objecti
       }
       match.step();
     }
-    // Compare scoring with equal opportunity. Repeated knockouts cost real time and raw score.
-    for (const [team, ticks] of activeTicks.entries()) {
-      const opportunity = ticks / Math.max(...activeTicks);
-      assert.ok(match.damage[team] >= WAGON_HP * 0.75 * opportunity, hero + ' ' + match.damage);
-    }
+    // On a time finish no team necessarily reaches WAGON_HP. Compare the damage per
+    // living runner-tick actually achieved by the two teams, and check match pace separately.
+    const rates = activeTicks.map((ticks, team) => match.damage[team] / ticks);
+    assert.ok(Math.min(...rates) >= Math.max(...rates) * 0.75, hero + ' ' + rates);
+    assert.ok(match.damage[0] + match.damage[1] >= WAGON_HP, hero + ' ' + match.damage);
   }
 });
 
@@ -1381,12 +1393,12 @@ test('Hammer leaps to the selected road tile, then damages and launches only riv
     [point.x, point.z - raidRoadTravel(RAID_LEAP_TICKS), 0, null],
   );
   assert.equal(rival.hp, hp - 24);
-  assert.equal(rival.jumping, 22);
+  assert.equal(rival.jumping, RAID_HZ);
   assert.equal(evader.jumping, 0);
   assert.equal(ally.jumping, 0);
   assert.equal(match.actions.filter((c) => c.slot === 0 && c.skill === 1).length, 1);
   match.step();
-  assert.equal(rival.jumping, 21);
+  assert.equal(rival.jumping, RAID_HZ - 1);
   assert.equal(match.actions.filter((c) => c.slot === 0 && c.skill === 1).length, 1);
   assert.ok(hammer.x < point.x);
 });

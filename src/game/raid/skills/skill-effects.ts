@@ -1,13 +1,13 @@
 import { RAID_SKILL_RANGE } from '../raid-rules.ts';
 import type { HeroCombat } from '../heroes/hero-definition.ts';
 import type { HeroSkill, SkillCast } from './skill-rule.ts';
-import { casterCircle, fieldCircle } from './attack-area.ts';
+import { casterCircle, fieldCircle, type CircleArea } from './attack-area.ts';
 import type { AreaHit, AreaAttack, FieldPulse, HitRule, ProjectileProfile } from './attack-rule.ts';
 
-export function sweep(hit: HitRule): HeroSkill<unknown, 'pulse'> {
+export function sweep(hit: HitRule, area: CircleArea = casterCircle): HeroSkill<unknown, 'pulse'> {
   return {
     kind: 'pulse',
-    attack: { kind: 'area', on: 'cast', area: casterCircle, hit },
+    attack: { kind: 'area', on: 'cast', area, hit },
     apply(combat, cast) {
       combat.record(cast.skill, combat.self, 'ground');
     },
@@ -16,11 +16,12 @@ export function sweep(hit: HitRule): HeroSkill<unknown, 'pulse'> {
 export function field(
   hit: HitRule = { powerScale: 3 },
   pulse?: FieldPulse,
+  area: CircleArea = fieldCircle,
 ): HeroSkill<unknown, 'field'> {
   return {
     kind: 'field',
     range: RAID_SKILL_RANGE.field,
-    attack: { kind: 'field', area: fieldCircle, hit, pulse },
+    attack: { kind: 'field', area, hit, pulse },
     apply(combat, cast) {
       combat.record(cast.skill, cast.point, 'ground');
     },
@@ -57,7 +58,7 @@ export function spin(ticks: number, attack: AreaAttack<'spinPulse'>): HeroSkill<
     attack,
     apply(combat, cast) {
       combat.self.spin = { skill: cast.skill, remaining: ticks, duration: ticks, interval: 15 };
-      combat.self.slowed = combat.self.lightningSlow = 0;
+      if (combat.controlImmune()) combat.self.slows.length = 0;
       combat.record(cast.skill, combat.self);
     },
   };

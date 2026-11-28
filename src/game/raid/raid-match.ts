@@ -1,3 +1,4 @@
+import { actionLocked, activeSlow, advanceSlows } from './raid-control.ts';
 import { triggerAttack } from './skills/skill-execution.ts';
 import { measureSkill } from './skills/skill-range.ts';
 import { strikeAlongDash } from './skills/dash-path.ts';
@@ -22,6 +23,7 @@ import {
   raidAimKind,
   canUseRaidSkill,
   raidSkill,
+  raidSkillCooldown,
 } from './heroes/hero-catalog.ts';
 import type { RaidHero } from './heroes/hero-id.ts';
 import type { HeroCombat, HeroView, RaidHeroRuntime } from './heroes/hero-definition.ts';
@@ -32,7 +34,6 @@ import {
   RAID_SKILL_RANGE,
   RAID_TARGETS,
   ROUND_TICKS,
-  SKILL_COOLDOWNS,
   WAGON,
   WAGON_HP,
   distance,
@@ -124,11 +125,16 @@ const makeRunner = (hero: RaidHero, slot: number, view: () => HeroView): Runner 
   barrier: null,
   taunt: null,
   silenced: 0,
-  slowed: 0,
+  slows: [],
+  get slowed() {
+    return activeSlow(this)?.ticks ?? 0;
+  },
+  stunned: 0,
+  launchDuration: 0,
   staggered: 0,
   staggerGuard: 0,
   hasteTicks: 0,
-  lightningSlow: 0,
+  cooldownDurations: [0, 0, 0, 0],
   kills: 0,
   wagonDamage: 0,
   deaths: 0,
@@ -198,6 +204,8 @@ export class RaidMatch implements RaidView {
       this.#contexts,
       (slot) => this.#heroes[slot]!.events,
       (slot) => {
+        const events = this.#heroes[slot]!.events;
+        if (events.onKnockout) return events.onKnockout(this.#contexts[slot]!);
         this.#heroes[slot] = heroCatalog[this.#runners[slot]!.hero].create();
       },
     );
@@ -242,7 +250,7 @@ export class RaidMatch implements RaidView {
       r.jumping ||
       r.leap ||
       r.dash ||
-      r.staggered ||
+      actionLocked(r) ||
       this.#heroes[slot]!.events.blocksJump?.()
     )
       return false;
@@ -504,10 +512,11 @@ export class RaidMatch implements RaidView {
     const hero = this.#heroes[slot]!;
     const spendRage = skill === 3 && !rule.noRageCost && !r.heroView.ultimateRecasts;
     this.#cancelCharge(slot);
-    const cooldown = hero.cast(c, resolved) ?? rule.cooldownTicks ?? SKILL_COOLDOWNS[skill];
+    const finishingDash = !!r.dash && rule.kind === 'pulse' && rule.recastDuringDash;
+    const cooldown = hero.cast(c, resolved) ?? raidSkillCooldown(r.hero, skill);
     if (spendRage) r.rage = 0;
     hero.events.onCast?.(c, skill);
-    r.cooldowns[skill] = cooldown;
+    if (!finishingDash) r.cooldownDurations[skill] = r.cooldowns[skill] = cooldown;
     return true;
   }
   #impact(r: Runner, skill: Skill, event: Exclude<AreaAttack['on'], 'cast'>, target?: RaidTarget) {
@@ -576,24 +585,21 @@ export class RaidMatch implements RaidView {
         }
         continue;
       }
-      if (r.staggered) {
+      if (actionLocked(r)) {
+        if (r.stunned) r.leap = null;
         r.dash = null;
         this.#cancelCharge(r.slot);
       }
-      if (r.spinTicks) {
-        r.slowed = 0;
-        r.lightningSlow = 0;
-      }
+      if (r.spinTicks && this.#contexts[r.slot]!.controlImmune()) r.slows.length = 0;
       const next = raidRunnerPositionAfter(r, 1);
       r.appliedBrake = raidBrakeAfter(r, 1);
       r.x = next.x;
       r.z = next.z;
       if (r.leap) r.leap = { ...r.leap, elapsed: r.leap.elapsed + 1 };
       if (r.silenced) r.silenced--;
-      if (r.slowed) r.slowed--;
+      advanceSlows(r);
       if (r.hasteTicks) r.hasteTicks--;
-      if (r.lightningSlow) r.lightningSlow--;
-      if (r.jumping) r.jumping--;
+      if (r.jumping && !r.launchDuration) r.jumping--;
       if (r.shield) r.shield--;
       if (r.barrier && r.barrier.until <= this.tick) r.barrier = null;
       if (r.taunt && (r.taunt.until <= this.tick || this.#runners[r.taunt.from]!.respawn))
@@ -621,11 +627,13 @@ export class RaidMatch implements RaidView {
         !r.respawn &&
         !r.leap &&
         !r.basic &&
-        !r.staggered &&
+        !actionLocked(r) &&
         !r.spinTicks &&
         !this.#charging.has(r.slot)
       )
         this.#autoAttack(r);
+      if (r.launchDuration && --r.jumping === 0) r.launchDuration = 0;
+      if (r.stunned) r.stunned--;
       if (r.staggered) r.staggered--;
       if (r.staggerGuard) r.staggerGuard--;
       if (r.spin) {
@@ -649,7 +657,7 @@ export class RaidMatch implements RaidView {
     // The first flight step always belongs to the next tick, even when other bolts are in flight.
     for (const [slot, shot] of this.#charging) {
       const caster = this.#runners[slot]!;
-      if (caster.respawn || caster.staggered) this.#cancelCharge(slot);
+      if (caster.respawn || actionLocked(caster)) this.#cancelCharge(slot);
       else if (this.tick >= shot.release) {
         this.#projectiles.launch(caster, shot.skill, shot.direction, shot.attack, RAID_HZ);
         this.#charging.delete(slot);

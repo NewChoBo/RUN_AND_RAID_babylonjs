@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { raidSkillCooldown } from '../../src/game/raid/heroes/hero-catalog.ts';
+import { originalCooldownSeconds } from '../../src/content/raid/skill-cooldowns.ts';
 import { RaidMatch, HEROES, ROUND_TICKS, RAID_HZ } from '../../src/game/raid/raid-match.ts';
 import { practiceRoster, applyPick } from '../../src/game/raid/raid-draft.ts';
 import { RaidSimulation } from '../../src/game/raid/raid-simulation.ts';
@@ -49,10 +51,11 @@ test('Drizz pulls a rival, launches them, lands from his own jump and punches th
   const [r, , enemy] = m.runners;
   assert.ok(m.cast(0, 0, { dx: 0, dz: 1 }));
   advance(m, 8);
-  assert.ok(enemy.silenced > 0 && Math.hypot(enemy.x - r.x, enemy.z - r.z) <= 1.01);
+  assert.equal(enemy.silenced, 0);
+  assert.ok(Math.hypot(enemy.x - r.x, enemy.z - r.z) <= 1.01);
   assert.ok(m.cast(0, 1));
   m.step();
-  assert.ok(enemy.jumping > 0 && enemy.staggered > 0);
+  assert.ok(enemy.jumping > 0 && enemy.launchDuration > 0);
   assert.equal(m.cast(0, 2), false);
   assert.ok(m.jump(0));
   assert.ok(m.cast(0, 2));
@@ -147,13 +150,15 @@ test('Froze spends ice crystals, flashes only chilled targets and absorbs one ho
   assert.equal(enemy.hp, hp);
   assert.ok(m.cast(0, 0, { dx: 0, dz: 1 }));
   advance(m, 25);
-  assert.equal(r.heroView.iceCrystals, 1);
-  assert.equal(m.cast(0, 1), false);
-  advance(m, 34);
   assert.equal(r.heroView.iceCrystals, 2);
   assert.ok(m.cast(0, 1));
   m.step();
   assert.ok(enemy.hp < hp - 30);
+  assert.equal(r.heroView.iceCrystals, 0);
+  assert.equal(m.cast(0, 2), false);
+  enemy.x = 3; // Leave the first boss lane so Abyss survives to test the shield.
+  advance(m, 63);
+  assert.equal(r.heroView.iceCrystals, 1);
   assert.ok(m.cast(0, 2));
   const start = r.hp;
   assert.ok(m.cast(2, 1, 0));
@@ -181,7 +186,7 @@ test('Magnus changes modes without rage and forces nearby rivals to focus him', 
   assert.ok(r.dash);
   advance(m, 8);
   assert.equal(r.dash, null);
-  advance(m, 112);
+  advance(m, 157);
   assert.ok(m.cast(0, 3));
   assert.equal(r.heroView.shieldMode, false);
 });
@@ -224,8 +229,8 @@ test('Jade casts from the orb carrier, chains through an ally and reduces repeat
   assert.equal(aim.radius, 6);
   assert.ok(match.cast(0, 1));
   match.step();
-  assert.equal(rival.lightningSlow, 30);
-  assert.equal(other.lightningSlow, 0);
+  assert.deepEqual(rival.slows[0], { ticks: 30, percent: 20, delay: 0 });
+  assert.equal(other.slowed, 0);
   assert.ok(carrier.hasteTicks && !jade.hasteTicks);
   // Put the orb on Jade. The ally is the only reachable first hop, followed by the rival.
   jade.z = -8;
@@ -278,4 +283,54 @@ test('Jade releases five beams and a local burst from the ally carrying the orb'
   assert.equal(near.hp, 0);
   assert.equal(between.hp, hp);
   assert.equal(jade.rage, 0);
+});
+
+test('matched slots use rank-one timing, patched values and the actual borrowed kit', () => {
+  for (const [hero, expected] of [
+    ['hammer', [8, 16, 14]],
+    ['orc', [8, 16, 14]],
+    ['longshot', [13, 14, 16]],
+    ['alice', [11, 11, 12]],
+    ['kali', [4, 11, 13]],
+    ['rildin', [7, 15, 7]],
+    ['kaiken', [6, 7, 16]],
+    ['magnus', [17, 17, 17]],
+    ['drizz', [15, 8, 8]],
+    ['abyss', [5, 9, 12]],
+    ['hof', [15, 3.5, 7]],
+    ['vallet', [5, 21, 7]],
+    ['freesia', [5, 3.5, 7]],
+  ])
+    assert.deepEqual(
+      [0, 1, 2].map((i) => raidSkillCooldown(hero, i) / RAID_HZ),
+      expected,
+      hero,
+    );
+  assert.equal(originalCooldownSeconds('alice', 0, 4), 8);
+  assert.equal(originalCooldownSeconds('froze', 0), undefined);
+  const m = arena('hammer');
+  assert.ok(m.cast(0, 0));
+  assert.equal(m.runners[0].cooldowns[0], 240);
+  advance(m, 239);
+  assert.equal(m.cast(0, 0), false);
+  m.step();
+  assert.ok(m.cast(0, 0));
+});
+
+test('Magnus spends and recovers each mode cooldown independently', () => {
+  const m = arena('magnus');
+  const r = m.runners[0];
+  assert.ok(m.cast(0, 1));
+  assert.ok(m.cast(0, 3));
+  assert.equal(r.cooldowns[1], 0);
+  advance(m, 30);
+  assert.ok(m.cast(0, 1));
+  advance(m, 134);
+  assert.equal(m.cast(0, 3), false);
+  m.step();
+  assert.ok(m.cast(0, 3));
+  assert.equal(r.cooldowns[1], 17 * RAID_HZ - 165);
+  advance(m, 165);
+  assert.ok(m.cast(0, 3));
+  assert.equal(r.cooldowns[1], 17 * RAID_HZ - 300);
 });

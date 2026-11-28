@@ -21,6 +21,7 @@ export const korean = {
   resetRanks: '리셋',
   rankUp: '{skill} 레벨 올리기',
   rankDown: '{skill} 레벨 내리기',
+  battleCooldown: '경기 {skill} {seconds}초',
   originalCooldown: '원작 재사용 {seconds}초',
   rankValue: '{skill} · 레벨 {n}',
   skinPreview: '스킨 미리보기',

@@ -1,3 +1,7 @@
+import { originalCooldownSeconds } from '../content/raid/skill-cooldowns.ts';
+import { raidSkillCooldown } from '../game/raid/heroes/hero-catalog.ts';
+import { RAID_HZ } from '../game/raid/raid-rules.ts';
+import { raidText } from '../content/locales/run-and-raid.ts';
 import { uiText as t, type UiMessage } from '../content/locales/ui.ts';
 import { getLocale } from '../content/locales/locale.ts';
 import type { RaidHero } from '../game/raid/heroes/hero-id.ts';
@@ -139,11 +143,17 @@ export function createDraftLoadout(previewArt: (hero: CatalogHero, url: string) 
     if (!selected) return;
     const rank = preset.ranks[i]!;
     const name = officialGuides[selected]!.skills[i]!;
-    const times = draftCatalog[selected].cooldownSeconds[i]!;
-    const seconds = times.length === 1 ? times[0] : times[rank - 1];
+    const slot = i as 0 | 1 | 2;
+    const seconds = originalCooldownSeconds(selected, slot, rank);
+    const battle = raidSkillCooldown(selected, slot) / RAID_HZ;
     info.textContent =
       t('rankValue', { skill: name, n: rank }) +
-      (seconds === undefined ? '' : ' · ' + t('originalCooldown', { seconds }));
+      (seconds === undefined ? '' : ' · ' + t('originalCooldown', { seconds })) +
+      ' · ' +
+      t('battleCooldown', {
+        skill: raidText(`${selected}${(['Pulse', 'Bolt', 'Field'] as const)[slot]}`),
+        seconds: Number(battle.toFixed(2)),
+      });
     info.hidden = false;
   }
   function updateRanks() {

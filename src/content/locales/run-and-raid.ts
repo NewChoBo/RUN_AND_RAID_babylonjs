@@ -29,11 +29,12 @@ export const raidText = defineMessages(
     magnusBattle: 'Battle Mode',
     iceCrystals: 'Ice crystals {count}',
     flare: 'Flare',
-    flareInfo: 'Cast fireballs, push enemies away with Flame Burst, and set the road alight.',
+    flareInfo:
+      'Fireball slows enemies and Flame Burst pushes them back. Pillar of Fire stuns enemies in the selected area for 1.5 seconds.',
     flarePulse: 'Fireball',
     flareBolt: 'Flame Burst',
     flareField: 'Ember Trail',
-    flareFury: 'Searing Sun',
+    flareFury: 'Pillar of Fire',
     hof: 'Hof',
     hofInfo:
       'Place a frost turret, charge on a rocket, then use a heavy bomb or a three-rocket salvo.',
@@ -43,11 +44,11 @@ export const raidText = defineMessages(
     hofFury: 'Rocket Salvo',
     froze: 'Froze',
     frozeInfo:
-      'Chill an enemy with Ice Lance and hit them again with Ice Flash. Ice Shield blocks one enemy skill.',
+      'Chill an enemy with Ice Lance and hit them again with Ice Flash. Ice Shield blocks one enemy skill. Frozen Ground stuns nearby enemies, then slows them.',
     frozePulse: 'Ice Lance',
     frozeBolt: 'Ice Flash',
     frozeField: 'Ice Shield',
-    frozeFury: 'Whiteout',
+    frozeFury: 'Frozen Ground',
     magnus: 'Magnus',
     magnusInfo:
       'Battle mode uses Shockwave, Magnetic Field and Enrage. Shield mode replaces them with a charge, taunt and self-healing.',
@@ -78,7 +79,7 @@ export const raidText = defineMessages(
     freesiaFury: 'Queen’s Sting',
     drizz: 'Drizz',
     drizzInfo:
-      'Pull and silence an enemy with your demon arm. Uppercut launches them for bonus airborne damage. Jump to cast Ground Slam.',
+      'Pull an enemy to you with your demon arm. Uppercut launches them for bonus airborne damage. Jump to cast Ground Slam.',
     drizzPulse: 'Dark Grasp',
     drizzBolt: 'Uppercut',
     drizzField: 'Ground Slam',
@@ -245,7 +246,9 @@ export const raidText = defineMessages(
     counterMortar: 'Mortar · Leave the circle',
     counterWave: 'Shockwave · Jump the wave',
     stagger: 'Staggered',
-    slow: 'Slowed',
+    stun: 'Stunned',
+    knockedUp: 'Airborne',
+    slow: 'Slowed {percent}%',
     silence: 'Silenced',
     kda: 'K / D / A',
     runner: 'Runner',

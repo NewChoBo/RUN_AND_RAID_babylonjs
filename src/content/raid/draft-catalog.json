@@ -23,11 +23,6 @@
         "en": "Doomguard",
         "effect": "attack"
       }
-    ],
-    "cooldownSeconds": [
-      [8, 7, 6, 5],
-      [16, 14, 12, 10],
-      [14, 13, 12, 11]
     ]
   },
   "longshot": {
@@ -54,8 +49,7 @@
         "en": "Mercenary Guild",
         "effect": null
       }
-    ],
-    "cooldownSeconds": [[13, 11, 9, 7], [14], [16, 15, 14, 13]]
+    ]
   },
   "flare": {
     "face": "https://cafeptthumb-phinf.pstatic.net/20140421_269/chivalrykgt_139806635196961oDV_JPEG/%C7%C3%B7%B9%BE%EE.jpg?type=w800",
@@ -76,8 +70,7 @@
         "en": "Police Officer",
         "effect": "power"
       }
-    ],
-    "cooldownSeconds": [[8, 7.5, 7, 6.5], [10, 9, 8, 7], [12]]
+    ]
   },
   "alice": {
     "face": "https://cafeptthumb-phinf.pstatic.net/20140421_282/chivalrykgt_1398066400915cCwOh_JPEG/%BE%D9%B8%AE%BD%BA.jpg?type=w800",
@@ -103,8 +96,7 @@
         "en": "Ladybug",
         "effect": null
       }
-    ],
-    "cooldownSeconds": [[12, 11, 10, 9], [11], [12, 11, 10, 9]]
+    ]
   },
   "hof": {
     "face": "https://cafeptthumb-phinf.pstatic.net/20140421_285/chivalrykgt_1398066375978wwpIY_JPEG/%C8%A3%C7%C1.jpg?type=w800",
@@ -125,8 +117,7 @@
         "en": "Sheriff",
         "effect": "magicPierce"
       }
-    ],
-    "cooldownSeconds": [[15], [15], [16]]
+    ]
   },
   "kali": {
     "face": "https://cafeptthumb-phinf.pstatic.net/20140421_158/chivalrykgt_1398066516278etsKy_JPEG/%C4%AE%B8%AE.jpg?type=w800",
@@ -157,8 +148,7 @@
         "en": "Mercenary Guild",
         "effect": null
       }
-    ],
-    "cooldownSeconds": [[4], [11, 10, 9, 8], [13, 12, 11, 10]]
+    ]
   },
   "kaiken": {
     "face": "https://cafeptthumb-phinf.pstatic.net/20140421_89/chivalrykgt_1398066540514zn1Wk_JPEG/%C4%AB%C0%CC%C4%CB.jpg?type=w800",
@@ -179,8 +169,7 @@
         "en": "Soldier",
         "effect": "hp"
       }
-    ],
-    "cooldownSeconds": [[6], [7], [16, 14, 12, 10]]
+    ]
   },
   "abyss": {
     "face": "https://cafeptthumb-phinf.pstatic.net/20140421_291/chivalrykgt_1398066556191y7tn1_JPEG/%BE%EE%BA%F1%BD%BA.jpg?type=w800",
@@ -201,8 +190,7 @@
         "en": "Crimson Flame",
         "effect": "drain"
       }
-    ],
-    "cooldownSeconds": [[9], [12, 11, 10, 9], [23, 20, 17, 14]]
+    ]
   },
   "froze": {
     "face": "https://cafeptthumb-phinf.pstatic.net/20140421_22/chivalrykgt_1398066568233UW6Jh_JPEG/%C7%C1%B7%CE%C1%EE.jpg?type=w800",
@@ -223,8 +211,7 @@
         "en": "City Girl",
         "effect": "power"
       }
-    ],
-    "cooldownSeconds": [[], [], [10, 9, 8, 7]]
+    ]
   },
   "magnus": {
     "face": "https://cafeptthumb-phinf.pstatic.net/20140421_110/chivalrykgt_1398066580451F8nc6_JPEG/%B8%C5%B1%D7%B3%CA%BD%BA.jpg?type=w800",
@@ -245,11 +232,6 @@
         "en": "Armored Division",
         "effect": "armor"
       }
-    ],
-    "cooldownSeconds": [
-      [18, 17, 16, 15],
-      [18, 17, 16, 15],
-      [17, 16, 15, 14]
     ]
   },
   "swift": {
@@ -276,11 +258,6 @@
         "en": "Bunny Girl",
         "effect": "rage"
       }
-    ],
-    "cooldownSeconds": [
-      [12, 11, 10, 9],
-      [13, 12, 11, 10],
-      [14, 13, 12, 11]
     ]
   },
   "rildin": {
@@ -297,8 +274,7 @@
         "en": "Wanderer",
         "effect": "armor"
       }
-    ],
-    "cooldownSeconds": [[7], [15, 14, 13, 12], [7, 6, 5, 4]]
+    ]
   },
   "jade": {
     "face": "https://cafeptthumb-phinf.pstatic.net/20140421_241/chivalrykgt_1398066624329CxHpg_JPEG/%C1%A6%C0%CC%B5%E5.jpg?type=w800",
@@ -314,11 +290,6 @@
         "en": "Master Wizard",
         "effect": "power"
       }
-    ],
-    "cooldownSeconds": [
-      [11, 10, 9, 8],
-      [11, 10, 9, 8],
-      [14, 13, 12, 11]
     ]
   },
   "theresa": {
@@ -340,11 +311,6 @@
         "en": "Guardian",
         "effect": "resist"
       }
-    ],
-    "cooldownSeconds": [
-      [12, 11, 10, 9],
-      [13, 12, 11, 10],
-      [10, 9, 8, 7]
     ]
   },
   "drizz": {
@@ -361,8 +327,7 @@
         "en": "Berserk",
         "effect": "attack"
       }
-    ],
-    "cooldownSeconds": [[15, 14, 13, 12], [8], [8, 7, 6, 5]]
+    ]
   },
   "vallet": {
     "face": "https://cafeptthumb-phinf.pstatic.net/20140516_297/chivalrykgt_14002041952411rGCP_JPEG/%B9%DF%B7%BF.jpg?type=w800",
@@ -378,11 +343,6 @@
         "en": "Lady",
         "effect": "attack"
       }
-    ],
-    "cooldownSeconds": [
-      [7, 6, 5, 4],
-      [9, 8, 7, 6],
-      [21, 19, 17, 15]
     ]
   },
   "freesia": {
@@ -399,7 +359,6 @@
         "en": "Honeybee",
         "effect": null
       }
-    ],
-    "cooldownSeconds": [[12, 11, 10, 9], [9], [18, 16, 14, 12]]
+    ]
   }
 }

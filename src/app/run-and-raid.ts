@@ -1,3 +1,4 @@
+import { actionLocked } from '../game/raid/raid-control.ts';
 import { RaidRound } from '../game/raid/raid-round.ts';
 import { raidSkill } from '../game/raid/heroes/hero-catalog.ts';
 import type { RaidEntry, RaidRoom, RoomError } from '../platform/photon/raid-room.ts';
@@ -127,7 +128,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   function evade() {
     if (state !== 'playing') return;
     const r = match.runners[slot]!;
-    if (r.respawn || r.leap || r.staggered || r.jumping) return;
+    if (r.respawn || r.leap || actionLocked(r) || r.jumping) return;
     aimPointer = null;
     aiming = null;
     hud.aimPad.close();
@@ -619,7 +620,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     }
     if (
       aiming !== null &&
-      (respawning || match.runners[slot]!.silenced || match.runners[slot]!.staggered)
+      (respawning || match.runners[slot]!.silenced || actionLocked(match.runners[slot]!))
     ) {
       aiming = null;
       course.showAim(null);

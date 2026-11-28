@@ -5,6 +5,23 @@ import { RAID_HZ } from '../raid-rules.ts';
 
 class Magnus implements HeroEvents {
   readonly view = { shieldMode: false };
+  private readonly inactiveCooldowns = [0, 0, 0];
+  changeMode(c: HeroCombat) {
+    for (const slot of [0, 1, 2] as const) {
+      const previous = c.self.cooldowns[slot]!;
+      c.self.cooldowns[slot] = this.inactiveCooldowns[slot]!;
+      this.inactiveCooldowns[slot] = previous;
+    }
+    this.view.shieldMode = !this.view.shieldMode;
+  }
+  onKnockout(c: HeroCombat) {
+    if (this.view.shieldMode) this.changeMode(c);
+    this.magnetUntil = this.rageUntil = 0;
+    this.openingStrike = false;
+  }
+  resistsControl(r: HeroCombat['self']) {
+    return this.view.shieldMode && r.dash?.skill === 0;
+  }
   magnetUntil = 0;
   rageUntil = 0;
   openingStrike = false;
@@ -14,6 +31,8 @@ class Magnus implements HeroEvents {
     return Math.round(hit.amount * (this.rageUntil > c.tick() ? 1.3 : 1)) + (opening ? 10 : 0);
   }
   onTimersAdvanced(c: HeroCombat) {
+    for (const slot of [0, 1, 2] as const)
+      if (this.inactiveCooldowns[slot]!) this.inactiveCooldowns[slot]!--;
     if (this.magnetUntil >= c.tick() && (this.magnetUntil - c.tick()) % RAID_HZ === 0) {
       for (const id of c.enemies(c.self, 4)) c.strike(id, { powerScale: 1 }, 1);
     }
@@ -38,7 +57,7 @@ export const magnus = defineHero(
           return;
         }
         for (const id of c.enemies(c.self, 4.5))
-          c.strike(id, { powerScale: 3, displacement: 'launch' }, cast.skill);
+          c.strike(id, { powerScale: 3, displacement: 'push' }, cast.skill);
         c.record(cast.skill, c.self, 'ground');
       },
     },
@@ -48,7 +67,7 @@ export const magnus = defineHero(
       apply(c, cast, state) {
         if (state.view.shieldMode) {
           for (const id of c.enemies(c.self, 4))
-            c.strike(id, { powerScale: 2, tauntTicks: 36 }, cast.skill);
+            c.strike(id, { powerScale: 2, tauntTicks: RAID_HZ }, cast.skill);
         } else {
           c.barrier(c.self.slot, 24, 5 * RAID_HZ);
           state.magnetUntil = c.tick() + 5 * RAID_HZ;
@@ -70,9 +89,9 @@ export const magnus = defineHero(
       kind: 'pulse',
       attack: noAttack,
       noRageCost: true,
-      cooldownTicks: 4 * RAID_HZ,
+      cooldownTicks: 5.5 * RAID_HZ,
       apply(c, cast, state) {
-        state.view.shieldMode = !state.view.shieldMode;
+        state.changeMode(c);
         state.openingStrike = !state.view.shieldMode;
         c.barrier(c.self.slot, 10, 2 * RAID_HZ);
         c.record(cast.skill, c.self);

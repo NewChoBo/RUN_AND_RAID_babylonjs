@@ -5,13 +5,11 @@ import { projectile, spin } from '../skills/skill-effects.ts';
 import type { HeroCombat, HeroEvents, Hit } from './hero-definition.ts';
 import type { AreaAttack } from '../skills/attack-rule.ts';
 import { casterCircle } from '../skills/attack-area.ts';
-import { stagger } from '../raid-control.ts';
-import { RAID_HZ } from '../raid-rules.ts';
 const fullMoon = {
   kind: 'area',
   on: 'dashEnd',
   area: casterCircle,
-  hit: { powerScale: 2, control: [stagger(12)] },
+  hit: { powerScale: 2 },
 } as const satisfies AreaAttack;
 const moonDance = {
   kind: 'area',
@@ -24,6 +22,9 @@ export const FULL_MOON_SPIN_TICKS = 16;
 class Kaiken implements HeroEvents {
   readonly view = { rootedTicks: 0, rootDuration: FULL_MOON_SPIN_TICKS };
   private lastMoonHit = 0;
+  resistsControl(runner: HeroCombat['self']) {
+    return runner.spinTicks > 0;
+  }
   onOutgoingHit(combat: HeroCombat, hit: Hit) {
     if (combat.self.respawn) return hit.amount;
     const bonus = Math.min(5, Math.floor((combat.tick() - this.lastMoonHit) / 60)) * 2;
@@ -42,8 +43,8 @@ class Kaiken implements HeroEvents {
   }
 }
 export const kaiken = defineHero(stats, () => new Kaiken(), [
-  { ...projectile(crescent, { powerScale: 2 }), cooldownTicks: 6 * RAID_HZ },
-  { ...projectile(risingMoon, { powerScale: 3 }), cooldownTicks: 7 * RAID_HZ },
+  projectile(crescent, { powerScale: 2 }),
+  projectile(risingMoon, { powerScale: 3 }),
   {
     kind: 'pulse',
     range: dashRange,
@@ -52,7 +53,7 @@ export const kaiken = defineHero(stats, () => new Kaiken(), [
     apply(combat) {
       if (combat.self.dash) {
         combat.finishDash();
-        return combat.self.cooldowns[2];
+        return;
       }
       const yaw = combat.facing();
       combat.dash(

@@ -46,7 +46,7 @@ export const alice = defineHero(stats, () => new Alice(), [
     allowAlly: 'includingSelf',
     allyEffect: 'heal',
     range: 15,
-    attack: { kind: 'direct', on: 'cast', hit: { powerScale: 2, control: [silence(30)] } },
+    attack: { kind: 'direct', on: 'cast', hit: { powerScale: 2, control: [silence(15)] } },
     apply(combat, cast) {
       if (typeof cast.target === 'number' && !combat.position(cast.target)) {
         combat.heal(cast.target, Math.round(stats.power * 2.5));
@@ -60,7 +60,7 @@ export const alice = defineHero(stats, () => new Alice(), [
     allowAlly: 'includingSelf',
     allyEffect: 'barrier',
     range: 15,
-    attack: { kind: 'direct', on: 'cast', hit: { powerScale: 2.5, control: [slow(60)] } },
+    attack: { kind: 'direct', on: 'cast', hit: { powerScale: 2.5, control: [slow(60, 20)] } },
     apply(combat, cast) {
       if (typeof cast.target === 'number' && !combat.position(cast.target)) {
         combat.barrier(cast.target, 2 * stats.power, 75);

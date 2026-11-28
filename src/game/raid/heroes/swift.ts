@@ -17,7 +17,7 @@ const lunge = {
 const execution = {
   kind: 'direct',
   on: 'cast',
-  hit: { powerScale: 7, control: [slow(30)] },
+  hit: { powerScale: 7, control: [slow(30, 50)] },
 } as const satisfies DirectAttack;
 class Swift implements HeroEvents {
   readonly view = { quarry: null as RaidTarget | null, guardUntil: 0 };
@@ -56,7 +56,7 @@ class Swift implements HeroEvents {
   }
 }
 export const swift = defineHero(stats, () => new Swift(), [
-  projectile(crossSlash, { powerScale: 2, control: [slow(30)] }),
+  projectile(crossSlash, { powerScale: 2, control: [slow(30, 20)] }),
   {
     kind: 'target',
     range: 12,

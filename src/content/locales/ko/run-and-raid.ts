@@ -27,11 +27,11 @@ export const korean = {
   iceCrystals: '얼음 결정 {count}',
   flare: '플레어',
   flareInfo:
-    '화염구과 화염폭발로 적을 밀어내고, 불씨 장판과 폭발하는 화염구로 여러 적을 공격합니다.',
+    '화염구로 적을 감속시키고 화염폭발로 밀어냅니다. 불기둥은 지정한 지역의 적을 1.5초 동안 기절시킵니다.',
   flarePulse: '화염구',
   flareBolt: '화염폭발',
   flareField: '잔불 지대',
-  flareFury: '작열하는 태양',
+  flareFury: '불기둥',
   hof: '호프',
   hofInfo:
     '냉각 포탑으로 길목을 막고 로켓으로 돌진합니다. 대형 폭탄과 세 갈래 로켓은 여러 적을 노릴 수 있습니다.',
@@ -41,11 +41,11 @@ export const korean = {
   hofFury: '로켓 일제 사격',
   froze: '프로즈',
   frozeInfo:
-    '얼음창으로 동상을 걸고 얼음점멸로 다시 맞히세요. 얼음 방패는 적의 스킬 한 번을 막습니다.',
+    '얼음창으로 동상을 걸고 얼음점멸로 다시 맞히세요. 얼음 방패는 적의 스킬 한 번을 막고, 얼어붙은 대지는 주변 적을 기절시킨 뒤 감속시킵니다.',
   frozePulse: '얼음창',
   frozeBolt: '얼음점멸',
   frozeField: '얼음 방패',
-  frozeFury: '백야의 눈보라',
+  frozeFury: '얼어붙은 대지',
   magnus: '매그너스',
   magnusInfo:
     '전투 모드에서는 충격파·자기장·격노를 사용합니다. 방패 모드로 바꾸면 돌진·도발·자기 회복을 사용할 수 있습니다.',
@@ -76,7 +76,7 @@ export const korean = {
   freesiaFury: '여왕벌의 침',
   drizz: '드리즈',
   drizzInfo:
-    '악마의 팔로 적을 끌어당겨 침묵시킵니다. 올려치기로 적을 띄우면 추가 피해를 주며, 점프 중에는 지면강타를 쓸 수 있습니다.',
+    '악마의 팔로 적을 끌어당깁니다. 올려치기로 적을 띄우면 추가 피해를 주며, 점프 중에는 지면강타를 쓸 수 있습니다.',
   drizzPulse: '어둠손아귀',
   drizzBolt: '올려치기',
   drizzField: '지면강타',
@@ -243,7 +243,9 @@ export const korean = {
   counterMortar: '추적 포격 · 원 밖으로 이동',
   counterWave: '충격파 · 파동이 닿을 때 점프',
   stagger: '경직',
-  slow: '감속',
+  stun: '기절',
+  knockedUp: '공중에 뜸',
+  slow: '감속 {percent}%',
   silence: '침묵',
   kda: '처치 / 사망 / 도움',
   runner: '주자',

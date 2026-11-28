@@ -5,7 +5,8 @@ import type { AttackArea, CircleArea } from './attack-area.ts';
 export interface HitRule {
   readonly powerScale: number;
   readonly control?: readonly CrowdControlEffect[];
-  readonly displacement?: 'pull' | 'launch' | 'push';
+  readonly displacement?: 'pull' | 'push';
+  readonly launchTicks?: number;
   readonly tauntTicks?: number;
   readonly piercesShield?: true;
 }

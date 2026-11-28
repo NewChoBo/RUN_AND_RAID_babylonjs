@@ -1,6 +1,6 @@
 import type { HeroCombat, HeroEvents, Hit } from '../heroes/hero-definition.ts';
 import { RAID_HZ, RAID_RUN_LIMIT_X, raidRespawnTicks, WAGON, WAGON_HP } from '../raid-rules.ts';
-import { limitRaidPlacement, RAID_JUMP_TICKS, raidRunnerHeight } from '../runner-motion.ts';
+import { limitRaidPlacement, raidRunnerHeight } from '../runner-motion.ts';
 import type { RaidHealthChange, RaidRunner, RaidTarget, Runner } from '../raid-view.ts';
 import { applyCrowdControl } from '../raid-control.ts';
 export function raidBossBonusPercent(runners: readonly RaidRunner[], attackingTeam: number) {
@@ -116,9 +116,9 @@ export class RaidHitResolution {
           if (hit.rule.control) applyCrowdControl(victim, hit.rule.control);
           if (hit.rule.tauntTicks)
             victim.taunt = { from: attacker.slot, until: tick + hit.rule.tauntTicks };
-          if (hit.rule.displacement) {
+          if (hit.rule.launchTicks || hit.rule.displacement) {
             victim.dash = victim.leap = null;
-            if (hit.rule.displacement === 'launch') victim.jumping = RAID_JUMP_TICKS;
+            if (hit.rule.launchTicks) victim.jumping = victim.launchDuration = hit.rule.launchTicks;
             else {
               const dx = victim.x - attacker.x;
               const dz = victim.z - attacker.z;
@@ -146,9 +146,10 @@ export class RaidHitResolution {
         contributors.clear();
         victim.deaths++;
         victim.silenced = 0;
-        victim.slowed = 0;
+        victim.slows.length = 0;
+        victim.stunned = victim.launchDuration = 0;
         victim.staggered = victim.staggerGuard = 0;
-        victim.hasteTicks = victim.lightningSlow = 0;
+        victim.hasteTicks = 0;
         victim.respawn = raidRespawnTicks(victim.deaths);
         victim.jumping = 0;
         victim.barrier = null;

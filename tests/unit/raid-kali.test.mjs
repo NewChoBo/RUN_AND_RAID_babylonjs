@@ -34,7 +34,7 @@ test('Poison arms the next landed basic and ticks three times after contact', ()
     [r] = m.runners;
   Object.assign(r, { x: 0, z: 8 });
   assert.ok(m.cast(0, 1));
-  assert.equal(r.cooldowns[1], 300);
+  assert.equal(r.cooldowns[1], 330);
   advance(m, 12);
   assert.equal(r.heroView.poisonArmed, true);
   assert.equal(m.damage[0], 0);

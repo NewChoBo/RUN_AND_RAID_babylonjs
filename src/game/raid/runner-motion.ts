@@ -1,3 +1,4 @@
+import { activeSlow } from './raid-control.ts';
 import type { RaidRunner, RaidPoint } from './raid-view.ts';
 import { RAID_HZ, RAID_LEAP_TICKS, RAID_RUN_LIMIT_X, WAGON } from './raid-rules.ts';
 /** Distance in metres travelled by the wagon over this many match ticks (including sub-ticks). */
@@ -64,13 +65,14 @@ function runAxis(position: number, delta: number, low: number, high: number, rec
 export function raidRunnerHeight(r: RaidRunner, subtick = 0) {
   return r.leap
     ? raidLeapHeight(Math.min(1, (r.leap.elapsed + subtick) / RAID_LEAP_TICKS))
-    : jumpHeight(Math.max(0, r.jumping - subtick));
+    : jumpHeight(Math.max(0, r.jumping - subtick), r.launchDuration || RAID_JUMP_TICKS);
 }
 /** Predict up to one tick from the current ground position for both the match and the camera. */
 export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint {
+  if (r.stunned || r.launchDuration || (r.staggered && !r.leap)) return { x: r.x, z: r.z };
   if (r.heroView.rootedTicks)
     return { x: r.x, z: Math.max(RAID_REAR_Z, r.z - raidRoadTravel(ticks)) };
-  const dash = r.staggered ? null : r.dash;
+  const dash = r.dash;
   const motion = dash ?? r.leap;
   if (motion) {
     // Skill endpoints are road positions sampled in the wagon frame when the cast starts.
@@ -85,13 +87,13 @@ export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint
     );
   }
   // Keep steering intent through a stagger so held controls resume on recovery.
-  const speed = (r.slowed ? 0.55 : r.lightningSlow ? 0.8 : 1) * (r.hasteTicks ? 1.2 : 1);
-  const seconds = r.respawn || r.staggered ? 0 : (ticks / RAID_HZ) * speed;
+  const speed = (1 - (activeSlow(r)?.percent ?? 0) / 100) * (r.hasteTicks ? 1.2 : 1);
+  const seconds = r.respawn ? 0 : (ticks / RAID_HZ) * speed;
   return {
     x: runAxis(r.x, r.side * 4.8 * seconds, -RAID_RUN_LIMIT_X, RAID_RUN_LIMIT_X, 4.8 * seconds),
     z: runAxis(
       r.z,
-      r.respawn || r.staggered ? 0 : forwardTravel(r, ticks) * speed,
+      r.respawn ? 0 : forwardTravel(r, ticks) * speed,
       RAID_REAR_Z,
       RAID_FRONT_Z,
       -BRAKE_SPEED * seconds,
@@ -99,7 +101,7 @@ export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint
   };
 }
 export const RAID_JUMP_TICKS = 22;
-export function jumpHeight(ticks: number) {
-  const t = clamp(ticks / RAID_JUMP_TICKS, 0, 1);
+export function jumpHeight(ticks: number, duration = RAID_JUMP_TICKS) {
+  const t = clamp(ticks / duration, 0, 1);
   return 4 * 3.2 * t * (1 - t);
 }

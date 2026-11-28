@@ -51,11 +51,10 @@ class Kali implements HeroEvents {
   }
 }
 export const kali = defineHero(stats, () => new Kali(), [
-  { ...sweep({ powerScale: 4 }), cooldownTicks: shadow.strikeCooldown },
+  sweep({ powerScale: 4 }),
   {
     kind: 'pulse',
     attack: { kind: 'none' },
-    cooldownTicks: shadow.poisonCooldown,
     apply(combat, cast, state) {
       state.view.poisonArmed = true;
       combat.record(cast.skill, combat.self);
@@ -65,7 +64,6 @@ export const kali = defineHero(stats, () => new Kali(), [
     kind: 'target',
     range: shadow.stepRange,
     allowAlly: true,
-    cooldownTicks: shadow.stepCooldown,
     attack: { kind: 'direct', on: 'cast', hit: { powerScale: 2 } },
     apply(combat, cast) {
       combat.record(cast.skill, cast.point);

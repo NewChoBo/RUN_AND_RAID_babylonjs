@@ -5,12 +5,12 @@ import type { HeroEvents } from './hero-definition.ts';
 import { RAID_SKILL_RANGE } from '../raid-rules.ts';
 import { casterCircle } from '../skills/attack-area.ts';
 import type { AreaAttack } from '../skills/attack-rule.ts';
-import { slow, stagger } from '../raid-control.ts';
+import { slow, stun } from '../raid-control.ts';
 const landing = {
   kind: 'area',
   on: 'land',
   area: { kind: 'circle', radius: leapImpactRadius },
-  hit: { powerScale: 2, displacement: 'launch' },
+  hit: { powerScale: 2, launchTicks: 30 },
 } as const satisfies AreaAttack;
 const whirlwind = {
   kind: 'area',
@@ -24,7 +24,7 @@ const hammerEvents: HeroEvents = {
   },
 };
 export const hammer = defineHero(stats, () => hammerEvents, [
-  sweep({ powerScale: 3, control: [slow(36)] }),
+  sweep({ powerScale: 3, control: [slow(30, 10)] }),
   {
     kind: 'leap',
     range: RAID_SKILL_RANGE.leap,
@@ -40,7 +40,7 @@ export const hammer = defineHero(stats, () => hammerEvents, [
   },
   spin(60, whirlwind),
   bolt(
-    { powerScale: 7, control: [stagger(15)] },
-    { splash: { area: casterCircle, hit: { powerScale: 2, control: [stagger(15)] } } },
+    { powerScale: 7, control: [stun(45)] },
+    { range: 10, splash: { area: { kind: 'circle', radius: 6 }, hit: { powerScale: 3.5 } } },
   ),
 ]);
