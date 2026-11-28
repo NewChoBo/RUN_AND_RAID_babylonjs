@@ -41,6 +41,7 @@ import {
 import {
   RAID_JUMP_TICKS,
   raidBrakeAfter,
+  limitAerialVolley,
   limitRaidDash,
   limitRaidPlacement,
   raidRunnerHeight,
@@ -491,10 +492,24 @@ export class RaidMatch implements RaidView {
     }
   }
   #startDash(r: Runner, skill: Skill, desired: RaidPoint, ticks: number, target?: RaidTarget) {
-    const to = limitRaidDash(r, desired, ticks);
+    const rule = raidSkill(r.hero, skill);
+    const aerialVolley = 'travelTicks' in rule && rule.aerialVolley;
+    const to = aerialVolley ? limitAerialVolley(r, desired) : limitRaidDash(r, desired, ticks);
+    const takeoffHeight = aerialVolley ? raidRunnerHeight(r) : undefined;
+    if (aerialVolley) r.jumping = 0;
     this.#record(r, skill, to, 'dash');
     const struck = raidSkill(r.hero, skill).attack.kind === 'dashPath' ? [] : undefined;
-    r.dash = { skill, from: { x: r.x, z: r.z }, to, elapsed: 0, ticks, target, struck };
+    r.dash = {
+      skill,
+      from: { x: r.x, z: r.z },
+      to,
+      elapsed: 0,
+      ticks,
+      target,
+      struck,
+      aerialVolley,
+      takeoffHeight,
+    };
   }
   cast(slot: number, skill: Skill, aim?: RaidPoint | RaidTarget | RaidDirection) {
     const r = this.#active(slot);
@@ -649,6 +664,9 @@ export class RaidMatch implements RaidView {
         if (--spin.remaining % spin.interval === 0) this.#impact(r, spin.skill, 'spinPulse');
         if (!spin.remaining) r.spin = null;
       }
+    }
+    for (const r of this.#runners) {
+      if (!r.respawn) this.#heroes[r.slot]!.events.onBeforeHits?.(this.#contexts[r.slot]!);
     }
     this.#boss.step(this.#tick, this.runners, raidRunnerHeight, this.#bossHit);
     if (previous)

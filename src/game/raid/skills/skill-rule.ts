@@ -35,10 +35,13 @@ export type SkillInfo =
       readonly allowAlly?: true | 'includingSelf';
       readonly allyEffect?: 'heal' | 'barrier';
     })
-  | RangedSkill<'field', FieldAttack>
+  | RangedSkill<'field', FieldAttack | NonAttacking>
   | RangedSkill<'leap', AreaAttack<'land'>>
   | SkillDefinition<'direction', ProjectileAttack>
-  | (RangedSkill<'direction', NonAttacking | DashPathAttack> & { readonly travelTicks: number });
+  | (RangedSkill<'direction', NonAttacking | DashPathAttack> & {
+      readonly travelTicks: number;
+      readonly aerialVolley?: true;
+    });
 
 export interface ResolvedCast {
   skill: Skill;

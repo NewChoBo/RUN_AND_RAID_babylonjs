@@ -7,7 +7,6 @@ const sources: Partial<Record<RaidHero, readonly string[]>> = icons;
 // The restoration moved some abilities. Numbers are the cafe's filenames (0 is passive).
 const adaptedSlots: Partial<Record<RaidHero, readonly [number, number, number, number]>> = {
   abyss: [3, 1, 2, 4],
-  hof: [2, 0, 4, 1],
   vallet: [1, 3, 2, 4],
 };
 

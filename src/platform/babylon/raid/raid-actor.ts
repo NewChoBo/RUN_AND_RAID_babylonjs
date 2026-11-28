@@ -284,7 +284,8 @@ export function createRaidActor(
     const vitals = healthMeter(r, tick);
     ward.setEnabled(vitals.reducedDamage || vitals.barrier > 0 || vitals.guarding);
     const { x, z } = position;
-    root.position.set(x, raidRunnerHeight(r, subtick), z);
+    const elevation = raidRunnerHeight(r, subtick);
+    root.position.set(x, elevation, z);
     ring.position.set(x, 0.055, z);
     shadow.position.set(x, 0.032, z);
     if (paintHp(vitals, r.team === localTeam)) texture.update();
@@ -315,6 +316,7 @@ export function createRaidActor(
     const pose = playback.update(actions, r.slot, now, (cue) => {
       let clip: string =
         cue.skill === 'basic' ? modeClip('shieldBasic', 'basic') : clips[cue.skill];
+      if (hero === 'hof' && cue.skill !== 'basic') clip = 'pulse';
       if (cue.comboStep && cue.comboStep > 1 && motion?.has('slash' + cue.comboStep))
         clip = 'slash' + cue.comboStep;
       if (cue.phase === 'spin' && hero === 'kaiken' && motion?.has('fullMoonEnd'))
@@ -347,7 +349,7 @@ export function createRaidActor(
         (r.spin.duration - r.spin.remaining + subtick) / RAID_HZ,
         dt,
       );
-    } else if (pose) {
+    } else if (pose && !(hero === 'longshot' && pose.cue.skill === 2)) {
       motion?.once(pose.clip, ((now - pose.start) / RAID_HZ) * (pose.cue.basicSpeed ?? 1), dt);
     } else if (r.jumping)
       motion?.once(

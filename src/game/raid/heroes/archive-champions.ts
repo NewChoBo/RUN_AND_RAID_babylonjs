@@ -1,8 +1,9 @@
-import { RAID_HZ } from '../raid-rules.ts';
+import { raidRoadTravel } from '../runner-motion.ts';
+import { distance, RAID_HZ } from '../raid-rules.ts';
 import { chartStats } from '../../../content/raid/base-stats.ts';
 import { defineHero, type HeroCombat, type HeroEvents, type Hit } from './hero-definition.ts';
 import { bolt, field, sweep } from '../skills/skill-effects.ts';
-import { silence, slow, stagger, stun } from '../raid-control.ts';
+import { silence, slow, stun } from '../raid-control.ts';
 import { noAttack } from '../skills/attack-rule.ts';
 import { aid, barrage, rush, shot } from './archive-skills.ts';
 
@@ -47,15 +48,21 @@ export const froze = defineHero(
       available: (r) => (r.heroView.iceCrystals ?? 0) >= 1,
     },
     {
-      kind: 'pulse',
+      kind: 'target',
+      range: 13,
+      allowAlly: true,
       attack: noAttack,
       cooldownTicks: 25,
       available: (r) => (r.heroView.iceCrystals ?? 0) >= 2,
       apply(c, cast, state) {
-        for (const id of c.enemies(c.self, 6))
-          if ((state.chilledUntil.get(id) ?? 0) > c.tick())
-            c.strike(id, { powerScale: 4, control: [slow(30, 15)] }, cast.skill);
-        c.record(cast.skill, c.self, 'ground');
+        c.record(cast.skill, cast.point);
+        const facing = c.facing(cast.target);
+        c.blink({
+          x: cast.point.x - 0.85 * Math.sin(facing),
+          z: cast.point.z - 0.85 * Math.cos(facing),
+        });
+        if ((state.chilledUntil.get(cast.target) ?? 0) > c.tick())
+          c.strike(cast.target, { powerScale: 4, control: [slow(RAID_HZ, 15)] }, cast.skill, true);
       },
     },
     {
@@ -76,17 +83,34 @@ export const theresa = defineHero(
   () => ({}),
   [
     aid(28, 0, 7),
-    bolt({ powerScale: 3, control: [stun(Math.ceil(0.75 * RAID_HZ))] }, { range: 8 }),
+    {
+      kind: 'target',
+      range: 5,
+      attack: {
+        kind: 'direct',
+        on: 'dashEnd',
+        contactRange: 2.2,
+        hit: { powerScale: 3, control: [stun(Math.ceil(0.75 * RAID_HZ))] },
+      },
+      apply(c, cast) {
+        const gap = distance(c.self, cast.point);
+        const ticks = Math.max(1, Math.ceil((14 * gap) / 5));
+        const travel = Math.max(0, gap - 0.65) / Math.max(gap, 0.001);
+        c.dash(
+          1,
+          {
+            x: c.self.x + (cast.point.x - c.self.x) * travel,
+            z: c.self.z + (cast.point.z - c.self.z) * travel + raidRoadTravel(ticks),
+          },
+          ticks,
+          cast.target,
+        );
+      },
+    },
     sweep({ powerScale: 3, launchTicks: RAID_HZ }),
     barrage({ powerScale: 3 }, { powerScale: 2 }, 2, 15),
   ],
 );
-export const hof = defineHero({ ...chartStats.hof, power: 10, reach: 8, radius: 4.2 }, () => ({}), [
-  barrage({ powerScale: 1 }, { powerScale: 1, control: [slow(30, 15)] }, 4, 8),
-  rush({ powerScale: 3, displacement: 'push' }, 9),
-  field({ powerScale: 4, control: [stagger(12)] }),
-  shot({ powerScale: 3 }, [-0.15, 0, 0.15], true, 19),
-]);
 export const vallet = defineHero(
   { ...chartStats.vallet, power: 10, reach: 10, radius: 3.8 },
   () => ({}),

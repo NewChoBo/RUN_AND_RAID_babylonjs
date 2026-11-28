@@ -13,7 +13,21 @@ export interface HeroStats {
   readonly cooldown: number;
   readonly radius: number;
 }
+export interface AirArrow extends RaidPoint {
+  tick: number;
+  height: number;
+}
+export type TurretSlot = 0 | 1 | 2;
+export interface HofTurret extends RaidPoint {
+  slot: TurretSlot;
+  id: number;
+  placed: number;
+  shot?: RaidPoint & { tick: number };
+}
 export interface HeroView {
+  readonly airArrows?: readonly AirArrow[];
+  readonly turrets?: readonly HofTurret[];
+  readonly blasts?: readonly (RaidPoint & { tick: number })[];
   readonly burns?: readonly { readonly target: RaidTarget; readonly next: number }[];
   readonly shieldMode?: boolean;
   readonly iceCrystals?: number;
@@ -87,6 +101,8 @@ export interface HeroEvents {
   /** Handle life-state reset in place when private cooldowns must survive a knockout. */
   onKnockout?(combat: HeroCombat): void;
   onRespawn?(combat: HeroCombat): void;
+  /** All runners have moved. Hits queued here resolve in this same simulation tick. */
+  onBeforeHits?(combat: HeroCombat): void;
   onTickEnd?(combat: HeroCombat): void;
 }
 type Slots<T> = readonly [T, T, T, T];

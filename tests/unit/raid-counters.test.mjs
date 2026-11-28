@@ -82,8 +82,11 @@ test('stagger holds steering and basic attacks, denies jumps and casts, then res
   assert.equal(victim.basic, 0);
   assert.equal(victim.staggered, 0);
   assert.ok(match.jump(victim.slot));
+  theresa.x = victim.x;
+  theresa.z = victim.z - 2;
   assert.ok(match.cast(theresa.slot, 1, victim.slot));
-  match.step();
+  assert.equal(victim.stunned, 0);
+  while (theresa.dash) match.step();
   assert.equal(victim.staggered, 0);
   assert.ok(victim.hp < 98 && victim.x > x && victim.basic > 0);
   assert.equal(victim.stunned, 23);
@@ -195,10 +198,10 @@ test('online replay agrees on a stun, expiry tick and the casting slot cooldown'
   const host = new RaidRound(seats),
     peer = new RaidRound(seats);
   assert.ok(host.enqueue(1, { seq: 1, action: 'cast', payload: { skill: 1, target: 2 } }));
-  for (let tick = 1; tick <= 25; tick++) {
+  for (let tick = 1; tick <= 33; tick++) {
     assert.ok(peer.replay(JSON.parse(JSON.stringify(host.advance(1)))));
     assert.deepEqual(peer.match.runners, host.match.runners);
-    assert.equal(peer.match.runners[2].stunned, Math.max(0, 24 - tick));
+    assert.equal(peer.match.runners[2].stunned, tick < 9 ? 0 : Math.max(0, 32 - tick));
     assert.equal(peer.match.runners[0].cooldowns[1], 390 - tick);
   }
 });

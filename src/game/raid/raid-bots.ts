@@ -137,12 +137,16 @@ export function driveRaidBots(
       r.hero === 'jade' && view.canShield(r.slot, partner.slot) && partnerGap + 2 < distance;
     const repositionOrb =
       r.hero === 'jade' && orbGap > 6 && (distance <= 6 || (passOrb && partnerGap <= 6));
-    const usePulse = opener === 'ward' ? needsHealing || repositionOrb : distance <= pulseRange;
+    const usePulse = r.heroView.turrets
+      ? distance <= 26
+      : opener === 'ward'
+        ? needsHealing || repositionOrb
+        : distance <= pulseRange;
     const needsEvasion =
       !!nearest &&
       nearestDistance < 4 &&
       (r.hp < HEROES[r.hero].hp * 0.55 || (!!counter && inRaidCounter(counter, r)));
-    const canRoll = r.hero !== 'longshot' || needsEvasion;
+    const canFlyBy = r.hero !== 'longshot' || needsEvasion || (!!target && distance <= 7);
     const canDischarge = r.hero !== 'jade' || orbGap <= 6;
     const inSlamRange = leap.kind !== 'leap' || distance <= HEROES[r.hero].radius;
     const wounded = [r, partner]
@@ -170,7 +174,20 @@ export function driveRaidBots(
     const windup = ultimate.kind === 'projectile' && ultimate.windupTicks;
     const unsafeCharge =
       windup && (needsEvasion || (counter && counter.ticks <= windup && inRaidCounter(counter, r)));
-    if (!unsafeCharge && canUseRaidSkill(r, 3) && (r.hero !== 'jade' || orbGap <= 8)) skill = 3;
+    const turretInRange =
+      !r.heroView.turrets ||
+      r.heroView.turrets.some((t) =>
+        [WAGON, ...view.runners.filter((enemy) => enemy.team !== r.team && !enemy.respawn)].some(
+          (enemy) => Math.hypot(enemy.x - t.x, enemy.z - t.z) <= 6,
+        ),
+      );
+    if (
+      turretInRange &&
+      !unsafeCharge &&
+      canUseRaidSkill(r, 3) &&
+      (r.hero !== 'jade' || orbGap <= 8)
+    )
+      skill = 3;
     else if (canLeap && canUseRaidSkill(r, 1) && distance > HEROES[r.hero].radius) skill = 1;
     else if (r.heroView.iceCrystals !== undefined && nearestDistance <= 8 && canUseRaidSkill(r, 2))
       skill = 2;
@@ -181,10 +198,12 @@ export function driveRaidBots(
       canUseRaidSkill(r, 1)
     )
       skill = 1;
+    else if (r.hero === 'longshot' && canUseRaidSkill(r, 2) && distance <= 3 && !needsEvasion)
+      skill = 2;
     else if (usePulse && canUseRaidSkill(r, 0)) skill = 0;
     else if (canDischarge && (leap.kind !== 'leap' || canLeap) && canUseRaidSkill(r, 1)) skill = 1;
     else if (
-      canRoll &&
+      canFlyBy &&
       inSlamRange &&
       (canUseRaidSkill(r, 2) || (raidSkill(r.hero, 2).requiresJump && !r.cooldowns[2]))
     )
@@ -193,8 +212,20 @@ export function driveRaidBots(
     if (raidSkill(r.hero, skill).requiresJump && !r.jumping) send(r.slot, 'jump');
     const kind = raidAimKind(r.hero, skill);
     if (kind === 'leap') send(r.slot, 'cast', { skill, ...leapAim });
-    else if (kind === 'field') send(r.slot, 'cast', { skill, x: point.x, z: point.z });
-    else if (kind === 'direction' && r.hero === 'longshot' && skill === 2 && nearest)
+    else if (kind === 'field') {
+      const factor = r.heroView.turrets && distance > 5.99 ? 5.99 / distance : 1;
+      send(r.slot, 'cast', {
+        skill,
+        x: r.x + (point.x - r.x) * factor,
+        z: r.z + (point.z - r.z) * factor,
+      });
+    } else if (
+      kind === 'direction' &&
+      r.hero === 'longshot' &&
+      skill === 2 &&
+      needsEvasion &&
+      nearest
+    )
       send(r.slot, 'cast', {
         skill,
         dx: r.x - nearest.x || (r.team ? 1 : -1),

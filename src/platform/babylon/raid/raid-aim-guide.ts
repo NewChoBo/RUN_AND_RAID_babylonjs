@@ -75,7 +75,8 @@ export function createRaidAimGuide(scene: Scene) {
     drawFlight(aim);
     boundary.setEnabled(kind !== 'pulse' && aim.flight?.guide !== 'sector');
     if (boundary.isEnabled()) {
-      const center = aim.dash ? raidGroundPointAfter(origin, aim.dash.ticks) : origin;
+      const center =
+        aim.dash && !aim.dash.aerialVolley ? raidGroundPointAfter(origin, aim.dash.ticks) : origin;
       const front =
         (kind === 'leap' || aim.dash) && range > 0
           ? Math.min(1, (RAID_FRONT_Z - center.z) / range)

@@ -2,6 +2,8 @@ import { actionLocked } from '../../../game/raid/raid-control.ts';
 import { heroKit, KIT_IDS } from '../../../game/raid/heroes/hero-id.ts';
 import { appearance } from './hero-appearance.ts';
 import { raidProjectileProfile, raidSkill } from '../../../game/raid/heroes/hero-catalog.ts';
+import { createHofTurrets } from './raid-hof-turrets.ts';
+import { createAirArrows } from './raid-air-arrows.ts';
 import { createRaidArrowRain } from './raid-arrow-rain.ts';
 import { createIgnitionFx, createFlame, createFlameMaterial } from './raid-ignition.ts';
 import { createRaidArrow } from './raid-arrow.ts';
@@ -38,6 +40,8 @@ const tau = Math.PI * 2;
 
 /** Effects sample match ticks, so pausing, catching up and starting a rematch have no independent timers. */
 export function createRaidEffects(scene: Scene) {
+  const drawTurrets = createHofTurrets(scene);
+  const drawAirArrows = createAirArrows(scene);
   const fire = createFlameMaterial(scene);
   const drawIgnition = createIgnitionFx(scene, fire);
   const materials = new Map<RaidHero, { sigil: StandardMaterial; light: StandardMaterial }>();
@@ -78,7 +82,6 @@ export function createRaidEffects(scene: Scene) {
       ),
     );
     let sector: LinesMesh | undefined;
-    let turret: Mesh | undefined;
     let pillars: Mesh[] | undefined;
     let sectorAngle: number | undefined;
     let rain: ReturnType<typeof createRaidArrowRain> | undefined;
@@ -88,7 +91,6 @@ export function createRaidEffects(scene: Scene) {
     function hide() {
       for (const part of parts) part.setEnabled(false);
       sector?.setEnabled(false);
-      turret?.setEnabled(false);
       for (const pillar of pillars ?? []) pillar.setEnabled(false);
       rain?.hide();
       blades?.hide();
@@ -136,27 +138,6 @@ export function createRaidEffects(scene: Scene) {
           : cue.to;
       const t = age / lifetime(cue);
       const { sigil, light } = materials.get(heroKit(hero))!;
-      if (heroKit(hero) === 'hof' && skill === 0) {
-        if (!turret) {
-          turret = MeshBuilder.CreateCylinder(
-            'Hof frost turret',
-            { height: 0.6, diameterTop: 0.52, diameterBottom: 0.82, tessellation: 8 },
-            scene,
-          );
-          const barrel = MeshBuilder.CreateBox(
-            'Frost turret barrel',
-            { width: 0.19, height: 0.2, depth: 0.74 },
-            scene,
-          );
-          barrel.parent = turret;
-          barrel.position.set(0, 0.26, 0.3);
-          barrel.isPickable = turret.isPickable = false;
-          barrel.material = turret.material = light;
-        }
-        turret.setEnabled(age <= 32);
-        turret.position.set(to.x, 0.32, to.z);
-        turret.rotation.y = Math.sin(age * 0.14) * 0.55;
-      }
       const area = kind === 'field' || kind === 'leap' || kind === 'pulse';
       const healing = kind === 'ward';
       const impactTime = area || healing || art.particles === 'heavy' ? 0 : 0.48;
@@ -268,7 +249,9 @@ export function createRaidEffects(scene: Scene) {
   let arrowSource: Mesh | undefined;
   const arrows: Mesh[] = [];
   let match: RaidView | undefined;
-  return (view: RaidView, subtick: number) => {
+  return (view: RaidView, subtick: number, outfits: readonly (string | undefined)[] = []) => {
+    drawTurrets(view, subtick, outfits);
+    drawAirArrows(view, subtick);
     drawIgnition(view, subtick);
     const now = view.tick + subtick;
     for (let i = 0; i < Math.max(arrows.length, bolts.length, view.projectiles.length); i++) {
@@ -326,6 +309,8 @@ export function createRaidEffects(scene: Scene) {
     const visible = view.actions.filter(
       (cue) =>
         now - cue.tick < lifetime(cue) &&
+        !(heroKit(cue.hero) === 'hof' && cue.skill !== 'basic') &&
+        !(cue.hero === 'longshot' && cue.skill === 2) &&
         !(
           cue.skill !== 'basic' &&
           appearance[heroKit(cue.hero)].spinClip ===

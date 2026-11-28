@@ -54,7 +54,6 @@ type BasicSlot = 0 | 1 | 2;
 type SourceSlot = BasicSlot | null;
 const adaptedSlots: Partial<Record<OriginalHero, readonly [SourceSlot, SourceSlot, SourceSlot]>> = {
   abyss: [null, 0, 1],
-  hof: [1, null, null],
   vallet: [null, 2, null],
   freesia: [null, null, null],
 };

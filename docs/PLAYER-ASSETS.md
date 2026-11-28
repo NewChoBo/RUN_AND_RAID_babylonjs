@@ -130,3 +130,11 @@ uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/verify_p
 ```
 
 정점 대조에는 원본 장면을 읽어 만든 `.asset-work/max-motion/`이 필요하다. 일괄 열기에서 실패한 장면은 해당 폴더의 `*.error`에 원본 경로가 남는다. 해당 경로를 `RUN_RAID_REFERENCE_FILE`에 넣고 같은 Max Batch 명령에 `-sceneFile <원본 절대경로>`를 추가해 새 프로세스에서 복구할 수 있다. 필터를 사용한 뒤에는 환경 변수를 해제한다.
+
+### 호프 포탑 9종
+
+변환된 원본 GLB가 `public/player-assets/models/hof/`에 있으면 저장소 루트에서 아래 명령으로 배포용 포탑을 다시 만든다. 각 파일에는 해당 스킨의 몸체·포신·텍스처와 설치·사격·주행 클립이 들어 있다. 호프 본체와 포탑은 각자의 리그로 재생한다. [이동·사격 판정과 원본 대조](COMBAT-AUDIT.md) · [Google Drive 경기용 GLB 묶음](https://drive.google.com/file/d/1yGBKI1J0qzTk3JqTssk3Kaylpfj0eeRD/view)
+
+```powershell
+uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/assemble_turrets.py
+```

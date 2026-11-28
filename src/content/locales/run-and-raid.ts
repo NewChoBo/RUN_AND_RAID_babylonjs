@@ -37,14 +37,14 @@ export const raidText = defineMessages(
     flareFury: 'Pillar of Fire',
     hof: 'Hof',
     hofInfo:
-      'Place a frost turret, charge on a rocket, then use a heavy bomb or a three-rocket salvo.',
-    hofPulse: 'Frost Turret',
-    hofBolt: 'Human Missile',
-    hofField: 'Mega Bomb',
-    hofFury: 'Rocket Salvo',
+      'Deploy gun, frost and electric turrets. Frost slows enemies and repeated shocks silence them. Remote Detonation explodes all your turrets.',
+    hofPulse: 'Gun Turret',
+    hofBolt: 'Frost Turret',
+    hofField: 'Electric Turret',
+    hofFury: 'Remote Detonation',
     froze: 'Froze',
     frozeInfo:
-      'Chill an enemy with Ice Lance and hit them again with Ice Flash. Ice Shield blocks one enemy skill. Frozen Ground stuns nearby enemies, then slows them.',
+      'Blink behind a target with Ice Flash. It deals damage if Ice Lance has chilled the target. Ice Shield blocks one enemy skill. Frozen Ground stuns nearby enemies, then slows them.',
     frozePulse: 'Ice Lance',
     frozeBolt: 'Ice Flash',
     frozeField: 'Ice Shield',
@@ -58,9 +58,9 @@ export const raidText = defineMessages(
     magnusFury: 'Shield Mode',
     theresa: 'Theresa',
     theresaInfo:
-      'Heal a nearby ally, stun a rival, then launch them. The ultimate repeatedly strikes a chosen patch of road.',
+      'Heal a nearby ally, charge to stun an enemy on contact, or launch nearby enemies. The ultimate repeatedly strikes a chosen patch of road.',
     theresaPulse: 'Comrade’s Prayer',
-    theresaBolt: 'Arresting Blow',
+    theresaBolt: 'Shield Charge',
     theresaField: 'Skybreaker',
     theresaFury: 'Guardian’s Judgment',
     vallet: 'Vallet',
@@ -262,7 +262,7 @@ export const raidText = defineMessages(
       'Crush slows nearby enemies. Leaping attack launches enemies at the landing point. Whirlwind deals damage as you move. Hammer of Judgment stuns on impact.',
     abyssInfo: 'Hex caster · Hush silences a rival. Dark vortex slows rivals inside it.',
     longshotInfo:
-      'Fire a spread of arrows, slow enemies with arrow rain and roll in the aimed direction to escape.',
+      'Fire a spread of arrows, slow enemies with arrow rain and fly in the aimed direction while firing five arrows below.',
     jadeInfo:
       'Shield an ally with the orb. Discharge and fork lightning from its bearer, or chain it through allies and enemies.',
     blue: 'Your team',

@@ -3,7 +3,12 @@ import { attackArea } from './attack-rule.ts';
 import { measureSkill } from './skill-range.ts';
 import { areaTargets } from './attack-area.ts';
 import { distance } from '../raid-rules.ts';
-import { limitRaidDash, limitRaidLeap, raidGroundPointAfter } from '../runner-motion.ts';
+import {
+  limitAerialVolley,
+  limitRaidDash,
+  limitRaidLeap,
+  raidGroundPointAfter,
+} from '../runner-motion.ts';
 import type { RaidAim, RaidPoint, RaidTarget, Skill } from '../raid-view.ts';
 import type { CombatRead } from '../heroes/hero-definition.ts';
 import type { ResolvedCast, SkillInfo } from './skill-rule.ts';
@@ -89,12 +94,15 @@ export function resolveSkill(
       'travelTicks' in rule
         ? {
             ticks: rule.travelTicks,
+            aerialVolley: rule.aerialVolley,
             end:
               end &&
-              raidGroundPointAfter(
-                limitRaidDash(combat.self, end, rule.travelTicks),
-                rule.travelTicks,
-              ),
+              (rule.aerialVolley
+                ? limitAerialVolley(combat.self, end)
+                : raidGroundPointAfter(
+                    limitRaidDash(combat.self, end, rule.travelTicks),
+                    rule.travelTicks,
+                  )),
           }
         : undefined,
     count: enemies?.length,

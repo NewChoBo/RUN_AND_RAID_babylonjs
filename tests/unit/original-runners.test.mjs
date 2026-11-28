@@ -205,13 +205,14 @@ test('Froze spends ice crystals, flashes only chilled targets and absorbs one ho
   const m = arena('froze'),
     [r, , enemy] = m.runners;
   const hp = enemy.hp;
-  assert.ok(m.cast(0, 1));
+  assert.ok(m.cast(0, 1, enemy.slot));
   m.step();
   assert.equal(enemy.hp, hp);
+  assert.ok(Math.abs(r.z - (enemy.z - 0.85)) < 0.01);
   assert.ok(m.cast(0, 0, { dx: 0, dz: 1 }));
   advance(m, 25);
   assert.equal(r.heroView.iceCrystals, 2);
-  assert.ok(m.cast(0, 1));
+  assert.ok(m.cast(0, 1, enemy.slot));
   m.step();
   assert.ok(enemy.hp < hp - 30);
   assert.equal(r.heroView.iceCrystals, 0);
@@ -357,7 +358,7 @@ test('matched slots use rank-one timing, patched values and the actual borrowed 
     ['magnus', [17, 17, 17]],
     ['drizz', [15, 8, 8]],
     ['abyss', [5, 9, 12]],
-    ['hof', [15, 3.5, 7]],
+    ['hof', [15, 15, 16]],
     ['vallet', [5, 21, 7]],
     ['freesia', [5, 3.5, 7]],
   ])

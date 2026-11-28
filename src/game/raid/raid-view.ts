@@ -13,6 +13,8 @@ export interface RaidDash {
   elapsed: number;
   ticks: number;
   target?: RaidTarget;
+  readonly aerialVolley?: boolean;
+  readonly takeoffHeight?: number;
   readonly struck?: RaidTarget[];
 }
 /** Positions are metres relative to the moving wagon, +Z in the direction of travel. */
@@ -43,7 +45,7 @@ export interface RaidAim {
   kind: SkillKind;
   flight?: Pick<ProjectileProfile, 'angles' | 'guide'>;
   /** End of the directional dash in the wagon frame at arrival, once a direction is chosen. */
-  dash?: { ticks: number; end: RaidPoint | null };
+  dash?: { ticks: number; aerialVolley?: boolean; end: RaidPoint | null };
   status: 'needDirection' | 'ready' | 'needTarget' | 'outOfRange' | 'invalidGround' | 'unavailable';
   origin: Readonly<RaidPoint>;
   point: Readonly<RaidPoint> | null;

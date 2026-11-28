@@ -54,6 +54,14 @@ export function limitRaidDash(from: RaidPoint, to: RaidPoint, ticks: number): Ra
   const fraction = (edge - from.z) / (arrivalZ - from.z);
   return { x: from.x + (to.x - from.x) * fraction, z: edge + travel };
 }
+// The aerial volley is steered relative to the chase formation throughout the flip.
+export function limitAerialVolley(from: RaidPoint, to: RaidPoint) {
+  const end = limitRaidDash(from, to, 0);
+  const x = clamp(end.x, Math.min(from.x, -RAID_RUN_LIMIT_X), Math.max(from.x, RAID_RUN_LIMIT_X));
+  return x === end.x
+    ? end
+    : { x, z: from.z + ((end.z - from.z) * (x - from.x)) / (end.x - from.x) };
+}
 // Outside the running corridor after a leap, return at running speed without snapping to its edge.
 function runAxis(position: number, delta: number, low: number, high: number, recovery: number) {
   return clamp(
@@ -63,6 +71,14 @@ function runAxis(position: number, delta: number, low: number, high: number, rec
   );
 }
 export function raidRunnerHeight(r: RaidRunner, subtick = 0) {
+  if (r.dash?.aerialVolley) {
+    // The Max take flips around the pelvis. The moving character supplies the lift above the road.
+    const age = r.dash.elapsed + subtick;
+    const rise = clamp((age - 3) / 5, 0, 1);
+    const fall = clamp((36 - age) / 8, 0, 1);
+    const smooth = (t: number) => t * t * (3 - 2 * t);
+    return 2.1 * smooth(rise) * smooth(fall) + (r.dash.takeoffHeight ?? 0) * (1 - smooth(rise));
+  }
   return r.leap
     ? raidLeapHeight(Math.min(1, (r.leap.elapsed + subtick) / RAID_LEAP_TICKS))
     : jumpHeight(Math.max(0, r.jumping - subtick), r.launchDuration || RAID_JUMP_TICKS);
@@ -80,6 +96,10 @@ export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint
     const { from, to, elapsed } = motion;
     const duration = dash?.ticks ?? RAID_LEAP_TICKS;
     const age = Math.min(duration, elapsed + ticks);
+    if (dash?.aerialVolley) {
+      const t = clamp((age - 3) / 33, 0, 1);
+      return { x: from.x + (to.x - from.x) * t, z: from.z + (to.z - from.z) * t };
+    }
     const t = age / duration;
     return raidGroundPointAfter(
       { x: from.x + (to.x - from.x) * t, z: from.z + (to.z - from.z) * t },

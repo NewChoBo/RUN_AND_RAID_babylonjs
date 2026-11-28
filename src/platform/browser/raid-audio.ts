@@ -25,10 +25,10 @@ const sounds: Partial<
   Record<ReturnType<typeof heroKit>, readonly [Effect, Effect, Effect, Effect, Effect]>
 > = {
   hammer: ['hammer', 'impact', 'hammer', 'blade', 'hammer'],
-  longshot: ['bow', 'bow', 'bow', 'blade', 'bow'],
+  longshot: ['bow', 'bow', 'bow', 'bow', 'bow'],
   flare: ['fire', 'fire', 'impact', 'spark', 'fire'],
   alice: ['ward', 'impact', 'ward', 'spark', 'ward'],
-  hof: ['shot', 'ice', 'shot', 'impact', 'shot'],
+  hof: ['shot', 'shot', 'ice', 'spark', 'impact'],
   kali: ['blade', 'blade', 'void', 'void', 'blade'],
   kaiken: ['blade', 'blade', 'spark', 'blade', 'blade'],
   abyss: ['void', 'void', 'spark', 'void', 'void'],
@@ -140,6 +140,10 @@ export function createRaidAudio() {
     skipPast(view: RaidView) {
       for (const cue of view.actions) if (releaseTick(cue) <= view.tick) seen.add(cue);
       for (const change of view.healthChanges) seen.add(change);
+      for (const r of view.runners ?? []) {
+        for (const arrow of r.heroView.airArrows ?? []) seen.add(arrow);
+        for (const turret of r.heroView.turrets ?? []) if (turret.shot) seen.add(turret.shot);
+      }
       for (const call of view.calls) if (call) seen.add(call);
     },
     count(seconds: number) {
@@ -160,6 +164,16 @@ export function createRaidAudio() {
           sounds[heroKit(cue.hero)]?.[cue.skill === 'basic' ? 0 : cue.skill + 1] ?? 'impact';
         const volume = (cue.slot === slot ? 0.55 : 0.24) * (basic ? 0.55 : 1);
         play(sound, 'effects', volume, cue.skill === 3 ? 0.78 : basic ? 1.18 : 1);
+      }
+      for (const r of view.runners ?? []) {
+        function sound(event: { tick: number }, clip: Effect) {
+          if (seen.has(event)) return;
+          seen.add(event);
+          if (view.tick - event.tick <= 3) play(clip, 'effects', r.slot === slot ? 0.28 : 0.14);
+        }
+        for (const arrow of r.heroView.airArrows ?? []) sound(arrow, 'bow');
+        for (const turret of r.heroView.turrets ?? [])
+          if (turret.shot) sound(turret.shot, (['shot', 'ice', 'spark'] as const)[turret.slot]);
       }
       let hit = false,
         heal = false;

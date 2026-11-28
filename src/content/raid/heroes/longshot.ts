@@ -20,3 +20,6 @@ export const piercing = {
   pierces: true,
   contact: standardContact,
 } as const;
+
+export const volleyFrames = [7, 13, 19, 25, 31];
+export const airArrowFlight = 3;

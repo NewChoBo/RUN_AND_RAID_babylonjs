@@ -627,7 +627,7 @@ test('an interrupted Piercing Shot ends its pose without firing later', () => {
     );
   }
 });
-test('Longshot lands separate arrows up close, slows with W and rolls through a hit with E', () => {
+test('Longshot lands separate arrows up close, slows with W and can still be hit during E', () => {
   const { match } = battle(['longshot', 'hammer', 'rend', 'jade']);
   for (const r of match.runners) r.basic = 100;
   const [caster, , rival] = match.runners;
@@ -644,8 +644,7 @@ test('Longshot lands separate arrows up close, slows with W and rolls through a 
   assert.ok(match.cast(2, 1, 0));
   const before = caster.hp;
   match.step();
-  assert.equal(caster.hp, before);
-  assert.ok(caster.dash);
+  assert.ok(caster.hp < before);
 });
 test('a wounded ally heals inside the grove and receives no further healing after running past it', () => {
   const { match, send } = battle('freesia');
@@ -1163,6 +1162,7 @@ test('lead changes count settled overtakes across ties, excluding first scores a
   settled([60, 30], 0);
   Object.assign(match.runners[3], { x: 0, z: 8, basic: 90 });
   score(3, 1);
+  advance(match, match.runners[3].dash.ticks - 1);
   settled([60, 60], 0);
   score(2, 2);
   settled([60, 90], 1);
@@ -1284,6 +1284,9 @@ test('each loadout contests wagon damage per active team member with one objecti
       if (match.tick % 45 === 0) {
         const r = match.runners[0];
         const priority = [3];
+        const towers = r.heroView.turrets;
+        if (towers && !towers.some((t) => Math.hypot(t.x - WAGON.x, t.z - WAGON.z) <= 6))
+          priority.length = 0;
         if (hero === 'rildin') {
           // Advance closes on the road while the wagon keeps moving. Weave basics once in reach.
           const distance = Math.hypot(WAGON.x - r.x, WAGON.z - r.z);
@@ -1301,9 +1304,14 @@ test('each loadout contests wagon damage per active team member with one objecti
         } else priority.push(1, 2, 0);
         for (const skill of priority) {
           const kind = raidAimKind(hero, skill);
+          const gap = Math.hypot(WAGON.x - r.x, WAGON.z - r.z);
+          const placement =
+            towers && gap > 5.99
+              ? { x: r.x + ((WAGON.x - r.x) * 5.99) / gap, z: r.z + ((WAGON.z - r.z) * 5.99) / gap }
+              : WAGON;
           const payload =
             kind === 'field' || kind === 'leap'
-              ? { skill, ...WAGON }
+              ? { skill, ...placement }
               : kind === 'direction'
                 ? { skill, dx: WAGON.x - r.x, dz: WAGON.z - r.z }
                 : kind === 'target'

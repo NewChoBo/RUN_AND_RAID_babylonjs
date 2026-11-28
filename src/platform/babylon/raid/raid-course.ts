@@ -376,7 +376,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
           startPose?.seconds,
           r.slot === slot ? startPose?.side : 0,
         );
-    effects(view, subtick);
+    effects(view, subtick, outfits);
     const jade = view.runners.find((r) => r.hero === 'jade' && !r.respawn);
     lightningOrb.setEnabled(!!jade);
     if (jade) {
