@@ -2,6 +2,7 @@ import { healthMeter, healthMeterPainter } from '../../../ui/raid-health-meter.t
 import { isJetFiring } from '../../../game/raid/air-movement.ts';
 import { sacrificeRadius } from '../../../content/raid/heroes/abyss.ts';
 import { createBladeWave } from './raid-blade-wave.ts';
+import { createSwordAfterimage } from './raid-sword-afterimage.ts';
 import { heroKit } from '../../../game/raid/heroes/hero-id.ts';
 import {
   appearance,
@@ -123,6 +124,7 @@ export function createRaidActor(
   let motion: ModelMotion | undefined;
   let playback = new RaidActionPlayback();
   let greatsword: TransformNode | undefined;
+  let bladeTrail: ReturnType<typeof createSwordAfterimage>;
   let current: Awaited<ReturnType<typeof loadModel>> | undefined;
   let requested: string | undefined;
   let generation = 0;
@@ -131,6 +133,8 @@ export function createRaidActor(
   function prepareModel(outfit?: string) {
     if ((current || loading) && requested === outfit) return loading;
     const version = ++generation;
+    bladeTrail?.dispose();
+    bladeTrail = undefined;
     current?.model.dispose();
     current = undefined;
     motion = undefined;
@@ -152,6 +156,7 @@ export function createRaidActor(
         }
         current = loaded;
         motion = loaded.motion;
+        if (motion) bladeTrail = createSwordAfterimage(hero, loaded.model.meshes);
         const size = loaded.modelSize;
         if (size) {
           const height = size.y * rig.scaling.y;
@@ -299,6 +304,7 @@ export function createRaidActor(
   }
   for (const part of [shadow, ring, bar, ward]) part.isPickable = false;
   function hide() {
+    bladeTrail?.hide();
     playback = new RaidActionPlayback();
     root.setEnabled(false);
     shadow.setEnabled(false);
@@ -336,7 +342,10 @@ export function createRaidActor(
     hit.material = ring.material = r.team === localTeam ? blue : red;
     ring.setEnabled(!r.respawn && !concealed);
     shadow.setEnabled(root.isEnabled());
-    if (!root.isEnabled()) return;
+    if (!root.isEnabled()) {
+      bladeTrail?.hide();
+      return;
+    }
     bar.setEnabled(!r.respawn);
     const vitals = healthMeter(r, tick);
     ward.setEnabled(vitals.reducedDamage || vitals.barrier > 0 || vitals.guarding);
@@ -365,6 +374,7 @@ export function createRaidActor(
     if (!current) return;
     if (greatsword) greatsword.scaling.setAll((r.heroView.empoweredUntil ?? 0) > tick ? 1.45 : 1);
     if (waitingSeconds !== undefined) {
+      bladeTrail?.hide();
       rig.rotation.y = raidSteeringFacing(startSide);
       if (motion?.has('idle')) motion.loop('idle', waitingSeconds, dt);
       else if (hero === 'bird') motion?.loop('run', waitingSeconds, dt);
@@ -372,10 +382,12 @@ export function createRaidActor(
       return;
     }
     if (r.respawn) {
+      bladeTrail?.hide();
       motion?.once('fall', (fallAge + subtick) / RAID_HZ, dt);
       return;
     }
     if ((r.staggered || r.stunned) && !r.leap && !r.jumping) {
+      bladeTrail?.hide();
       motion?.seek('fall', 0.13, dt);
       return;
     }
@@ -402,6 +414,7 @@ export function createRaidActor(
       return { clip, duration: motion?.duration(clip) ?? 0, start };
     });
     const facing = raidFacing(r, pose?.cue ?? active);
+    let swing: RaidAction | undefined;
     if (r.leap) {
       motion?.once(actionClip(clips[r.leap.skill]), (r.leap.elapsed + subtick) / RAID_HZ, dt);
     } else if (r.dash) {
@@ -441,6 +454,7 @@ export function createRaidActor(
       );
     } else if (pose && !(hero === 'longshot' && pose.cue.skill === 2)) {
       motion?.once(pose.clip, ((now - pose.start) / RAID_HZ) * (pose.cue.basicSpeed ?? 1), dt);
+      if (pose.clip !== 'run') swing = pose.cue;
     } else if (r.jumping)
       motion?.once(
         modeClip('shieldJump', 'jump'),
@@ -466,11 +480,15 @@ export function createRaidActor(
     }
     const turn = facing - rig.rotation.y;
     rig.rotation.y += Math.atan2(Math.sin(turn), Math.cos(turn)) * Math.min(1, dt * 20);
+    bladeTrail?.draw(swing, now, root.position, (r.heroView.empoweredUntil ?? 0) > tick);
   }
   return {
     draw,
     hide,
     prepareModel,
+    get hasBladeTrail() {
+      return !!bladeTrail;
+    },
     hit,
     get barHeight() {
       return bar.position.y;

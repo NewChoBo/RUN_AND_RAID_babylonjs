@@ -40,8 +40,9 @@ test('an incoming orb keeps its shape at first contact, then its pooled mesh swi
 test('blade waves reuse meshes, keep their contact width and switch between horizontal, upright and cross', (t) => {
   const engine = new NullEngine();
   t.after(() => engine.dispose());
+  let rigReady = false;
   const scene = new Scene(engine),
-    draw = createRaidEffects(scene);
+    draw = createRaidEffects(scene, () => rigReady);
   for (const [hero, skill, form, count, width] of [
     ['kaiken', 0, 'horizontal', 1, 3],
     ['kaiken', 1, 'upright', 3, 1],
@@ -71,6 +72,9 @@ test('blade waves reuse meshes, keep their contact width and switch between hori
   for (let i = 0; i < 6; i++) match.step();
   draw(match, 0);
   assert.ok(cut.isEnabled());
+  rigReady = true;
+  draw(match, 0.5);
+  assert.ok(!cut.isEnabled());
   draw(new RaidMatch(), 0);
   assert.ok(!cut.isEnabled());
   assert.equal(scene.meshes.filter((m) => m.name === 'sword wave').length, 3);

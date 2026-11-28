@@ -10,6 +10,7 @@ import { createRaidArrowRain } from './raid-arrow-rain.ts';
 import { createSwiftDaggerFx } from './raid-swift-dagger.ts';
 import { createIgnitionFx, createFlame, createFlameMaterial } from './raid-ignition.ts';
 import { createFlyingShots } from './raid-flying-shots.ts';
+import { createRaidDashWind } from './raid-dash-wind.ts';
 import { createShadowBlades } from './raid-shadow-blades.ts';
 import {
   Color3,
@@ -43,7 +44,11 @@ const lifetime = (cue: RaidAction) =>
 const tau = Math.PI * 2;
 
 /** Effects sample match ticks, so pausing, catching up and starting a rematch have no independent timers. */
-export function createRaidEffects(scene: Scene) {
+export function createRaidEffects(
+  scene: Scene,
+  hasBladeTrail: (hero: RaidHero) => boolean = () => false,
+) {
+  const drawDashWind = createRaidDashWind(scene);
   const drawTurrets = createHofTurrets(scene);
   const drawAirArrows = createAirArrows(scene);
   const drawSwiftDagger = createSwiftDaggerFx(scene);
@@ -137,7 +142,10 @@ export function createRaidEffects(scene: Scene) {
         return;
       }
       const lunge = hero === 'swift' && skill === 1 && cue.phase === 'dash';
-      if ((hero === 'rildin' && skill === 0) || (hero === 'kali' && skill === 0) || lunge) {
+      if (
+        ((hero === 'rildin' && skill === 0) || (hero === 'kali' && skill === 0) || lunge) &&
+        !hasBladeTrail(hero)
+      ) {
         swordCut ??= createBladeWave(scene, 'melee sword trail', new Color3(1, 0.81, 0.48));
         const runner = view.runners[cue.slot]!;
         const point = raidRunnerPositionAfter(runner, subtick);
@@ -149,7 +157,9 @@ export function createRaidEffects(scene: Scene) {
         swordCut.position.set(point.x, 0.85 + raidRunnerHeight(runner, subtick), point.z);
         swordCut.scaling.set(1.6, 1, 2.5);
         swordCut.visibility = Math.max(0, 1 - phase * phase);
-      }
+      } else swordCut?.setEnabled(false);
+      // Swift cuts on arrival. The caster and sword already show both phases of the lunge.
+      if (lunge) return;
       const kind = skill === 'basic' ? null : raidAimKind(hero, skill);
       const roadMotion = cue.phase === 'dash' || cue.phase === 'spin';
       const from = roadMotion ? raidGroundPointAfter(cue.from, age) : cue.from;
@@ -268,6 +278,7 @@ export function createRaidEffects(scene: Scene) {
   const drawFlyingShots = createFlyingShots(scene, (kit) => materials.get(kit)!.light);
   let match: RaidView | undefined;
   return (view: RaidView, subtick: number, outfits: readonly (string | undefined)[] = []) => {
+    drawDashWind(view, subtick);
     drawTurrets(view, subtick, outfits);
     drawAirArrows(view, subtick);
     drawSwiftDagger(view, subtick);
@@ -280,6 +291,7 @@ export function createRaidEffects(scene: Scene) {
         !(heroKit(cue.hero) === 'hof' && cue.skill !== 'basic') &&
         !(cue.hero === 'longshot' && cue.skill === 2) &&
         !(cue.hero === 'swift' && cue.skill === 2) &&
+        !(cue.hero === 'rildin' && cue.skill === 2 && cue.phase === 'dash') &&
         !(
           cue.skill !== 'basic' &&
           appearance[heroKit(cue.hero)].spinClip ===

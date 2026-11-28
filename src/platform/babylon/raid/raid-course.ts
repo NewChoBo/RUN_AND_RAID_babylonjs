@@ -180,7 +180,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   lightningOrb.material = raidMaterial(scene, 'Jade orb light', '#8aeaff', 1);
   lightningOrb.isPickable = false;
   lightningOrb.setEnabled(false);
-  const effects = createRaidEffects(scene);
+  const effects = createRaidEffects(scene, (hero) => actors.get(hero)?.hasBladeTrail ?? false);
   const drawCounter = createRaidCounterVisual(scene);
   const lock = MeshBuilder.CreateTorus(
     'target lock',
