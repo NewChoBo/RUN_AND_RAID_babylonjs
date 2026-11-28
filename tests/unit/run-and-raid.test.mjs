@@ -1246,18 +1246,20 @@ test('lead changes count settled overtakes across ties, excluding first scores a
   settled([120, 90], 2);
 });
 
-test('holding both teams back ends the full three minutes on wagon damage, including an exact tie', () => {
+test('an intact wagon reaches the five-minute limit and decides the match on damage, including a tie', () => {
+  const fiveMinutes = 5 * 60 * RAID_HZ;
   for (const scored of [true, false]) {
     const { match, send } = battle(['bastion', 'hammer', 'rime', 'rend']);
     for (const runner of match.runners) runner.z = -4;
     if (scored) assert.ok(send(0, 'cast', { skill: 2, ...WAGON }));
-    for (let i = 0; i < ROUND_TICKS; i++) {
+    for (let i = 0; i < fiveMinutes; i++) {
       for (const r of match.runners)
         send(r.slot, 'move', { side: r.team === 0 ? -1 : 1, walk: true });
       match.step();
-      if (i < ROUND_TICKS - 1) assert.equal(match.result, null);
+      if (i < fiveMinutes - 1) assert.equal(match.result, null);
     }
     assert.deepEqual(match.result, { reason: 'time', winner: scored ? 0 : 'draw' });
+    assert.equal(match.tick, fiveMinutes);
     assert.equal(match.leadChanges, 0);
   }
 });

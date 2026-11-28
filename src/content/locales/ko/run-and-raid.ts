@@ -1,3 +1,5 @@
+import { ROUND_MINUTES } from '../../../game/raid/raid-rules.ts';
+
 export const korean = {
   taunted: '도발',
   airi: '아이리',
@@ -180,8 +182,7 @@ export const korean = {
   syncError: '경기 동기화가 끊겼습니다. 새 방에서 다시 시작하세요.',
   homeMode: '2대2 마차 추격전',
   mode: '런앤레이드',
-  rules:
-    '두 팀이 한 마차를 추격합니다. 마차를 먼저 파괴하거나 3분 동안 마차에 더 많은 피해를 주면 승리합니다.',
+  rules: `두 팀이 한 마차를 추격합니다. 마차를 먼저 파괴하면 승리합니다. ${ROUND_MINUTES}분이 지나면 마차에 더 많은 피해를 준 팀이 이깁니다.`,
   controls:
     '왼쪽 패드를 좌우로 밀면 방향을 바꾸고 아래로 당기면 걷습니다. 즉발 스킬은 한 번 탭하고, 조준 스킬은 방향이나 위치를 정한 뒤 놓으세요. 조준 스킬 아이콘을 밖으로 끌어 놓으면 직전 대상이나 방향으로 빠르게 시전합니다. 키보드는 Shift와 스킬 숫자를 함께 누르세요.',
   pingTeam: '아군 핑',

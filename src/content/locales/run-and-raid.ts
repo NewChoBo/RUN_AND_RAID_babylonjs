@@ -1,3 +1,4 @@
+import { ROUND_MINUTES } from '../../game/raid/raid-rules.ts';
 import { defineMessages } from './locale.ts';
 import { korean } from './ko/run-and-raid.ts';
 export const raidText = defineMessages(
@@ -183,8 +184,7 @@ export const raidText = defineMessages(
     syncError: 'The match lost sync. Create or join a new room.',
     homeMode: '2v2 wagon chase',
     mode: 'Run & Raid',
-    rules:
-      'Two teams chase one wagon. Break it first, or deal the most wagon damage in three minutes.',
+    rules: `Two teams chase one wagon. Destroy it first to win. After ${ROUND_MINUTES} minutes, the team that dealt more wagon damage wins.`,
     controls:
       'Drag the left pad sideways to steer or pull it down to walk. Tap instant skills once. For aimed skills, aim and release. Drag an aimed skill off its button to reuse the previous target or aim. On a keyboard, press Shift + its number.',
     pingTeam: 'Team ping',
