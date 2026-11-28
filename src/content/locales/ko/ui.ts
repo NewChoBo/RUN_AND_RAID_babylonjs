@@ -89,6 +89,8 @@ export const korean = {
   matchStarting: '모두 준비됐습니다. 잠시 후 경기를 시작합니다.',
   soloReady: '준비가 끝났습니다. 봇전을 시작할 수 있습니다.',
   language: '언어',
+  battleSounds: '전투 효과음',
+  teamVoice: '출발·팀 신호 음성',
   welcome: '환영합니다!',
   welcomeMessage: '저도 그리움에 사무쳐 돌아오신 여러분들이 그리웠습니다.',
   fanEdition: '런앤레이드의 2대2 마차 추격전을 웹으로 옮긴 팬 복각판입니다.',

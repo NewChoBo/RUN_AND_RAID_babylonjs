@@ -23,7 +23,7 @@ test('Longshot renders seven arrowheads along their shots and rains arrows acros
     const d = Vector3.TransformNormal(Vector3.Down(), shot.computeWorldMatrix(true));
     assert.ok(Math.hypot(d.x - match.projectiles[i].dx, d.z - match.projectiles[i].dz) < 1e-6);
   }
-  for (let i = 0; i <= 30; i++) {
+  for (let i = 0; i <= 45; i++) {
     draw(match, 0);
     if (i % 15 === 0) {
       const ring = scene.meshes.find(
@@ -46,13 +46,36 @@ test('Longshot renders seven arrowheads along their shots and rains arrows acros
     }
     match.step();
   }
-  while (match.tick < 37) match.step();
+  while (match.tick < 49) match.step();
   draw(match, 0);
   assert.ok(
     scene.meshes
       .filter((m) => m.name === 'falling arrow' || m.name === 'raid flying arrow')
       .every((m) => !m.isEnabled()),
   );
+});
+
+test('Ignite flames travel with the marked runner and clear on expiry', (t) => {
+  const engine = new NullEngine();
+  t.after(() => engine.dispose());
+  const scene = new Scene(engine),
+    draw = createRaidEffects(scene);
+  const match = new RaidMatch(['flare', 'hammer', 'hammer', 'jade']);
+  for (const r of match.runners) r.basic = 1000;
+  const target = match.runners[2];
+  target.x = match.runners[0].x;
+  target.z = match.runners[0].z + 2;
+  assert.ok(match.cast(0, 2, 2));
+  draw(match, 0);
+  const flames = scene.meshes.filter((m) => m.name === 'ignite flame');
+  assert.equal(flames.length, 5);
+  target.x += 4;
+  match.step();
+  draw(match, 0);
+  assert.ok(flames.every((m) => m.isEnabled() && Math.abs(m.position.x - target.x) < 0.4));
+  while (match.tick < 120) match.step();
+  draw(match, 0);
+  assert.ok(flames.every((m) => !m.isEnabled()));
 });
 
 test('Dark Blades follows the moving caster, layers two cuts and finishes with the pale sweep', (t) => {

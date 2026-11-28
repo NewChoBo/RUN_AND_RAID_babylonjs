@@ -30,10 +30,10 @@ export const raidText = defineMessages(
     iceCrystals: 'Ice crystals {count}',
     flare: 'Flare',
     flareInfo:
-      'Fireball slows enemies and Flame Burst pushes them back. Pillar of Fire stuns enemies in the selected area for 1.5 seconds.',
+      'Fireball slows nearby enemies on impact. Flame Burst grants brief control immunity. Ignite burns a target for four seconds. Other skill hits extend the burn.',
     flarePulse: 'Fireball',
     flareBolt: 'Flame Burst',
-    flareField: 'Ember Trail',
+    flareField: 'Ignite',
     flareFury: 'Pillar of Fire',
     hof: 'Hof',
     hofInfo:

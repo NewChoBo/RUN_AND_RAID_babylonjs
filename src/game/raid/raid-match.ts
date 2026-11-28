@@ -463,6 +463,10 @@ export class RaidMatch implements RaidView {
       hero: r.hero,
       skill,
       phase,
+      fieldTicks:
+        attack?.kind === 'field' && attack.pulse
+          ? attack.pulse.intervalTicks * attack.pulse.count
+          : undefined,
       ...detail,
       from: { x: r.x, z: r.z },
       footprint: area
@@ -571,7 +575,11 @@ export class RaidMatch implements RaidView {
       this.projectiles.length || this.runners.some((r) => r.dash?.struck)
         ? this.runners.map((r) => ({ x: r.x, z: r.z, height: raidRunnerHeight(r) }))
         : null;
-    while (this.#actions.length && this.#tick - this.#actions[0]!.tick > 39) this.#actions.shift();
+    while (this.#actions.length) {
+      const first = this.#actions[0]!;
+      if (this.#tick - first.tick < Math.max(40, (first.fieldTicks ?? 0) + 4)) break;
+      this.#actions.shift();
+    }
     for (const r of this.#runners) {
       if (r.respawn) {
         if (--r.respawn === 0) {

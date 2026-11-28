@@ -56,6 +56,7 @@ export interface RaidAim {
 }
 export type Team = 0 | 1;
 export interface RaidAction {
+  readonly fieldTicks?: number;
   readonly basicSpeed?: number;
   readonly cancelledAt?: number;
   readonly comboStep?: number;

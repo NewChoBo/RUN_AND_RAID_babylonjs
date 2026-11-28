@@ -92,6 +92,8 @@ const english = {
   matchStarting: 'Everyone is ready. The match starts shortly.',
   soloReady: 'Ready. Start the bot match when you’re set.',
   language: 'Language',
+  battleSounds: 'Combat sounds',
+  teamVoice: 'Start and team callouts',
   welcome: 'Welcome back!',
   welcomeMessage: 'I’ve missed you too. It’s good to see you again.',
   fanEdition: 'A fan-made web revival of Run & Raid’s 2v2 wagon chase.',

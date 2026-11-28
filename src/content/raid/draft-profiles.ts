@@ -5,7 +5,7 @@ export const adaptedSkills: Partial<Record<RaidHero, readonly number[]>> = {
   abyss: [0, 1, 2, 3],
   longshot: [0, 1, 2, 3],
   drizz: [2, 3],
-  flare: [2],
+  flare: [0],
   hof: [0, 1, 2, 3],
   froze: [1, 2],
   magnus: [0, 1, 2],

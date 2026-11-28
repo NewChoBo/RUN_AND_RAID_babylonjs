@@ -31,7 +31,7 @@ export type SkillInfo =
     })
   | (RangedSkill<'pulse', AreaAttack<'dashEnd'>> & { readonly recastDuringDash: true })
   | RangedSkill<'ward', NonAttacking>
-  | (RangedSkill<'target', DirectAttack | DashStrike> & {
+  | (RangedSkill<'target', DirectAttack | DashStrike | NonAttacking> & {
       readonly allowAlly?: true | 'includingSelf';
       readonly allyEffect?: 'heal' | 'barrier';
     })

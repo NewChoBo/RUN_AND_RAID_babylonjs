@@ -27,10 +27,10 @@ export const korean = {
   iceCrystals: '얼음 결정 {count}',
   flare: '플레어',
   flareInfo:
-    '화염구로 적을 감속시키고 화염폭발로 밀어냅니다. 불기둥은 지정한 지역의 적을 1.5초 동안 기절시킵니다.',
+    '화염구는 명중 지점 주변을 감속시키고 화염폭발은 잠시 상태이상을 막습니다. 점화는 대상에게 4초 동안 피해를 주며 다른 스킬을 맞히면 1초 늘어납니다.',
   flarePulse: '화염구',
   flareBolt: '화염폭발',
-  flareField: '잔불 지대',
+  flareField: '점화',
   flareFury: '불기둥',
   hof: '호프',
   hofInfo:

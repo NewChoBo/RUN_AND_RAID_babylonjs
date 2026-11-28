@@ -6,16 +6,6 @@ import { silence, slow, stagger, stun } from '../raid-control.ts';
 import { noAttack } from '../skills/attack-rule.ts';
 import { aid, barrage, rush, shot } from './archive-skills.ts';
 
-export const flare = defineHero(
-  { ...chartStats.flare, power: 10, reach: 9, radius: 4 },
-  () => ({}),
-  [
-    shot({ powerScale: 3, control: [slow(45, 15)] }),
-    sweep({ powerScale: 3, displacement: 'push' }),
-    barrage({ powerScale: 2 }, { powerScale: 1 }, 3, 15),
-    field({ powerScale: 6, control: [stun(45)] }, undefined, { kind: 'circle', radius: 10 }),
-  ],
-);
 class Frostbite implements HeroEvents {
   private recharge = 3 * RAID_HZ;
   readonly view = { iceCrystals: 5, guardUntil: 0 };

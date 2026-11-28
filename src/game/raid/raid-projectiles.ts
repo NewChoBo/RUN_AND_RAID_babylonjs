@@ -20,8 +20,9 @@ interface Projectile extends RaidPoint, RaidDirection {
   remaining: number;
   // Piercing shots remember targets already passed. Most volleys share their hit set.
   readonly hit: Set<RaidTarget>;
+  readonly volleyTargets?: Set<RaidTarget>;
 }
-export type RaidProjectile = Readonly<Omit<Projectile, 'hit'>>;
+export type RaidProjectile = Readonly<Omit<Projectile, 'hit' | 'volleyTargets'>>;
 
 // Entry time in [0, 1] into a moving ellipse, measured along this tick's shot segment.
 function contact(x: number, z: number, dx: number, dz: number, rx: number, rz: number) {
@@ -55,8 +56,10 @@ export class RaidProjectiles {
     const profile = attack.flight;
     const heading = Math.atan2(direction.dx, direction.dz);
     const hit = new Set<RaidTarget>();
+    const volleyTargets = profile.repeatHitScale === undefined ? undefined : new Set<RaidTarget>();
     for (const angle of profile.angles) {
       this.#active.push({
+        volleyTargets,
         x: r.x,
         z: r.z,
         dx: Math.sin(heading + angle),
@@ -109,10 +112,36 @@ export class RaidProjectiles {
         )
           contacts.push({ t, target: r.slot });
       }
-      for (const { target } of contacts.sort((a, b) => a.t - b.t)) {
+      for (const { target, t } of contacts.sort((a, b) => a.t - b.t)) {
         if (!p.hit.has(target)) {
+          const flight = p.attack.flight;
+          const scale = p.volleyTargets?.has(target)
+            ? flight.repeatHitScale!
+            : flight.pierceScale === undefined
+              ? 1
+              : flight.pierceScale ** p.hit.size;
           p.hit.add(target);
-          strike(p.caster, target, p.skill, p.attack.hit);
+          p.volleyTargets?.add(target);
+          const hit =
+            scale === 1
+              ? p.attack.hit
+              : { ...p.attack.hit, powerScale: p.attack.hit.powerScale * scale };
+          strike(p.caster, target, p.skill, hit);
+          if (p.attack.splashRadius) {
+            const x = p.x + dx * t,
+              z = p.z + dz * t;
+            for (const other of runners) {
+              if (other.slot === target || other.team === runners[p.caster]!.team || other.respawn)
+                continue;
+              const old = previous[other.slot]!;
+              const ox = old.x + (other.x - old.x) * t,
+                oz = old.z + (other.z - old.z) * t;
+              if (Math.hypot(ox - x, oz - z) <= p.attack.splashRadius)
+                strike(p.caster, other.slot, p.skill, p.attack.hit);
+            }
+            if (target !== 'wagon' && Math.hypot(wagon.x - x, wagon.z - z) <= p.attack.splashRadius)
+              strike(p.caster, 'wagon', p.skill, p.attack.hit);
+          }
         }
         if (!p.attack.flight.pierces) return false;
       }

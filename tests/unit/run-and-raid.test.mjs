@@ -512,13 +512,13 @@ test('the wagon takes arrow rain on impact and at half a second, then moves beyo
   const before = match.damage[0];
   assert.ok(send(0, 'cast', { skill: 1, ...WAGON }));
   advance(match, 14);
-  assert.equal(match.damage[0] - before, 24);
+  assert.equal(match.damage[0] - before, 12);
   match.step();
-  assert.equal(match.damage[0] - before, 48);
+  assert.equal(match.damage[0] - before, 24);
   advance(match, 15);
-  assert.equal(match.damage[0] - before, 48);
+  assert.equal(match.damage[0] - before, 24);
   advance(match, 15);
-  assert.equal(match.damage[0] - before, 48);
+  assert.equal(match.damage[0] - before, 24);
 });
 test('running into arrow rain or a dark vortex triggers a later pulse at the placed road point', () => {
   for (const hero of ['longshot', 'abyss']) {
@@ -636,7 +636,7 @@ test('Longshot lands separate arrows up close, slows with W and rolls through a 
   const hp = rival.hp;
   assert.ok(match.cast(0, 0, { dx: 0, dz: 1 }));
   match.step();
-  assert.equal(hp - rival.hp, 42);
+  assert.equal(hp - rival.hp, 20 + 6 * 4);
   assert.ok(match.cast(0, 1, { x: rival.x, z: rival.z }));
   match.step();
   assert.ok(rival.slowed > 0);
@@ -1242,6 +1242,8 @@ test('a runner can dodge a fireball in flight or run into a shot aimed ahead', (
   for (const lead of [0, 0.8]) {
     const { match, send } = battle('flare');
     const [player, , rival] = match.runners;
+    // Isolate a direct hit from explosions on the adjacent rival.
+    match.runners[3].x = -6;
     send(2, 'move', { side: 0, brake: 1 });
     advance(match, 9);
     const hp = rival.hp;

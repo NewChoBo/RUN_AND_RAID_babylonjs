@@ -57,7 +57,7 @@ export function applySkill<S>(
         return cooldown;
       }
       const attack = rule.attack;
-      if (attack.on === 'cast') {
+      if (attack.kind === 'direct' && attack.on === 'cast') {
         combat.strike(cast.target, attack.hit, cast.skill, true);
         if (attack.splash) {
           for (const id of areaTargets(combat, attack.splash.area, cast.point, cast.radius))

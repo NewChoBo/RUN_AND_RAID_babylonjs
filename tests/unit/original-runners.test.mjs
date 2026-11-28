@@ -20,6 +20,66 @@ function advance(match, n) {
   for (let i = 0; i < n; i++) match.step();
 }
 
+test('Ignite follows its target for four one-second ticks and another skill adds one tick', () => {
+  for (const extended of [false, true]) {
+    const m = arena('flare'),
+      target = m.runners[2];
+    const initial = target.hp;
+    assert.ok(m.cast(0, 2, 2));
+    assert.equal(m.runners[0].cooldowns[2], 12 * RAID_HZ);
+    if (extended) assert.ok(m.cast(0, 1));
+    target.x = 6;
+    advance(m, 29);
+    const before = initial - (extended ? 30 : 0);
+    assert.equal(target.hp, before);
+    m.step();
+    assert.equal(target.hp, before - 10);
+    advance(m, 90);
+    assert.equal(target.hp, before - 40);
+    assert.equal(m.runners[0].heroView.burns.length, Number(extended));
+    advance(m, 30);
+    assert.equal(target.hp, before - (extended ? 50 : 40));
+    assert.equal(m.runners[0].heroView.burns.length, 0);
+  }
+});
+
+test('Fireball explodes on collision and Flame Burst protects against control for fifteen ticks', () => {
+  const m = arena('flare');
+  const [caster, , primary, nearby] = m.runners;
+  nearby.x = 1.5;
+  nearby.z = primary.z;
+  const hp = [primary.hp, nearby.hp];
+  assert.ok(m.cast(0, 0, { dx: 0, dz: 1 }));
+  advance(m, 8);
+  assert.deepEqual(
+    [primary.hp, nearby.hp],
+    hp.map((value) => value - 30),
+  );
+  assert.ok(primary.slowed && nearby.slowed);
+  assert.ok(m.cast(0, 1));
+  assert.ok(m.cast(2, 1, 0));
+  m.step();
+  assert.equal(caster.silenced, 0);
+  advance(m, 15);
+  primary.cooldowns[1] = 0;
+  assert.ok(m.cast(2, 1, 0));
+  m.step();
+  assert.equal(caster.silenced, RAID_HZ);
+});
+
+test('Piercing Shot deals half the previous damage after each target', () => {
+  const m = arena('longshot');
+  const [caster, , first, second] = m.runners;
+  caster.x = first.x = second.x = 2.8;
+  first.z = 3;
+  second.z = 7;
+  const hp = [first.hp, second.hp];
+  caster.rage = 100;
+  assert.ok(m.cast(0, 3, { dx: 0, dz: 1 }));
+  advance(m, 45);
+  assert.deepEqual([hp[0] - first.hp, hp[1] - second.hp], [56, 28]);
+});
+
 test('chart grades control starting health, unmodified basic damage and ticks between hits', () => {
   for (const [hero, hp, basic, interval] of [
     ['flare', 105, 10, 26],

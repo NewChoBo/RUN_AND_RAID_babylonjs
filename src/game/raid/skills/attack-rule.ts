@@ -49,11 +49,14 @@ export interface ProjectileProfile {
   /** Dense volleys display the envelope between the outermost flight angles. */
   readonly guide?: 'sector';
   readonly hitPerArrow?: boolean;
+  readonly repeatHitScale?: number;
+  readonly pierceScale?: number;
   readonly pierces: boolean;
   readonly contact: ProjectileContact;
 }
 export interface ProjectileAttack {
   readonly kind: 'projectile';
+  readonly splashRadius?: number;
   readonly windupTicks?: number;
   readonly flight: ProjectileProfile;
   readonly hit: HitRule;

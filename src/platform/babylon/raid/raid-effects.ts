@@ -3,6 +3,7 @@ import { heroKit, KIT_IDS } from '../../../game/raid/heroes/hero-id.ts';
 import { appearance } from './hero-appearance.ts';
 import { raidProjectileProfile, raidSkill } from '../../../game/raid/heroes/hero-catalog.ts';
 import { createRaidArrowRain } from './raid-arrow-rain.ts';
+import { createIgnitionFx } from './raid-ignition.ts';
 import { createRaidArrow } from './raid-arrow.ts';
 import { createShadowBlades } from './raid-shadow-blades.ts';
 import {
@@ -27,7 +28,7 @@ import { raidColors } from './raid-material.ts';
 
 const lifetime = (cue: RaidAction) =>
   cue.skill !== 'basic' && raidAimKind(cue.hero, cue.skill) === 'field'
-    ? 36
+    ? Math.max(36, (cue.fieldTicks ?? 0) + 4)
     : cue.skill === 3
       ? 28
       : cue.skill === 'basic'
@@ -37,6 +38,7 @@ const tau = Math.PI * 2;
 
 /** Effects sample match ticks, so pausing, catching up and starting a rematch have no independent timers. */
 export function createRaidEffects(scene: Scene) {
+  const drawIgnition = createIgnitionFx(scene);
   const materials = new Map<RaidHero, { sigil: StandardMaterial; light: StandardMaterial }>();
   for (const hero of KIT_IDS) {
     const color = Color3.FromHexString(raidColors[hero]);
@@ -220,7 +222,16 @@ export function createRaidEffects(scene: Scene) {
         const phase = (age / 15 + i * 0.19) % 1;
         shard.material = light;
         shard.setEnabled(true);
-        if (art.particles === 'arrows' && !area && travel < 1) {
+        if (heroKit(hero) === 'flare' && skill === 3) {
+          const rise = Math.sin(Math.PI * t) * (3.5 + 2 * phase);
+          shard.position.set(
+            to.x + Math.cos(a) * radius * 0.32,
+            rise / 2,
+            to.z + Math.sin(a) * radius * 0.32,
+          );
+          shard.rotation.set(0, a, 0.1 * Math.sin(a));
+          shard.scaling.set(8 * fade, rise, 8 * fade);
+        } else if (art.particles === 'arrows' && !area && travel < 1) {
           shard.setEnabled(i === 0);
           shard.position.set(x, y, z);
           shard.rotation.set(Math.PI / 2, Math.atan2(to.x - from.x, to.z - from.z), 0);
@@ -252,6 +263,7 @@ export function createRaidEffects(scene: Scene) {
   const arrows: Mesh[] = [];
   let match: RaidView | undefined;
   return (view: RaidView, subtick: number) => {
+    drawIgnition(view, subtick);
     const now = view.tick + subtick;
     for (let i = 0; i < Math.max(arrows.length, bolts.length, view.projectiles.length); i++) {
       const p = view.projectiles[i];
@@ -287,6 +299,7 @@ export function createRaidEffects(scene: Scene) {
       bolt.position.set(p.x + p.dx * advance, crescent ? 0.36 : 1, p.z + p.dz * advance);
       bolt.rotation.y = Math.atan2(p.dx, p.dz);
       bolt.scaling.set(0.14, 0.14, p.skill === 3 ? 1.25 : 0.78);
+      if (heroKit(p.hero) === 'flare' && p.skill === 0) bolt.scaling.set(0.65, 0.65, 0.85);
       if (crescent || form === 'cross') bolt.scaling.set(2.35, 0.1, 0.38);
       if (form === 'upright') bolt.scaling.set(0.16, 1.85, 0.46);
       bolt.material = materials.get(heroKit(p.hero))!.light;

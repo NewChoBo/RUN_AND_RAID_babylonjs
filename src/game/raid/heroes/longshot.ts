@@ -11,9 +11,11 @@ export const longshot = defineHero(
   stats,
   () => ({
     onIncomingHit: (combat) => combat.self.dash?.skill === 2,
+    onOutgoingHit: (_combat, hit) =>
+      hit.skill === 1 && hit.target === 'wagon' ? Math.round(hit.amount / 2) : hit.amount,
   }),
   [
-    projectile(scatter, { powerScale: 0.75 }),
+    projectile(scatter, { powerScale: 2.5 }),
     field(arrowRainHit, {
       intervalTicks: 15,
       count: 3,

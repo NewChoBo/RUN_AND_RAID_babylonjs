@@ -6,7 +6,7 @@ import { defineHero, type HeroEvents } from './hero-definition.ts';
 
 const darkHand: HeroEvents = {
   onOutgoingHit(combat, hit, victim) {
-    return victim && combat.height(victim) > 0 ? Math.round(hit.amount * 1.2) : hit.amount;
+    return victim && combat.height(victim) > 0 ? Math.round(hit.amount * 1.1) : hit.amount;
   },
   resistsControl(runner) {
     return runner.dash?.skill === 3;

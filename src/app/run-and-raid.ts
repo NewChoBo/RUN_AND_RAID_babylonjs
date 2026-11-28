@@ -19,6 +19,7 @@ import type { RaidCommandName } from '../game/raid/raid-feature.ts';
 import { RaidSimulation } from '../game/raid/raid-simulation.ts';
 import type { openRaidCourse } from '../platform/babylon/raid/raid-course.ts';
 import { createPreferences, RAID_SKILL_SIZE } from '../platform/browser/preferences.ts';
+import { createRaidAudio } from '../platform/browser/raid-audio.ts';
 import { createRaidHud } from '../ui/raid-hud.ts';
 import {
   RAID_AIM_RADIUS,
@@ -36,6 +37,10 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   let course: Awaited<ReturnType<typeof openRaidCourse>>;
   const device = createPreferences();
   const preferences = device.get();
+  const audio = createRaidAudio();
+  // Touch browsers grant audio activation on release. Online starts arrive later from the room.
+  document.addEventListener('pointerup', audio.unlock, true);
+  document.addEventListener('keydown', audio.unlock, true);
 
   let chosenHero: RaidHero = 'hammer';
   let offline = false;
@@ -141,6 +146,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     hud.update(match, null, slot);
   }
   function enterCourse() {
+    audio.unlock();
     state = countdownMs > 0 ? 'countdown' : 'playing';
     hud.play(Math.ceil(countdownMs / 1000));
     canvas.inert = false;
@@ -149,6 +155,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   }
   function resume() {
     if (!playableViewport.matches) return;
+    if (state === 'paused') audio.skipPast(match);
     previous = performance.now();
     if (round) countdownMs = Math.max(0, onlineStart - previous);
     enterCourse();
@@ -164,6 +171,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     aiming = null;
     course.showAim(null);
     state = 'paused';
+    audio.suspend();
     course.stopRendering(renderFrame);
     hud.showPanel(null, slot, !!round);
     canvas.inert = true;
@@ -222,6 +230,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     launch();
   }
   function launch() {
+    audio.reset();
     lobby.closePicker();
     pressed.clear();
     padSide = 0;
@@ -368,6 +377,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     leave: () => resetLobby(),
   });
   function resetLobby(reason?: RoomError, exiting = false) {
+    audio.suspend();
     attempt++;
     if (state === 'loading') closeLoadingScreen();
     clearInterval(timer);
@@ -604,12 +614,14 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       const waiting = Math.min(countdownMs, elapsed);
       countdownMs -= waiting;
       if (countdownMs > 0) {
+        audio.count(Math.ceil(countdownMs / 1000));
         hud.showStartCountdown(Math.ceil(countdownMs / 1000));
         renderCourse(Math.min(elapsed / 1000, 0.1), 0, (startDelayMs - countdownMs) / 1000);
         return;
       }
       // Only the part of this frame after the start signal advances the match.
       elapsed -= waiting;
+      audio.count(0);
       enterCourse();
       if (!round) move();
     }
@@ -640,6 +652,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       ? Math.min(1, Math.max(0, ((now - lastFrameAt) * RAID_HZ) / 1000))
       : carry;
     renderCourse(Math.min(dt, 0.1), match.result ? 0 : subtick);
+    audio.update(match, slot);
     if (Math.floor(match.tick / 3) !== lastHud || wasRespawning !== respawning) {
       hud.update(match, aiming, slot);
       lastHud = Math.floor(match.tick / 3);

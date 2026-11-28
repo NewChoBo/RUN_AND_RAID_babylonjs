@@ -2,7 +2,14 @@ import { RAID_SKILL_RANGE } from '../raid-rules.ts';
 import type { HeroCombat } from '../heroes/hero-definition.ts';
 import type { HeroSkill, SkillCast } from './skill-rule.ts';
 import { casterCircle, fieldCircle, type CircleArea } from './attack-area.ts';
-import type { AreaHit, AreaAttack, FieldPulse, HitRule, ProjectileProfile } from './attack-rule.ts';
+import type {
+  AreaHit,
+  AreaAttack,
+  FieldPulse,
+  HitRule,
+  ProjectileAttack,
+  ProjectileProfile,
+} from './attack-rule.ts';
 
 export function sweep(hit: HitRule, area: CircleArea = casterCircle): HeroSkill<unknown, 'pulse'> {
   return {
@@ -49,7 +56,7 @@ export function projectile(
   flight: ProjectileProfile,
   hit: HitRule,
   windupTicks?: number,
-): HeroSkill<unknown, 'direction'> {
+): Extract<HeroSkill<unknown, 'direction'>, { attack: ProjectileAttack }> {
   return { kind: 'direction', attack: { kind: 'projectile', flight, hit, windupTicks } };
 }
 export function spin(ticks: number, attack: AreaAttack<'spinPulse'>): HeroSkill<unknown, 'pulse'> {

@@ -17,7 +17,8 @@ import { swift } from './swift.ts';
 import { kali } from './kali.ts';
 import { drizz } from './drizz.ts';
 import { alice } from './alice.ts';
-import { flare, froze, theresa, hof, vallet, freesia } from './archive-champions.ts';
+import { froze, theresa, hof, vallet, freesia } from './archive-champions.ts';
+import { flare } from './flare.ts';
 import { magnus } from './magnus.ts';
 const kits = {
   hammer,

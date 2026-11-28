@@ -14,6 +14,7 @@ export interface HeroStats {
   readonly radius: number;
 }
 export interface HeroView {
+  readonly burns?: readonly { readonly target: RaidTarget; readonly next: number }[];
   readonly shieldMode?: boolean;
   readonly iceCrystals?: number;
   readonly orbTicks?: number;
