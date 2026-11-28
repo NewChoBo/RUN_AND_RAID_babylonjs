@@ -1,6 +1,8 @@
 import { uiText } from '../content/locales/ui.ts';
 import { characterLabel, characterName, illustrations } from '../content/raid/gallery.ts';
-import outfits from '../content/raid/published-outfits.json' with { type: 'json' };
+import { getLocale } from '../content/locales/locale.ts';
+import { outfitCatalog, outfitName } from '../content/raid/battle-outfits.ts';
+import { raidOutfits } from '../content/raid/outfits.ts';
 import type { AssetContainer } from '@babylonjs/core';
 import type { createView } from '../platform/babylon/model-preview.ts';
 import { choiceCard, touchPicker } from '../ui/touch-picker.ts';
@@ -19,23 +21,46 @@ const image = root.querySelector<HTMLImageElement>('img')!;
 const canvas = root.querySelector('canvas')!;
 const caption = root.querySelector('strong')!;
 const status = root.querySelector<HTMLElement>('[role=status]')!;
-const art = illustrations.map((i) => ({
-  group: i.hero,
-  title: i.caption,
-  url: i.image,
-  isDefault: false,
-}));
-const models = outfits.map((o) => ({
-  group: characterName(o.group),
-  title: o.skin === 'default' ? uiText('defaultOutfit') : o.skin,
-  url: o.model,
-  isDefault: o.skin === 'default',
-}));
+interface GalleryItem {
+  group: string;
+  title: string;
+  url: string;
+  isDefault: boolean;
+  outfitId?: string;
+  playable: boolean;
+}
+const art: GalleryItem[] = illustrations.flatMap<GalleryItem>((i) => {
+  const pairs = outfitCatalog.filter((o) => o.skinInfo?.art === i.caption);
+  if (!pairs.length)
+    return [{ group: i.hero, title: i.caption, url: i.image, isDefault: false, playable: false }];
+  return pairs.map((o) => ({
+    group: characterName(o.group),
+    title: outfitName(o, getLocale()),
+    url: i.image,
+    isDefault: o.skin === 'default',
+    outfitId: o.id,
+    playable: o.playable,
+  }));
+});
+const models: GalleryItem[] = raidOutfits.map((o) => {
+  const id = o.group + '/' + o.skin;
+  const pair = outfitCatalog.find((item) => item.id === id);
+  return {
+    group: characterName(o.group),
+    title: pair ? outfitName(pair, getLocale()) : o.skin,
+    url: o.model,
+    isDefault: o.skin === 'default',
+    outfitId: id,
+    playable: !!pair?.playable,
+  };
+});
 let catalog = art;
+let currentItem: GalleryItem | undefined;
 let request = 0;
 let model: AssetContainer | undefined;
 let view: ReturnType<typeof createView> | undefined;
-async function select(item: (typeof art)[number]) {
+async function select(item: GalleryItem) {
+  currentItem = item;
   const id = ++request;
   model?.dispose();
   model = undefined;
@@ -43,7 +68,8 @@ async function select(item: (typeof art)[number]) {
     b.setAttribute('aria-pressed', String(b.value === item.url));
   caption.textContent =
     catalog === art ? item.title : characterLabel(item.group) + ' · ' + item.title;
-  caption.lang = catalog === art ? 'ko' : document.documentElement.lang;
+  if (!item.playable) caption.textContent += ' · ' + uiText('galleryOnly');
+  caption.lang = catalog === art && !item.outfitId ? 'ko' : document.documentElement.lang;
   canvas.hidden = catalog === art;
   image.hidden = !canvas.hidden;
   if (catalog === art) {
@@ -81,7 +107,7 @@ async function select(item: (typeof art)[number]) {
 image.onerror = () => {
   if (catalog === art) status.textContent = uiText('artError');
 };
-function list() {
+function list(outfitId?: string) {
   const rows = catalog.filter((i) => i.group === currentHero);
   items.replaceChildren(
     ...rows.map((i) => {
@@ -91,12 +117,16 @@ function list() {
         () => void select(i),
       );
       card.value = i.url;
-      if (catalog === art) card.lang = 'ko';
+      if (catalog === art && !i.outfitId) card.lang = 'ko';
       return card;
     }),
   );
   items.scrollTop = 0;
-  void select((rows.find((i) => i.isDefault) ?? rows[0])!);
+  const selected =
+    (outfitId && rows.find((i) => i.outfitId === outfitId)) ||
+    rows.find((i) => i.isDefault) ||
+    rows[0];
+  if (selected) void select(selected);
 }
 function mode(next: typeof catalog) {
   catalog = next;
@@ -112,7 +142,7 @@ function mode(next: typeof catalog) {
   );
   for (const b of root.querySelectorAll<HTMLButtonElement>('[data-mode]'))
     b.setAttribute('aria-pressed', String((b.dataset.mode === 'art') === (catalog === art)));
-  list();
+  list(currentItem?.outfitId);
 }
 for (const b of root.querySelectorAll<HTMLButtonElement>('[data-mode]'))
   b.onclick = () => mode(b.dataset.mode === 'art' ? art : models);

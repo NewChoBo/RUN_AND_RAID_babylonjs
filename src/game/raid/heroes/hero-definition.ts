@@ -22,6 +22,7 @@ export interface HeroView {
   readonly ultimateRecasts?: number;
   readonly slashes?: number;
   readonly empoweredUntil?: number;
+  /** First tick on which the guard no longer blocks hits. */
   readonly guardUntil?: number;
   readonly quarry?: RaidTarget | null;
   readonly rootedTicks?: number;

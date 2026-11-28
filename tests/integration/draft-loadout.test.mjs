@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import test from 'node:test';
+import { battleOutfit } from '../../src/content/raid/battle-outfits.ts';
 import { ORIGINAL_HERO_IDS } from '../../src/game/raid/heroes/hero-id.ts';
 import {
   draftCatalog,
@@ -7,16 +9,23 @@ import {
   effectFor,
   equipmentPages,
   remainingPoints,
-  skinArt,
+  selectableSkins,
 } from '../../src/content/raid/draft-loadout.ts';
 
 test('all original runners have face art and every selectable skin resolves to its catalog artwork', () => {
   assert.deepEqual(Object.keys(draftCatalog).sort(), [...ORIGINAL_HERO_IDS].sort());
-  for (const { face, skins } of Object.values(draftCatalog)) {
+  for (const [hero, { face, skins }] of Object.entries(draftCatalog)) {
     assert.match(face, /^https:/);
     assert.equal(new Set(skins.map((s) => s.art)).size, skins.length);
+    assert.equal(new Set(skins.map((s) => s.modelSkin)).size, skins.length);
+    assert.ok(skins.some((s) => s.modelSkin === 'default'));
+    assert.deepEqual(selectableSkins(hero), skins);
     for (const skin of skins) {
-      assert.ok(skinArt(skin.art));
+      const outfit = battleOutfit(hero, hero + '/' + skin.modelSkin);
+      assert.ok(outfit.image, skin.art);
+      assert.equal(outfit.skinInfo.art, skin.art);
+      assert.ok(outfit.model.endsWith('.glb'));
+      assert.ok(existsSync(new URL('../../public/' + outfit.portrait, import.meta.url)), outfit.id);
       if (skin.effect !== null) assert.ok(effectFor(skin.effect));
     }
   }

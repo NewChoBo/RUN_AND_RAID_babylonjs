@@ -1,14 +1,11 @@
+import { healthMeter, healthMeterPainter } from './raid-health-meter.ts';
 import { actionLocked, activeSlow } from '../game/raid/raid-control.ts';
 import { uiText } from '../content/locales/ui.ts';
 import { heroKit } from '../game/raid/heroes/hero-id.ts';
-import { raidOutfits } from '../content/raid/outfits.ts';
 import { openSettings } from './settings.ts';
-import { characterLabel, characterName } from '../content/raid/gallery.ts';
-import { touchPicker } from './touch-picker.ts';
 import { raidSkill } from '../game/raid/heroes/hero-catalog.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import {
-  HEROES,
   canUseRaidSkill,
   raidRunnerAimKind,
   raidBossBonusPercent,
@@ -73,28 +70,6 @@ export function createRaidHud(
   course: HTMLCanvasElement,
   skillSize: { min: number; max: number; step: number; value: number },
 ) {
-  const outfitButton = document.createElement('button');
-  let outfit: string | undefined;
-  let outfitPicker: ReturnType<typeof touchPicker> | undefined;
-  if (raidOutfits.length) {
-    outfitPicker = touchPicker(outfitButton, uiText('practiceOutfit'), (value) => {
-      outfit = value || undefined;
-    });
-    outfitPicker.set(
-      [
-        { label: uiText('runnerOutfit'), group: uiText('runnerOutfit'), value: '' },
-        ...raidOutfits.map((o) => ({
-          value: o.model,
-          group: characterLabel(characterName(o.group)),
-          label:
-            characterLabel(characterName(o.group)) +
-            ' · ' +
-            (o.skin === 'default' ? uiText('defaultOutfit') : o.skin),
-        })),
-      ],
-      '',
-    );
-  }
   const root = element('section', document.body);
   root.className = 'raid-hud';
   root.hidden = true;
@@ -155,7 +130,19 @@ export function createRaidHud(
   deck.className = 'raid-deck';
   const vitals = element('div', deck);
   vitals.className = 'raid-vitals';
-  const hp = element('span', vitals);
+  const hp = element('div', vitals);
+  hp.className = 'raid-health';
+  hp.setAttribute('role', 'meter');
+  hp.setAttribute('aria-label', t('hp'));
+  hp.setAttribute('aria-valuemin', '0');
+  const hpText = element('strong', hp);
+  const hpBar = element('canvas', hp);
+  hpBar.width = 200;
+  hpBar.height = 24;
+  hpBar.setAttribute('aria-hidden', 'true');
+  const paintHp = healthMeterPainter(hpBar.getContext('2d')!, hpBar.width, hpBar.height);
+  const protection = element('small', hp);
+  protection.className = 'raid-protection';
   const rage = element('span', vitals);
   const condition = element('output', vitals);
   condition.className = 'raid-condition';
@@ -355,7 +342,22 @@ export function createRaidHud(
       if (side.bonus.textContent !== bonus) side.bonus.textContent = bonus;
       side.bonus.hidden = !percent;
     });
-    hp.textContent = t('hp') + ' ' + runner.hp + '/' + HEROES[runner.hero].hp;
+    const vitals = healthMeter(runner, view.tick);
+    if (paintHp(vitals, true)) {
+      hpText.textContent = t('hp') + ' ' + vitals.hp + '/' + vitals.max;
+      const status = [
+        vitals.barrier && t('barrierPoints', { n: vitals.barrier }),
+        vitals.reducedDamage && t('damageWard'),
+        vitals.guarding && t('guardActive'),
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      protection.textContent = status;
+      protection.hidden = !status;
+      hp.setAttribute('aria-valuemax', String(vitals.max));
+      hp.setAttribute('aria-valuenow', String(vitals.hp));
+      hp.setAttribute('aria-valuetext', [hpText.textContent, status].filter(Boolean).join(' · '));
+    }
     rage.textContent = t('rage') + ' ' + runner.rage + '%';
     if (runner.heroView.comboPoints !== undefined)
       rage.textContent += ' · ' + t('shadowCombo', { count: runner.heroView.comboPoints });
@@ -485,15 +487,7 @@ export function createRaidHud(
   return {
     aimPad,
     drawCombatNumbers,
-    outfitButton,
-    closeOutfits: () => outfitPicker?.close(),
-    outfit: () => outfit,
-    resetOutfit() {
-      outfit = undefined;
-      outfitPicker?.setValue('');
-    },
     reset() {
-      outfitPicker?.close();
       ping.close();
       root.hidden = panel.hidden = true;
       aimPad.close();

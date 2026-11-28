@@ -331,24 +331,9 @@
   padding: 3px;
   gap: 3px;
 }
-#overlay .battle-outfit {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  padding: 3px 4px;
-  font-size: clamp(11px, 2.5dvh, 14px);
-}
-.battle-outfit select {
-  flex: 1;
-  min-width: 0;
-  min-height: 32px;
-}
 @media (pointer: coarse) {
   .team-versus .draft-room-info:has(.draft-room-code) {
     row-gap: 10px;
-  }
-  .battle-outfit select {
-    min-height: 44px;
   }
 }
 #overlay .runner-picker .raid-pick-grid img {

@@ -1,5 +1,5 @@
 import entries from './draft-catalog.json' with { type: 'json' };
-import { illustrations } from './gallery.ts';
+import { battleOutfit } from './battle-outfits.ts';
 import type { RaidHero } from '../../game/raid/heroes/hero-id.ts';
 
 export type CatalogHero = keyof typeof entries;
@@ -7,8 +7,8 @@ export function hasDraftCatalog(hero: RaidHero): hero is CatalogHero {
   return Object.hasOwn(entries, hero);
 }
 export const draftCatalog = entries;
-export function skinArt(caption: string) {
-  return illustrations.find((art) => art.caption === caption)?.image;
+export function selectableSkins(hero: CatalogHero) {
+  return entries[hero].skins.filter((skin) => battleOutfit(hero, hero + '/' + skin.modelSkin));
 }
 
 // The June 17 patch doubled the published unlocks. Keep the rounded 1.88 source values explicit.
@@ -79,7 +79,7 @@ export interface DraftPreset {
 }
 
 export function draftPreset(hero: CatalogHero, saved?: Partial<DraftPreset> | null): DraftPreset {
-  const skins = entries[hero].skins;
+  const skins = selectableSkins(hero);
   const first = skins[0]!.art;
   const ranks = saved?.ranks;
   return {

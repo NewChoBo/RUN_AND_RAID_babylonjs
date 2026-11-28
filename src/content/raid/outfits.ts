@@ -14,8 +14,8 @@ const manifests = import.meta.glob<Outfit[]>('./local-outfits.json', {
 const outfits = new Map<string, Outfit>(published.map((o) => [o.group + '/' + o.skin, o]));
 for (const local of manifests['./local-outfits.json'] ?? []) {
   const key = local.group + '/' + local.skin;
-  // A source scene can include a whole take. The packaged outfit carries the game clip mapping.
-  if (outfits.get(key)?.clips && !local.clips) continue;
+  // Prefer the same published model used in a match. Extra local scenes are gallery-only.
+  if (outfits.has(key)) continue;
   outfits.set(key, {
     ...local,
     model: './player-assets/' + local.model,

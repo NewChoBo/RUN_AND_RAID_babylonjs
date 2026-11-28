@@ -38,7 +38,7 @@ class Swift implements HeroEvents {
     return { amount, cooldown: Math.ceil(stats.cooldown / (1 + haste)) };
   }
   onIncomingHit(combat: HeroCombat) {
-    return this.view.guardUntil >= combat.tick();
+    return this.view.guardUntil > combat.tick();
   }
   onOutgoingHit(combat: HeroCombat, hit: Hit) {
     if (!combat.self.respawn && hit.skill === 2) {
@@ -81,7 +81,7 @@ export const swift = defineHero(stats, () => new Swift(), [
     apply(combat, cast, state) {
       combat.record(3, cast.point);
       combat.blink({ x: cast.point.x, z: cast.point.z - 1.1 });
-      state.view.guardUntil = combat.tick() + 7;
+      state.view.guardUntil = combat.tick() + 8;
     },
   },
 ]);

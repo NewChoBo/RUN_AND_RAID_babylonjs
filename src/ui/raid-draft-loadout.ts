@@ -3,6 +3,7 @@ import { raidSkillCooldown } from '../game/raid/heroes/hero-catalog.ts';
 import { RAID_HZ } from '../game/raid/raid-rules.ts';
 import { raidText } from '../content/locales/run-and-raid.ts';
 import { uiText as t, type UiMessage } from '../content/locales/ui.ts';
+import { battleOutfit, outfitName } from '../content/raid/battle-outfits.ts';
 import { getLocale } from '../content/locales/locale.ts';
 import type { RaidHero } from '../game/raid/heroes/hero-id.ts';
 import {
@@ -13,7 +14,7 @@ import {
   gearIcon,
   hasDraftCatalog,
   remainingPoints,
-  skinArt,
+  selectableSkins,
   type CatalogHero,
   type DraftPreset,
   type GearPage,
@@ -30,7 +31,7 @@ function selectField(parent: HTMLElement, label: UiMessage) {
   return select;
 }
 
-export function createDraftLoadout(previewArt: (hero: CatalogHero, url: string) => void) {
+export function createDraftLoadout(changeAppearance: () => void) {
   const skills = document.createElement('section');
   skills.className = 'draft-ranks';
   const header = document.createElement('header');
@@ -50,7 +51,7 @@ export function createDraftLoadout(previewArt: (hero: CatalogHero, url: string) 
   skills.append(header, row, info);
   const settings = document.createElement('section');
   settings.className = 'draft-loadout';
-  const art = selectField(settings, 'skinPreview');
+  const art = selectField(settings, 'battleSkin');
   const intrinsic = document.createElement('small');
   intrinsic.className = 'draft-skin-note';
   settings.append(intrinsic);
@@ -204,25 +205,27 @@ export function createDraftLoadout(previewArt: (hero: CatalogHero, url: string) 
       items.append(slot);
     }
   }
-  function paintArt() {
-    const url = skinArt(preset.art);
-    if (!selected || !url) return;
-    previewArt(selected, url);
-    intrinsic.hidden = preset.option === preset.art;
-    const skin = draftCatalog[selected].skins.find((s) => s.art === preset.art);
+  function paintBonus() {
+    if (!selected) return;
+    const skin = battleOutfit(selected, art.value)?.skinInfo;
+    intrinsic.hidden = preset.option === skin?.art;
     const effect = effectFor(skin?.effect ?? null);
     intrinsic.textContent = t('intrinsicBonus', {
       bonus: effect ? t(effect[0]) + ' ' + effect[1] : t('unconfirmedEffect'),
     });
   }
   art.onchange = () => {
-    preset.art = art.value;
-    paintArt();
+    if (!selected) return;
+    const skin = battleOutfit(selected, art.value)?.skinInfo;
+    if (!skin) return;
+    preset.art = skin.art;
+    paintBonus();
     save();
+    changeAppearance();
   };
   option.onchange = () => {
     preset.option = option.value;
-    paintArt();
+    paintBonus();
     save();
   };
   gear.onchange = () => {
@@ -233,14 +236,20 @@ export function createDraftLoadout(previewArt: (hero: CatalogHero, url: string) 
   return {
     skills,
     settings,
-    show(hero: RaidHero) {
+    outfit: () => (selected ? art.value || undefined : undefined),
+    show(hero: RaidHero, locked: boolean, seatOutfit?: string) {
       const active = hasDraftCatalog(hero);
       skills.hidden = settings.hidden = !active;
       if (!active) {
         selected = undefined;
         return;
       }
-      if (selected === hero) return;
+      art.disabled = locked;
+      if (selected === hero) {
+        if (locked) art.value = battleOutfit(hero, seatOutfit)?.id ?? hero + '/default';
+        paintBonus();
+        return;
+      }
       selected = hero;
       preset = read(hero);
       info.hidden = true;
@@ -262,21 +271,26 @@ export function createDraftLoadout(previewArt: (hero: CatalogHero, url: string) 
       updateRanks();
       art.replaceChildren();
       option.replaceChildren();
-      for (const skin of draftCatalog[hero].skins) {
+      for (const skin of selectableSkins(hero)) {
         const effect = effectFor(skin.effect);
         const bonus = effect ? t(effect[0]) + ' ' + effect[1] : t('unconfirmedEffect');
-        const name =
-          getLocale() === 'ko' ? skin.art.replace('둠가드 기본', '둠가드 해머') : skin.en;
-        art.add(new Option(name, skin.art));
+        const outfit = battleOutfit(hero, hero + '/' + skin.modelSkin)!;
+        const name = outfitName(outfit, getLocale());
+        art.add(
+          new Option(outfit.clips.length ? name : name + ' · ' + t('missingMotion'), outfit.id),
+        );
         if (effect) option.add(new Option(name + ' · ' + bonus, skin.art));
       }
       option.disabled = !option.length;
       if (option.disabled) option.add(new Option(t('unconfirmedEffect'), preset.option));
-      art.value = preset.art;
+      const saved = selectableSkins(hero).find((s) => s.art === preset.art);
+      art.value = locked
+        ? (battleOutfit(hero, seatOutfit)?.id ?? hero + '/default')
+        : hero + '/' + (saved?.modelSkin ?? 'default');
       option.value = preset.option;
       gear.value = preset.gear;
       updateGear();
-      paintArt();
+      paintBonus();
     },
   };
 }

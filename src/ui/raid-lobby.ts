@@ -16,20 +16,21 @@ import {
 import { HEROES, RAID_HZ, type RaidHero, type Skill } from '../game/raid/raid-match.ts';
 import { HERO_IDS, heroKit, PRACTICE_HERO_IDS } from '../game/raid/heroes/hero-id.ts';
 import { adaptedSkills } from '../content/raid/draft-profiles.ts';
-import { createBattleOutfitPicker } from './raid-battle-outfit.ts';
+import { battleOutfit } from '../content/raid/battle-outfits.ts';
 import type { RaidEntry, RoomError } from '../platform/photon/raid-room.ts';
 
 function setDraftArt(
   image: HTMLImageElement,
   hero: RaidHero,
   thumbnail = false,
-  source = characterArt(hero),
+  outfit?: ReturnType<typeof battleOutfit>,
 ) {
+  const source = outfit?.image ?? characterArt(hero);
   if (image.dataset.hero === hero && image.dataset.art === source) return;
   image.dataset.art = source;
   image.dataset.hero = hero;
   image.referrerPolicy = 'no-referrer';
-  const fallback = './assets/raid/portraits/' + hero + '.webp';
+  const fallback = outfit?.portrait ?? './assets/raid/portraits/' + hero + '.webp';
   image.style.background =
     source === fallback ? '' : `url("${fallback}") center / contain no-repeat`;
   image.onload = () => {
@@ -51,7 +52,6 @@ function setDraftArt(
 
 export function createRaidLobby(
   parent: HTMLElement,
-  outfitButton: HTMLButtonElement,
   actions: {
     connect(code: string, entry: RaidEntry): void;
     start(): void;
@@ -60,7 +60,6 @@ export function createRaidLobby(
     leave(): void;
     pick(hero: RaidHero | null, outfit?: string): void;
     prefer(hero: RaidHero, outfit?: string): void;
-    resetPracticeOutfit(): void;
     selected(): RaidHero;
   },
 ) {
@@ -124,7 +123,8 @@ export function createRaidLobby(
   confirm.textContent = uiText('ok');
   confirm.onclick = () => {
     const own = seats.find((seat) => seat.actor === self);
-    if (own && !own.hero && own.preferred !== preview) actions.prefer(preview, battleModel.value());
+    if (own && !own.hero && (own.preferred !== preview || own.outfit !== loadout.outfit()))
+      changePreference();
     picker.close();
   };
   const draft = document.createElement('div');
@@ -164,18 +164,17 @@ export function createRaidLobby(
   source.target = '_blank';
   source.rel = 'noopener noreferrer';
   guide.append(guideTitle, originalSkills, source);
-  const loadout = createDraftLoadout((hero, url) => setDraftArt(portrait, hero, false, url));
+  const loadout = createDraftLoadout(changePreference);
   const more = document.createElement('details');
   more.className = 'draft-character-details';
   const moreTitle = document.createElement('summary');
   moreTitle.textContent = uiText('championDetails');
   more.append(moreTitle, baseStats, detail, skills, guide);
   function changePreference() {
-    actions.resetPracticeOutfit();
-    actions.prefer(preview, battleModel.value());
+    actions.prefer(preview, loadout.outfit());
+    paint();
   }
-  const battleModel = createBattleOutfitPicker(changePreference);
-  caption.append(heroName, loadout.settings, battleModel.field, more);
+  caption.append(heroName, loadout.settings, more);
   profile.append(portrait, caption);
   const notice = document.createElement('p');
   notice.className = 'draft-notice';
@@ -213,8 +212,9 @@ export function createRaidLobby(
           : undefined;
     card.append(taken);
     card.onclick = () => {
+      if (seats.find((s) => s.actor === self)?.hero) return;
       preview = hero;
-      paint();
+      loadout.show(hero, false);
       changePreference();
     };
     cards.append(card);
@@ -234,6 +234,9 @@ export function createRaidLobby(
           ? uiText('soloReady')
           : t(soloRoom ? 'pickSolo' : 'pickPlayers');
     if (mine) preview = mine;
+    loadout.show(preview, !!mine, own?.outfit);
+    const selectedOutfit = battleOutfit(preview, loadout.outfit());
+    setDraftArt(portrait, preview, false, selectedOutfit);
     for (const [i, { item, team, name, runner, image, state, ready }] of seatViews.entries()) {
       const seat = seats[i];
       const ownSeat = seat?.actor === self;
@@ -247,7 +250,7 @@ export function createRaidLobby(
       runner.textContent = hero ? t(hero) : text;
       runner.classList.toggle('seat-runner-name', !!hero);
       if (hero) {
-        setDraftArt(image, hero, true);
+        setDraftArt(image, hero, true, ownSeat ? selectedOutfit : battleOutfit(hero, seat?.outfit));
         image.classList.toggle('tentative-art', !seat?.hero);
         if (!image.parentNode) item.prepend(image);
       } else image.remove();
@@ -264,11 +267,8 @@ export function createRaidLobby(
       card.setAttribute('aria-label', card.title);
       card.setAttribute('aria-pressed', String(hero === preview));
     }
-    battleModel.show(preview, !!mine, own?.outfit);
     const kit = heroKit(preview);
-    loadout.show(preview);
     const catalogued = hasDraftCatalog(preview);
-    if (!catalogued) setDraftArt(portrait, preview);
     if (guide.dataset.hero !== preview) more.open = kit !== preview;
     heroName.textContent = t(preview);
     if (guide.dataset.hero !== preview) {
@@ -335,7 +335,7 @@ export function createRaidLobby(
       !mine && ((!!clock && active !== self) || seats.some((s) => s.hero === preview));
   }
   lock.onclick = () => {
-    actions.pick(seats.find((s) => s.actor === self)?.hero ? null : preview, battleModel.value());
+    actions.pick(seats.find((s) => s.actor === self)?.hero ? null : preview, loadout.outfit());
   };
   const choose = document.createElement('button');
   choose.textContent = uiText('chooseCharacter');
@@ -343,7 +343,7 @@ export function createRaidLobby(
   const selection = document.createElement('section');
   selection.append(title, cards, loadout.skills, kitPanel);
   const pickerTools = document.createElement('footer');
-  pickerTools.append(chat.open, outfitButton, confirm);
+  pickerTools.append(chat.open, confirm);
   picker.append(selection, profile, pickerTools);
   draft.append(choose, lock);
   group.append(teams, versus, notice, chat.dock, draft, picker, chat.dialog);
@@ -495,7 +495,6 @@ export function createRaidLobby(
       self = actor;
       clock = nextClock;
       soloRoom = (!!roomCode || offline) && isHost && seats.length === 1;
-      outfitButton.hidden = !soloRoom;
       chat.mode(offline);
       show('draft');
       paint();

@@ -58,7 +58,7 @@ class Rildin implements HeroEvents {
     }
   }
   onIncomingHit(combat: HeroCombat, hit: Hit) {
-    if (this.view.guardUntil < combat.tick()) return false;
+    if (this.view.guardUntil <= combat.tick()) return false;
     this.view.guardUntil = 0;
     combat.counter(1);
     combat.gainRage(hit.amount);
@@ -87,7 +87,7 @@ export const rildin = defineHero(
       attack: counter,
       apply(combat, _cast, state) {
         combat.record(1, combat.self);
-        state.view.guardUntil = combat.tick() + RAID_HZ;
+        state.view.guardUntil = combat.tick() + RAID_HZ + 1;
       },
     },
     {

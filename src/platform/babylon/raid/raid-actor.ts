@@ -1,8 +1,12 @@
+import { healthMeter, healthMeterPainter } from '../../../ui/raid-health-meter.ts';
 import { heroKit } from '../../../game/raid/heroes/hero-id.ts';
 import { appearance, RAID_MODEL_SCALE, RAID_RUNNER_SCALE } from './hero-appearance.ts';
 import { heroModelSource } from './hero-model-source.ts';
 import { equipRaidGear } from './raid-equipment.ts';
 import {
+  Color3,
+  DynamicTexture,
+  Mesh,
   LoadAssetContainerAsync,
   MeshBuilder,
   type StandardMaterial,
@@ -77,9 +81,7 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
     for (const mesh of rig.getChildMeshes()) mesh.isPickable = false;
     // Rildin's default run repeats in about 0.70 s in match footage (see ORIGINAL-ROSTER).
     const runCycle =
-      hero === 'rildin' && (!outfit || outfit === './assets/fighters/rildin-default.glb')
-        ? 0.7
-        : undefined;
+      hero === 'rildin' && (!outfit || outfit === 'rildin/default') ? 0.7 : undefined;
     return { model, motion, bodyHeight, runCycle };
   } catch (error) {
     model.dispose();
@@ -182,22 +184,26 @@ export function createRaidActor(
   shadow.rotation.x = Math.PI / 2;
   shadow.scaling.setAll(RAID_RUNNER_SCALE);
   shadow.material = shadowMat;
-  const bar = MeshBuilder.CreateBox(
-    hero + ' health backing',
-    { width: 0.82, height: 0.09, depth: 0.05 },
-    scene,
-  );
+  const bar = MeshBuilder.CreatePlane(hero + ' health', { width: 1.48, height: 0.22 }, scene);
   bar.parent = root;
+  bar.billboardMode = Mesh.BILLBOARDMODE_ALL;
   const defaultBarHeight = (art.barHeight ?? 2.2) * RAID_RUNNER_SCALE;
   bar.position.y = defaultBarHeight;
-  bar.material = raidMaterial(scene, hero + ' health surround', '#303341');
-  const life = MeshBuilder.CreateBox(
-    hero + ' health',
-    { width: 0.78, height: 0.065, depth: 0.012 },
+  const texture = new DynamicTexture(
+    hero + ' health meter',
+    { width: 256, height: 32 },
     scene,
+    false,
   );
-  life.parent = bar;
-  life.position.z = -0.034;
+  texture.hasAlpha = true;
+  const material = raidMaterial(scene, hero + ' health meter', '#ffffff');
+  material.diffuseTexture = texture;
+  material.useAlphaFromDiffuseTexture = true;
+  material.disableLighting = true;
+  material.emissiveColor = Color3.White();
+  material.backFaceCulling = false;
+  bar.material = material;
+  const paintHp = healthMeterPainter(texture.getContext(), 256, 32);
   const ward = MeshBuilder.CreateSphere(hero + ' ward', { diameter: 1.5, segments: 14 }, scene);
   ward.parent = body;
   ward.position.y = 0.99;
@@ -215,7 +221,7 @@ export function createRaidActor(
     orb.material = raidMaterial(scene, 'Holy Orb light', raidColors.alice, 0.95);
     orb.setEnabled(false);
   }
-  for (const part of [shadow, ring, life, bar, ward]) part.isPickable = false;
+  for (const part of [shadow, ring, bar, ward]) part.isPickable = false;
   function hide() {
     playback = new RaidActionPlayback();
     root.setEnabled(false);
@@ -245,20 +251,18 @@ export function createRaidActor(
     const fallAge = raidRespawnTicks(r.deaths) - r.respawn;
     root.setEnabled(!r.respawn || fallAge < (motion?.duration('fall') || 0.6) * RAID_HZ);
     hit.setEnabled(!r.respawn);
-    hit.material = life.material = ring.material = r.team === localTeam ? blue : red;
+    hit.material = ring.material = r.team === localTeam ? blue : red;
     ring.setEnabled(!r.respawn);
     shadow.setEnabled(root.isEnabled());
     if (!root.isEnabled()) return;
     bar.setEnabled(!r.respawn);
-    ward.setEnabled(
-      !r.respawn && (r.shield > 0 || !!r.barrier || (r.heroView.guardUntil ?? 0) > tick),
-    );
+    const vitals = healthMeter(r, tick);
+    ward.setEnabled(vitals.reducedDamage || vitals.barrier > 0 || vitals.guarding);
     const { x, z } = position;
     root.position.set(x, raidRunnerHeight(r, subtick), z);
     ring.position.set(x, 0.055, z);
     shadow.position.set(x, 0.032, z);
-    life.scaling.x = r.hp / HEROES[hero].hp;
-    life.position.x = -0.39 * (1 - life.scaling.x);
+    if (paintHp(vitals, r.team === localTeam)) texture.update();
     rig.rotation.z = 0.26 * Math.min(1, Math.max(r.staggered, r.stunned) / 4);
     if (!current) return;
     if (greatsword) greatsword.scaling.setAll((r.heroView.empoweredUntil ?? 0) > tick ? 1.45 : 1);

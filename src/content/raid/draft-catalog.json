@@ -6,22 +6,27 @@
       {
         "art": "해머 기본",
         "en": "Default",
-        "effect": "hp"
+        "effect": "hp",
+        "modelSkin": "default"
       },
       {
         "art": "근위대 해머",
         "en": "Royal Guard",
-        "effect": "resist"
+        "effect": "resist",
+        "modelSkin": "royalguard"
       },
       {
         "art": "워머신 해머",
         "en": "War Machine",
-        "effect": "armor"
+        "effect": "armor",
+        "modelSkin": "warmachine"
       },
       {
         "art": "둠가드 기본",
+        "ko": "둠가드 해머",
         "en": "Doomguard",
-        "effect": "attack"
+        "effect": "attack",
+        "modelSkin": "doomguard"
       }
     ]
   },
@@ -32,22 +37,27 @@
       {
         "art": "롱샷 기본",
         "en": "Default",
-        "effect": "pierce"
+        "effect": "pierce",
+        "modelSkin": "default"
       },
       {
         "art": "근위대 롱샷",
         "en": "Royal Guard",
-        "effect": "attack"
+        "effect": "attack",
+        "modelSkin": "royalguard"
       },
       {
         "art": "히트맨 롱샷",
         "en": "Hitman",
-        "effect": "speed"
+        "effect": "speed",
+        "modelSkin": "hitman"
       },
       {
         "art": "용병 길드 롱샷과 칼리",
+        "ko": "용병 길드 롱샷",
         "en": "Mercenary Guild",
-        "effect": null
+        "effect": null,
+        "modelSkin": "thiefguild"
       }
     ]
   },
@@ -58,17 +68,20 @@
       {
         "art": "플레어 기본",
         "en": "Default",
-        "effect": "hp"
+        "effect": "hp",
+        "modelSkin": "default"
       },
       {
         "art": "동양의 플레어",
         "en": "Eastern",
-        "effect": "magicPierce"
+        "effect": "magicPierce",
+        "modelSkin": "oriental"
       },
       {
         "art": "경관 플레어",
         "en": "Police Officer",
-        "effect": "power"
+        "effect": "power",
+        "modelSkin": "police"
       }
     ]
   },
@@ -79,22 +92,26 @@
       {
         "art": "앨리스 기본",
         "en": "Default",
-        "effect": "hp"
+        "effect": "hp",
+        "modelSkin": "default"
       },
       {
         "art": "이상한 나라의 앨리스",
         "en": "Wonderland",
-        "effect": "cooldown"
+        "effect": "cooldown",
+        "modelSkin": "wonderland"
       },
       {
         "art": "오즈의 앨리스",
         "en": "Oz",
-        "effect": "power"
+        "effect": "power",
+        "modelSkin": "dorothy"
       },
       {
         "art": "무당벌레 앨리스",
         "en": "Ladybug",
-        "effect": null
+        "effect": null,
+        "modelSkin": "bug"
       }
     ]
   },
@@ -105,17 +122,20 @@
       {
         "art": "호프 기본",
         "en": "Default",
-        "effect": "hp"
+        "effect": "hp",
+        "modelSkin": "default"
       },
       {
         "art": "우주 비행사 호프",
         "en": "Astronaut",
-        "effect": "pierce"
+        "effect": "pierce",
+        "modelSkin": "astronaut"
       },
       {
         "art": "보안관 호프",
         "en": "Sheriff",
-        "effect": "magicPierce"
+        "effect": "magicPierce",
+        "modelSkin": "western"
       }
     ]
   },
@@ -126,27 +146,33 @@
       {
         "art": "칼리 기본",
         "en": "Default",
-        "effect": "move"
+        "effect": "move",
+        "modelSkin": "default"
       },
       {
         "art": "5월의 신부 칼리",
         "en": "May Bride",
-        "effect": "pierce"
+        "effect": "pierce",
+        "modelSkin": "may"
       },
       {
         "art": "수녀 칼리",
         "en": "Nun",
-        "effect": "attack"
+        "effect": "attack",
+        "modelSkin": "nun"
       },
       {
         "art": "간호사 칼리",
         "en": "Nurse",
-        "effect": "speed"
+        "effect": "speed",
+        "modelSkin": "nurse"
       },
       {
         "art": "용병 길드 롱샷과 칼리",
+        "ko": "용병 길드 칼리",
         "en": "Mercenary Guild",
-        "effect": null
+        "effect": null,
+        "modelSkin": "thiefguild"
       }
     ]
   },
@@ -157,17 +183,20 @@
       {
         "art": "카이켄 기본",
         "en": "Default",
-        "effect": "cooldown"
+        "effect": "cooldown",
+        "modelSkin": "default"
       },
       {
         "art": "정장 카이켄",
         "en": "Suit",
-        "effect": "magicPierce"
+        "effect": "magicPierce",
+        "modelSkin": "suit"
       },
       {
         "art": "군인 카이켄",
         "en": "Soldier",
-        "effect": "hp"
+        "effect": "hp",
+        "modelSkin": "sin"
       }
     ]
   },
@@ -178,17 +207,27 @@
       {
         "art": "어비스 기본",
         "en": "Default",
-        "effect": "hp"
+        "effect": "hp",
+        "modelSkin": "default"
       },
       {
         "art": "심판관 어비스",
         "en": "Inquisitor",
-        "effect": "power"
+        "effect": "power",
+        "modelSkin": "judgement"
       },
       {
         "art": "홍염의 어비스",
         "en": "Crimson Flame",
-        "effect": "drain"
+        "effect": "drain",
+        "modelSkin": "fire"
+      },
+      {
+        "art": "어비스 스킨 설정화",
+        "ko": "사신 어비스 (설정화)",
+        "en": "Reaper concept",
+        "effect": null,
+        "modelSkin": "death"
       }
     ]
   },
@@ -199,17 +238,20 @@
       {
         "art": "프로즈 기본",
         "en": "Default",
-        "effect": "hp"
+        "effect": "hp",
+        "modelSkin": "default"
       },
       {
         "art": "캣 우먼 프로즈",
         "en": "Catwoman",
-        "effect": "speed"
+        "effect": "speed",
+        "modelSkin": "roadcat"
       },
       {
         "art": "도시 여자 프로즈",
         "en": "City Girl",
-        "effect": "power"
+        "effect": "power",
+        "modelSkin": "citygirl"
       }
     ]
   },
@@ -220,17 +262,20 @@
       {
         "art": "매그너스 기본",
         "en": "Default",
-        "effect": "hp"
+        "effect": "hp",
+        "modelSkin": "default"
       },
       {
         "art": "양철 나무꾼 매그너스",
         "en": "Tin Woodman",
-        "effect": "resist"
+        "effect": "resist",
+        "modelSkin": "oz"
       },
       {
         "art": "기갑부대 매그너스",
         "en": "Armored Division",
-        "effect": "armor"
+        "effect": "armor",
+        "modelSkin": "armoredforces"
       }
     ]
   },
@@ -241,22 +286,26 @@
       {
         "art": "스위프트 기본",
         "en": "Default",
-        "effect": "speed"
+        "effect": "speed",
+        "modelSkin": "default"
       },
       {
         "art": "비서 스위프트",
         "en": "Secretary",
-        "effect": "pierce"
+        "effect": "pierce",
+        "modelSkin": "secretary"
       },
       {
         "art": "궁중 악사 스위프트",
         "en": "Court Musician",
-        "effect": "move"
+        "effect": "move",
+        "modelSkin": "musician"
       },
       {
         "art": "바니걸 스위프트",
         "en": "Bunny Girl",
-        "effect": "rage"
+        "effect": "rage",
+        "modelSkin": "bunny"
       }
     ]
   },
@@ -267,12 +316,14 @@
       {
         "art": "릴딘 기본",
         "en": "Default",
-        "effect": "resist"
+        "effect": "resist",
+        "modelSkin": "default"
       },
       {
         "art": "방랑자 릴딘",
         "en": "Wanderer",
-        "effect": "armor"
+        "effect": "armor",
+        "modelSkin": "rugged"
       }
     ]
   },
@@ -283,12 +334,14 @@
       {
         "art": "제이드 기본",
         "en": "Default",
-        "effect": "armor"
+        "effect": "armor",
+        "modelSkin": "default"
       },
       {
         "art": "마스터 위자드 제이드",
         "en": "Master Wizard",
-        "effect": "power"
+        "effect": "power",
+        "modelSkin": "masterwizard"
       }
     ]
   },
@@ -299,17 +352,20 @@
       {
         "art": "테레사 기본",
         "en": "Default",
-        "effect": "hp"
+        "effect": "hp",
+        "modelSkin": "default"
       },
       {
         "art": "견습 기사 테레사",
         "en": "Squire",
-        "effect": "armor"
+        "effect": "armor",
+        "modelSkin": "varlet"
       },
       {
         "art": "가디언 테레사",
         "en": "Guardian",
-        "effect": "resist"
+        "effect": "resist",
+        "modelSkin": "retinue"
       }
     ]
   },
@@ -320,12 +376,14 @@
       {
         "art": "드리즈 기본",
         "en": "Default",
-        "effect": "hp"
+        "effect": "hp",
+        "modelSkin": "default"
       },
       {
         "art": "폭주화 드리즈",
         "en": "Berserk",
-        "effect": "attack"
+        "effect": "attack",
+        "modelSkin": "demon"
       }
     ]
   },
@@ -336,12 +394,21 @@
       {
         "art": "발렛 기본",
         "en": "Default",
-        "effect": "pierce"
+        "effect": "pierce",
+        "modelSkin": "default"
       },
       {
         "art": "레이디 발렛",
         "en": "Lady",
-        "effect": "attack"
+        "effect": "attack",
+        "modelSkin": "skin1"
+      },
+      {
+        "art": "발렛 · 차후 업데이트 원화",
+        "ko": "해군복 발렛 (설정화)",
+        "en": "Naval uniform concept",
+        "effect": null,
+        "modelSkin": "navy"
       }
     ]
   },
@@ -352,12 +419,14 @@
       {
         "art": "프리지아 기본",
         "en": "Default",
-        "effect": null
+        "effect": null,
+        "modelSkin": "default"
       },
       {
         "art": "꿀벌 프리지아",
         "en": "Honeybee",
-        "effect": null
+        "effect": null,
+        "modelSkin": "bee"
       }
     ]
   }

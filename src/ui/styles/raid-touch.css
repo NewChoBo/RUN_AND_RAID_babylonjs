@@ -290,6 +290,25 @@ body.raid-mode .title-copy h1 {
   background: linear-gradient(90deg, #0c1825d9, #0c182573);
   border-left: 2px solid #80b7af;
 }
+.raid-health {
+  display: grid;
+  width: clamp(95px, 16vw, 158px);
+  row-gap: 1px;
+  font-variant-numeric: tabular-nums;
+}
+.raid-health canvas {
+  display: block;
+  width: 100%;
+  height: 12px;
+}
+.raid-health strong {
+  color: #fff;
+  font-size: inherit;
+}
+.raid-protection {
+  color: #9eebef;
+  font-size: inherit;
+}
 .raid-orders {
   position: absolute;
   left: 0;

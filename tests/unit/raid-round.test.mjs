@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { battleOutfits, battleOutfit } from '../../src/content/raid/battle-outfits.ts';
+import {
+  battleOutfits,
+  battleOutfit,
+  outfitCatalog,
+} from '../../src/content/raid/battle-outfits.ts';
 import { HERO_IDS } from '../../src/game/raid/heroes/hero-id.ts';
 import { RaidSimulation } from '../../src/game/raid/raid-simulation.ts';
 import { RaidMatch } from '../../src/game/raid/raid-match.ts';
@@ -229,9 +233,9 @@ test('online turns follow the numbered seats; other players can preview but cann
   assert.equal(nextDraftClock(seats, clock, 3000).actor, 7);
 });
 
-test('all published appearances can enter a match and a timed-out pick keeps only its own valid outfit', () => {
+test('only mapped appearances enter a match and a timed-out pick keeps its own valid outfit', () => {
   for (const item of battleOutfits) {
-    const hero = item.group === 'base' ? 'bird' : item.group;
+    const hero = item.group;
     assert.ok(HERO_IDS.includes(hero));
     assert.equal(battleOutfit(hero, item.id)?.model, item.model);
     assert.deepEqual(readDraftChoice({ hero, outfit: item.id }), { hero, outfit: item.id });
@@ -250,7 +254,18 @@ test('all published appearances can enter a match and a timed-out pick keeps onl
   timeoutPick(seats, 2);
   assert.ok(isRaidRoster(seats));
   assert.equal(seats[1].outfit, undefined);
-  for (const outfit of ['hammer/doomguard', 'https://example.com/test.glb', 42])
+  for (const item of outfitCatalog.filter((item) => !item.playable)) {
+    const hero = item.group === 'base' ? 'bird' : item.group;
+    assert.equal(battleOutfit(hero, item.id), undefined);
+    assert.equal(readDraftChoice({ hero, outfit: item.id }), null);
+  }
+  for (const outfit of [
+    'base/witchdoctor',
+    'bird/bigbird#default',
+    'hammer/doomguard',
+    'https://example.com/test.glb',
+    42,
+  ])
     assert.equal(readDraftChoice({ hero: 'bird', outfit }), null);
 });
 test('timeouts use the preview if free and preserve the active turn across joins and host changes', () => {

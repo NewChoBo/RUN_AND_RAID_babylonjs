@@ -15,7 +15,6 @@ import {
   type RaidTarget,
 } from '../game/raid/raid-match.ts';
 import { practiceRoster } from '../game/raid/raid-draft.ts';
-import { battleOutfit } from '../content/raid/battle-outfits.ts';
 import type { RaidCommandName } from '../game/raid/raid-feature.ts';
 import { RaidSimulation } from '../game/raid/raid-simulation.ts';
 import type { openRaidCourse } from '../platform/babylon/raid/raid-course.ts';
@@ -204,14 +203,13 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   }
   function launchSolo() {
     slot = 0;
-    matchOutfits = [hud.outfit() ?? battleOutfit(chosenHero, soloOutfit)?.model];
+    matchOutfits = [soloOutfit];
     match = new RaidMatch(practiceRoster(chosenHero), course.viewAspect);
     solo = new RaidSimulation(match, new Set([slot]));
     launch();
   }
   function launch() {
     lobby.closePicker();
-    hud.closeOutfits();
     pressed.clear();
     padSide = 0;
     padBrake = 0;
@@ -326,40 +324,35 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   function drawOffline() {
     lobby.room('', [{ actor: 1, hero: offlinePick, outfit: soloOutfit }], 1, true, null, true);
   }
-  const lobby = createRaidLobby(
-    document.querySelector<HTMLElement>('#menu-actions')!,
-    hud.outfitButton,
-    {
-      connect: (code, entry) => void connect(code, entry),
-      practice() {
-        offline = true;
-        offlinePick = null;
-        soloOutfit = undefined;
-        drawOffline();
-      },
-      start() {
-        if (offline && offlinePick) {
-          chosenHero = offlinePick;
-          void begin();
-        } else room?.start();
-      },
-      pick(hero, outfit) {
-        if (offline) {
-          offlinePick = hero;
-          soloOutfit = outfit;
-          drawOffline();
-        } else room?.pick(hero, outfit);
-      },
-      selected: () => chosenHero,
-      resetPracticeOutfit: hud.resetOutfit,
-      prefer: (hero, outfit) => room?.prefer(hero, outfit),
-      chat(text) {
-        if (offline) lobby.chat(1, text);
-        else room?.chat(text);
-      },
-      leave: () => resetLobby(),
+  const lobby = createRaidLobby(document.querySelector<HTMLElement>('#menu-actions')!, {
+    connect: (code, entry) => void connect(code, entry),
+    practice() {
+      offline = true;
+      offlinePick = null;
+      soloOutfit = undefined;
+      drawOffline();
     },
-  );
+    start() {
+      if (offline && offlinePick) {
+        chosenHero = offlinePick;
+        void begin();
+      } else room?.start();
+    },
+    pick(hero, outfit) {
+      if (offline) {
+        offlinePick = hero;
+        soloOutfit = outfit;
+        drawOffline();
+      } else room?.pick(hero, outfit);
+    },
+    selected: () => chosenHero,
+    prefer: (hero, outfit) => room?.prefer(hero, outfit),
+    chat(text) {
+      if (offline) lobby.chat(1, text);
+      else room?.chat(text);
+    },
+    leave: () => resetLobby(),
+  });
   function resetLobby(reason?: RoomError, exiting = false) {
     attempt++;
     if (state === 'loading') closeLoadingScreen();
@@ -372,7 +365,6 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     aiming = null;
     pressed.clear();
     hud.reset();
-    hud.resetOutfit();
     course?.stopRendering(renderFrame);
     course?.showAim(null);
     offline = false;
@@ -396,7 +388,6 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
         waiting: (count) => lobby.waiting(count),
         chat: (actor, text) => lobby.chat(actor, text),
         lobby(seats, self, host, clock) {
-          if (seats.length > 1) hud.closeOutfits();
           lobby.room(code, seats, self, host, clock);
         },
         solo(hero, outfit) {
@@ -408,8 +399,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
         start(seats, self, host) {
           round = new RaidRound(seats);
           matchOutfits = [];
-          for (const seat of seats)
-            matchOutfits[round.slot(seat.actor)!] = battleOutfit(seat.hero, seat.outfit)?.model;
+          for (const seat of seats) matchOutfits[round.slot(seat.actor)!] = seat.outfit;
           slot = round.slot(self)!;
           match = round.match;
           onlineStart = performance.now() + 3000;
