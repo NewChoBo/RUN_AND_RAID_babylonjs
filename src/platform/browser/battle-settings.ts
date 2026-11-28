@@ -1,4 +1,3 @@
-export type AudioChannel = 'effects' | 'voice';
 export const graphicsLevels = ['low', 'medium', 'high'] as const;
 export type GraphicsLevel = (typeof graphicsLevels)[number];
 
@@ -16,31 +15,24 @@ function write(key: string, value: string) {
     /* Still applies for this session. */
   }
 }
-function loadChannel(channel: AudioChannel) {
-  const key = 'run-and-raid.audio.' + channel;
-  const percent = Number(read(key + '.volume') ?? 100);
-  return {
-    key,
-    enabled: read(key) !== 'off',
-    volume: Number.isFinite(percent) && percent > 0 && percent <= 100 ? percent : 100,
-  };
+const effectsKey = 'run-and-raid.audio.effects';
+const savedVolume = Number(read(effectsKey + '.volume') ?? 100);
+let volume =
+  Number.isFinite(savedVolume) && savedVolume > 0 && savedVolume <= 100 ? savedVolume : 100;
+let enabled = read(effectsKey) !== 'off';
+export const audioVolume = () => (enabled ? volume : 0);
+export function setAudioEnabled(value: boolean) {
+  enabled = value;
+  write(effectsKey, value ? 'on' : 'off');
 }
-const channels = { effects: loadChannel('effects'), voice: loadChannel('voice') };
-export const audioVolume = (channel: AudioChannel) =>
-  channels[channel].enabled ? channels[channel].volume : 0;
-export function setAudioEnabled(channel: AudioChannel, enabled: boolean) {
-  channels[channel].enabled = enabled;
-  write(channels[channel].key, enabled ? 'on' : 'off');
-}
-export function setAudioVolume(channel: AudioChannel, percent: number) {
+export function setAudioVolume(percent: number) {
   if (!Number.isFinite(percent)) return;
   const value = Math.max(0, Math.min(100, Math.round(percent)));
-  const setting = channels[channel];
   if (value) {
-    setting.volume = value;
-    write(setting.key + '.volume', String(value));
+    volume = value;
+    write(effectsKey + '.volume', String(value));
   }
-  setAudioEnabled(channel, value > 0);
+  setAudioEnabled(value > 0);
 }
 
 const graphicsKey = 'run-and-raid.graphics';

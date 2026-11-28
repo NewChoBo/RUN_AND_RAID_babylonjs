@@ -1,10 +1,10 @@
-import { getLocale } from '../../content/locales/locale.ts';
 import { heroKit } from '../../game/raid/heroes/hero-id.ts';
 import { raidSkill } from '../../game/raid/heroes/hero-catalog.ts';
 import type { RaidAction, RaidView } from '../../game/raid/raid-view.ts';
-import { audioVolume, type AudioChannel } from './battle-settings.ts';
+import { audioVolume } from './battle-settings.ts';
 
 const effects = [
+  'ping',
   'hammer',
   'blade',
   'bow',
@@ -19,7 +19,6 @@ const effects = [
   'signal',
 ] as const;
 type Effect = (typeof effects)[number];
-type Voice = 'go' | 'advance' | 'retreat' | 'focus';
 // Each row follows basic attack, Q, W, E and R in the current playable kit.
 const sounds: Partial<
   Record<ReturnType<typeof heroKit>, readonly [Effect, Effect, Effect, Effect, Effect]>
@@ -46,10 +45,9 @@ const sounds: Partial<
 /** Cue ownership stays with the match. The audio clock only plays short samples. */
 export function createRaidAudio() {
   let context: AudioContext | undefined;
-  const buffers = new Map<string, AudioBuffer>();
-  const loading = new Set<string>();
+  const buffers = new Map<Effect, AudioBuffer>();
+  const loading = new Set<Effect>();
   const active = new Set<AudioBufferSourceNode>();
-  let voice: AudioBufferSourceNode | undefined;
   let seen = new WeakSet<object>();
   let countdown = -1;
   function unlock() {
@@ -61,10 +59,7 @@ export function createRaidAudio() {
       return;
     }
     const ctx = context;
-    for (const name of [
-      ...effects,
-      ...['go', 'advance', 'retreat', 'focus'].map((v) => getLocale() + '-' + v),
-    ]) {
+    for (const name of effects) {
       if (buffers.has(name) || loading.has(name)) continue;
       loading.add(name);
       void fetch('./assets/audio/' + name + '.wav')
@@ -78,12 +73,12 @@ export function createRaidAudio() {
         .finally(() => loading.delete(name));
     }
   }
-  function play(name: string, channel: AudioChannel, volume: number, speed = 1) {
+  function play(name: Effect, volume: number, speed = 1) {
     const buffer = buffers.get(name);
-    const percent = audioVolume(channel);
+    const percent = audioVolume();
     if (!percent || document.hidden || !buffer || context?.state !== 'running') return;
-    if (channel === 'voice') voice?.stop();
-    else if (active.size >= 10) return;
+    // An accepted team ping stays audible even during a full volley of combat sounds.
+    if (active.size >= 10 && name !== 'ping') return;
     const source = context.createBufferSource();
     const gain = context.createGain();
     source.buffer = buffer;
@@ -91,16 +86,13 @@ export function createRaidAudio() {
     source.playbackRate.value = speed;
     source.connect(gain).connect(context.destination);
     active.add(source);
-    if (channel === 'voice') voice = source;
     source.onended = () => {
       source.disconnect();
       gain.disconnect();
       active.delete(source);
-      if (voice === source) voice = undefined;
     };
     source.start();
   }
-  const say = (line: Voice) => play(getLocale() + '-' + line, 'voice', 0.82);
   function stop() {
     for (const source of active) source.stop();
   }
@@ -132,8 +124,7 @@ export function createRaidAudio() {
     count(seconds: number) {
       if (seconds === countdown) return;
       countdown = seconds;
-      play(seconds ? 'count' : 'signal', 'effects', 0.29);
-      if (!seconds) say('go');
+      play(seconds ? 'count' : 'signal', 0.29);
     },
     update(view: RaidView, slot: number) {
       for (const cue of view.actions) {
@@ -146,13 +137,13 @@ export function createRaidAudio() {
         const sound =
           sounds[heroKit(cue.hero)]?.[cue.skill === 'basic' ? 0 : cue.skill + 1] ?? 'impact';
         const volume = (cue.slot === slot ? 0.55 : 0.24) * (basic ? 0.55 : 1);
-        play(sound, 'effects', volume, cue.skill === 3 ? 0.78 : basic ? 1.18 : 1);
+        play(sound, volume, cue.skill === 3 ? 0.78 : basic ? 1.18 : 1);
       }
       for (const r of view.runners ?? []) {
         function sound(event: { tick: number }, clip: Effect) {
           if (seen.has(event)) return;
           seen.add(event);
-          if (view.tick - event.tick <= 3) play(clip, 'effects', r.slot === slot ? 0.28 : 0.14);
+          if (view.tick - event.tick <= 3) play(clip, r.slot === slot ? 0.28 : 0.14);
         }
         for (const arrow of r.heroView.airArrows ?? []) sound(arrow, 'bow');
         for (const turret of r.heroView.turrets ?? [])
@@ -168,13 +159,12 @@ export function createRaidAudio() {
         if (change.amount > 0) heal = true;
         else hit = true;
       }
-      if (hit) play('impact', 'effects', 0.38);
-      if (heal) play('ward', 'effects', 0.32, 1.24);
+      if (hit) play('impact', 0.38);
+      if (heal) play('ward', 0.32, 1.24);
       const call = view.calls[view.runners[slot]!.team];
       if (call && !seen.has(call)) {
         seen.add(call);
-        play('signal', 'effects', 0.29);
-        say('movement' in call ? call.movement : 'focus');
+        play('ping', 0.44);
       }
     },
   };

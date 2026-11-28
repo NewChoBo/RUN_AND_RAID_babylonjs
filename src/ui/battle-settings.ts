@@ -14,46 +14,35 @@ import './styles/battle-settings.css';
 export function createBattleSettings(parent: HTMLElement, prefix: string) {
   const body = element('div', parent);
   body.className = 'battle-settings';
-  const channels = (['voice', 'effects'] as const).map((channel) => {
-    const row = element('div', body);
-    row.className = 'battle-volume';
-    const name = t(channel === 'voice' ? 'voiceVolume' : 'battleSounds');
-    const label = element('label', row, name);
-    const value = element('span', row);
-    value.setAttribute('aria-hidden', 'true');
-    const track = element('div', row);
-    const muteLabel = element('label', track);
-    muteLabel.className = 'battle-speaker';
-    const enabled = element('input', muteLabel);
-    enabled.type = 'checkbox';
-    enabled.id = prefix + '-' + channel;
-    enabled.setAttribute('aria-label', name);
-    const glyph = element('span', muteLabel);
-    glyph.setAttribute('aria-hidden', 'true');
-    const slider = element('input', track);
-    slider.type = 'range';
-    slider.id = enabled.id + '-volume';
-    label.htmlFor = slider.id;
-    slider.min = '0';
-    slider.max = '100';
-    slider.step = '1';
-    function refresh() {
-      const percent = audioVolume(channel);
-      enabled.checked = percent > 0;
-      slider.value = String(percent);
-      value.textContent = percent + '%';
-      slider.setAttribute('aria-valuetext', value.textContent);
-    }
-    enabled.onchange = () => {
-      setAudioEnabled(channel, enabled.checked);
-      refresh();
-    };
-    slider.oninput = () => {
-      setAudioVolume(channel, slider.valueAsNumber);
-      refresh();
-    };
-    return refresh;
-  });
+  const row = element('div', body);
+  row.className = 'battle-volume';
+  const volumeLabel = element('label', row, t('battleSounds'));
+  const value = element('span', row);
+  value.setAttribute('aria-hidden', 'true');
+  const track = element('div', row);
+  const muteLabel = element('label', track);
+  muteLabel.className = 'battle-speaker';
+  const enabled = element('input', muteLabel);
+  enabled.type = 'checkbox';
+  enabled.id = prefix + '-effects';
+  enabled.setAttribute('aria-label', t('battleSounds'));
+  const glyph = element('span', muteLabel);
+  glyph.setAttribute('aria-hidden', 'true');
+  const slider = element('input', track);
+  slider.type = 'range';
+  slider.id = enabled.id + '-volume';
+  volumeLabel.htmlFor = slider.id;
+  slider.min = '0';
+  slider.max = '100';
+  slider.step = '1';
+  enabled.onchange = () => {
+    setAudioEnabled(enabled.checked);
+    refresh();
+  };
+  slider.oninput = () => {
+    setAudioVolume(slider.valueAsNumber);
+    refresh();
+  };
   const quality = element('div', body);
   quality.className = 'battle-quality';
   const label = element('strong', quality, t('graphics'));
@@ -71,7 +60,11 @@ export function createBattleSettings(parent: HTMLElement, prefix: string) {
   const more = button(quality, '▶', () => change(1));
   more.setAttribute('aria-label', t('raiseGraphics'));
   function refresh() {
-    for (const refreshVolume of channels) refreshVolume();
+    const percent = audioVolume();
+    enabled.checked = percent > 0;
+    slider.value = String(percent);
+    value.textContent = percent + '%';
+    slider.setAttribute('aria-valuetext', value.textContent);
     const current = graphicsQuality();
     level.textContent = t(
       ({ high: 'qualityHigh', medium: 'qualityMedium', low: 'qualityLow' } as const)[current],
