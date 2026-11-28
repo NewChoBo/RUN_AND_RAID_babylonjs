@@ -3,7 +3,7 @@ import { heroKit, KIT_IDS } from '../../../game/raid/heroes/hero-id.ts';
 import { appearance } from './hero-appearance.ts';
 import { raidProjectileProfile, raidSkill } from '../../../game/raid/heroes/hero-catalog.ts';
 import { createRaidArrowRain } from './raid-arrow-rain.ts';
-import { createIgnitionFx } from './raid-ignition.ts';
+import { createIgnitionFx, createFlame, createFlameMaterial } from './raid-ignition.ts';
 import { createRaidArrow } from './raid-arrow.ts';
 import { createShadowBlades } from './raid-shadow-blades.ts';
 import {
@@ -38,7 +38,8 @@ const tau = Math.PI * 2;
 
 /** Effects sample match ticks, so pausing, catching up and starting a rematch have no independent timers. */
 export function createRaidEffects(scene: Scene) {
-  const drawIgnition = createIgnitionFx(scene);
+  const fire = createFlameMaterial(scene);
+  const drawIgnition = createIgnitionFx(scene, fire);
   const materials = new Map<RaidHero, { sigil: StandardMaterial; light: StandardMaterial }>();
   for (const hero of KIT_IDS) {
     const color = Color3.FromHexString(raidColors[hero]);
@@ -78,6 +79,7 @@ export function createRaidEffects(scene: Scene) {
     );
     let sector: LinesMesh | undefined;
     let turret: Mesh | undefined;
+    let pillars: Mesh[] | undefined;
     let sectorAngle: number | undefined;
     let rain: ReturnType<typeof createRaidArrowRain> | undefined;
     let blades: ReturnType<typeof createShadowBlades> | undefined;
@@ -87,6 +89,7 @@ export function createRaidEffects(scene: Scene) {
       for (const part of parts) part.setEnabled(false);
       sector?.setEnabled(false);
       turret?.setEnabled(false);
+      for (const pillar of pillars ?? []) pillar.setEnabled(false);
       rain?.hide();
       blades?.hide();
       lightning?.dispose();
@@ -223,14 +226,17 @@ export function createRaidEffects(scene: Scene) {
         shard.material = light;
         shard.setEnabled(true);
         if (heroKit(hero) === 'flare' && skill === 3) {
+          pillars ??= shards.map(() => createFlame(scene, 'pillar of fire', fire));
+          const pillar = pillars[i]!;
           const rise = Math.sin(Math.PI * t) * (3.5 + 2 * phase);
-          shard.position.set(
+          shard.setEnabled(false);
+          pillar.setEnabled(true);
+          pillar.position.set(
             to.x + Math.cos(a) * radius * 0.32,
             rise / 2,
             to.z + Math.sin(a) * radius * 0.32,
           );
-          shard.rotation.set(0, a, 0.1 * Math.sin(a));
-          shard.scaling.set(8 * fade, rise, 8 * fade);
+          pillar.scaling.set(2.2 * fade, rise, 1);
         } else if (art.particles === 'arrows' && !area && travel < 1) {
           shard.setEnabled(i === 0);
           shard.position.set(x, y, z);
