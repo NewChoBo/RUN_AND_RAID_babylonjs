@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T20:19+09:00',
+    tag: 'arena',
+    title: '발치에서 솟는 기둥 번개',
+    body: '낮은 전격은 돌바닥을 따라 옆으로 갈라집니다. 기둥 번개는 첫 줄의 두세 곳에 작은 빛과 가는 세로 줄기로 예고합니다. 방전이 시작되면 맞을 수 있는 칸에서만 굵은 번개가 솟습니다.',
+  },
+  {
     updatedAt: '2026-11-28T20:12+09:00',
     tag: 'arena',
     title: '황록색으로 다가오는 지그재그 번개',

@@ -15,6 +15,7 @@ import { raidRoadTravel } from '../../../game/raid/runner-motion.ts';
 
 const straight = { glow: new Color3(0.12, 0.48, 1), core: new Color3(0.78, 0.96, 1) };
 const zigzag = { glow: new Color3(0.4, 0.83, 0.07), core: new Color3(1, 1, 0.6) };
+const pillarHeight = 5.8;
 
 const electricShader = {
   vertexSource: `
@@ -33,7 +34,7 @@ const electricShader = {
     precision highp float;
     varying vec2 coord;
     varying float upright;
-    uniform float age, seed, strength;
+    uniform float age, seed, strength, pillarWave;
     uniform vec3 glowColor, coreColor;
 
     float hash(float x) { return fract(sin(x * 12.9898 + seed) * 4375.17); }
@@ -45,27 +46,37 @@ const electricShader = {
     void main() {
       vec2 p = coord * 2.0 - 1.0;
       float frame = 7.0 * floor(age / 3.0);
-      float d, fade, pool;
+      float discharge = smoothstep(0.60, 0.92, strength);
+      float d, fade;
       if (upright > 0.5) {
         float h = coord.y;
-        float trunk = 0.32 * jag(h * 9.0, frame) + 0.09 * jag(h * 19.0, frame + 15.0);
-        trunk *= min(h * 5.0, 1.0);
-        float branch = abs(p.x - trunk - (0.52 - h) * 0.95 - 0.11 * jag(h * 18.0, frame + 3.0));
-        d = min(abs(p.x - trunk), h > 0.18 && h < 0.52 ? branch * 1.7 : 2.0);
+        float trunk = (0.32 * jag(h * 9.0, frame) + 0.09 * jag(h * 19.0, frame + 15.0))
+          * min(h * 5.0, 1.0) * mix(0.42, 1.0, discharge);
+        d = abs(p.x - trunk);
+        if (discharge > 0.0) {
+          float fork = abs(p.x - trunk - (0.63 - h) * 1.2 - 0.11 * jag(h * 18.0, frame + 3.0));
+          if (h > 0.16 && h < 0.63) d = min(d, fork * 1.5);
+          float spur = abs(p.x - trunk + (0.83 - h) * 1.05 + 0.08 * jag(h * 14.0, frame + 7.0));
+          if (h > 0.45 && h < 0.83) d = min(d, spur * 1.7);
+        }
         fade = 1.0 - smoothstep(0.78, 1.0, h);
-        pool = 0.0;
+      } else if (pillarWave > 0.5) {
+        // Only a small point of light touches the road beneath a pillar.
+        float r2 = dot(p, p);
+        vec3 foot = glowColor * exp(-3.7 * r2) + coreColor * exp(-18.0 * r2);
+        gl_FragColor = vec4(foot * (1.0 - smoothstep(0.75, 1.0, r2)), strength);
+        return;
       } else {
-        float radius = length(p * vec2(1.0, 1.17));
-        pool = 0.75 * exp(-5.5 * radius * radius) + 0.28 * exp(-15.0 * abs(radius - 0.52));
         float arc = 0.52 * jag(p.x * 5.0, frame) + 0.16 * jag(p.x * 11.0, frame + 2.0);
         float fork = abs(p.y - arc - 0.56 * (p.x + 0.12) - 0.1 * jag(p.x * 13.0, frame + 8.0));
         d = min(abs(p.y - arc), p.x > -0.12 ? fork * 1.5 : 2.0);
-        fade = 1.0 - smoothstep(0.64, 1.0, radius);
+        float spur = abs(p.y - arc - 0.50 * (p.x - 0.20) - 0.1 * jag(p.x * 12.0, frame + 5.0));
+        if (p.x < 0.20) d = min(d, spur * 1.5);
+        fade = (1.0 - smoothstep(0.76, 1.0, abs(p.x))) * (1.0 - smoothstep(0.7, 1.0, abs(p.y)));
       }
       float glow = exp(-9.0 * d), core = exp(-42.0 * d);
-      float discharge = smoothstep(0.60, 0.92, strength);
-      vec3 glowLight = glowColor * (pool + glow * mix(0.35, 1.0, discharge));
-      vec3 coreLight = coreColor * (core * mix(0.23, 1.0, discharge) + 0.28 * pool);
+      vec3 glowLight = glowColor * glow * mix(0.78, 1.0, discharge);
+      vec3 coreLight = coreColor * core * mix(0.60, 1.0, discharge);
       gl_FragColor = vec4((glowLight + coreLight) * fade, strength);
     }`,
 };
@@ -75,7 +86,15 @@ function electricTile(scene: Scene, index: number) {
   const root = new TransformNode('wagon electric cell ' + index, scene);
   const material = new ShaderMaterial('wagon electricity ' + index, scene, electricShader, {
     attributes: ['position', 'normal', 'uv'],
-    uniforms: ['worldViewProjection', 'age', 'seed', 'strength', 'glowColor', 'coreColor'],
+    uniforms: [
+      'worldViewProjection',
+      'age',
+      'seed',
+      'strength',
+      'pillarWave',
+      'glowColor',
+      'coreColor',
+    ],
     needAlphaBlending: true,
   });
   material.backFaceCulling = false;
@@ -89,42 +108,64 @@ function electricTile(scene: Scene, index: number) {
   floor.position.y = 0.045;
   const pillar = MeshBuilder.CreatePlane(
     'wagon electric pillar ' + index,
-    { width: width * 0.52, height: 5.8 },
+    { width: width * 0.52, height: pillarHeight },
     scene,
   );
-  pillar.position.y = 2.9;
   for (const mesh of [floor, pillar]) {
     mesh.parent = root;
     mesh.material = material;
     mesh.isPickable = false;
   }
-  return { root, pillar, material };
+  return { root, floor, pillar, material };
+}
+
+function firstPillarWarning(cells: RaidCounter['cells']) {
+  let first: (typeof cells)[number] | undefined;
+  for (const cell of cells) {
+    if (cell.phase === 'impact') return undefined;
+    if (!first || cell.ticks < first.ticks) first = cell;
+  }
+  return first?.row;
 }
 
 export function createRaidCounterVisual(scene: Scene) {
   const tiles: ReturnType<typeof electricTile>[] = [];
   return (counter: RaidCounter | null, subtick: number) => {
-    const count = counter?.cells.length ?? 0;
-    for (let i = count; i < tiles.length; i++) tiles[i]!.root.setEnabled(false);
-    if (!counter) return;
+    if (!counter) {
+      for (const tile of tiles) tile.root.setEnabled(false);
+      return;
+    }
     const timing = RAID_COUNTERS[counter.kind];
     const palette = counter.zigzag ? zigzag : straight;
-    for (const [i, cell] of counter.cells.entries()) {
+    const pillar = counter.kind === 'pillar';
+    const warningRow = pillar ? firstPillarWarning(counter.cells) : undefined;
+    let count = 0;
+    for (const cell of counter.cells) {
+      const strike = cell.phase === 'impact';
+      if (pillar && !strike && cell.row !== warningRow) continue;
+      const i = count++;
       const tile = (tiles[i] ??= electricTile(scene, i));
       tile.root.setEnabled(true);
       tile.root.position.set(cell.x, 0, cell.z - raidRoadTravel(subtick));
-      const strike = cell.phase === 'impact';
-      tile.pillar.setEnabled(strike && counter.kind === 'pillar');
       const elapsed = (strike ? timing.active : timing.windup) - cell.ticks + subtick;
+      tile.floor.scaling.set(pillar ? 0.34 : 1, 1, pillar ? 0.28 : 1);
+      tile.pillar.setEnabled(pillar);
+      if (pillar) {
+        const heightScale = strike ? 1 : 0.48 + 0.16 * (elapsed / timing.windup);
+        tile.pillar.scaling.set(strike ? 1 : 0.6, heightScale, 1);
+        tile.pillar.position.y = tile.floor.position.y + (pillarHeight * heightScale) / 2;
+      }
       // The final two impact ticks leave a softer arc on the same hazardous cell.
       const strength = strike
         ? 0.72 + 0.22 * Math.min(1, (cell.ticks - subtick) / 2)
         : 0.31 + 0.29 * Math.min(1, elapsed / timing.windup);
       tile.material.setColor3('glowColor', palette.glow);
       tile.material.setColor3('coreColor', palette.core);
+      tile.material.setFloat('pillarWave', pillar ? 1 : 0);
       tile.material.setFloat('strength', strength);
       tile.material.setFloat('age', elapsed + (strike ? timing.windup : 0));
       tile.material.setFloat('seed', cell.row * 5 + cell.column * 13);
     }
+    for (let i = count; i < tiles.length; i++) tiles[i]!.root.setEnabled(false);
   };
 }

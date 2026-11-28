@@ -334,7 +334,7 @@ test('Chain Slash draws the frontal sector at its cast-time reach even after a l
   assert.equal(rim.getBoundingInfo().boundingBox.minimum.z, 0);
 });
 
-test('electric tells follow individual road cells, raise pillars only on impact and reuse their meshes', (t) => {
+test('electric tells follow road cells and reuse their meshes when switching between ground arcs and pillars', (t) => {
   const engine = new NullEngine();
   t.after(() => engine.dispose());
   const scene = new Scene(engine);
@@ -348,31 +348,61 @@ test('electric tells follow individual road cells, raise pillars only on impact 
   draw(counter, 0.5);
   const pools = cells.map((_, i) => scene.getMeshByName('wagon electric pool ' + i));
   const pillars = cells.map((_, i) => scene.getMeshByName('wagon electric pillar ' + i));
-  for (const [i, pool] of pools.entries()) {
-    const cell = cells[i];
-    assert.deepEqual(
-      [pool.parent.position.x, pool.parent.position.z],
-      [cell.x, cell.z - raidRoadTravel(0.5)],
-    );
-    assert.ok(pool.isEnabled() && !pool.isPickable && !pillars[i].isEnabled());
-    const { minimum, maximum } = pool.getBoundingInfo().boundingBox;
-    assert.ok(Math.abs(maximum.x - minimum.x - width) < 1e-6);
-    assert.ok(Math.abs(maximum.z - minimum.z - depth) < 1e-6);
+  function worldBox(mesh) {
+    mesh.computeWorldMatrix(true);
+    return mesh.getBoundingInfo().boundingBox;
   }
-  draw({ ...counter, kind: 'pillar', zigzag: true }, 0.75);
-  assert.ok(pillars[0].isEnabled() && !pillars[1].isEnabled());
+  function checkGroundArcs(subtick) {
+    for (const [i, pool] of pools.entries()) {
+      const cell = cells[i];
+      assert.deepEqual(
+        [pool.parent.position.x, pool.parent.position.z],
+        [cell.x, cell.z - raidRoadTravel(subtick)],
+      );
+      assert.ok(pool.isEnabled() && !pool.isPickable && !pillars[i].isEnabled());
+      const { minimumWorld, maximumWorld } = worldBox(pool);
+      assert.ok(Math.abs(maximumWorld.x - minimumWorld.x - width) < 1e-6);
+      assert.ok(Math.abs(maximumWorld.z - minimumWorld.z - depth) < 1e-6);
+      assert.equal(pool.material.serialize().floats.pillarWave, 0);
+    }
+  }
+  checkGroundArcs(0.5);
+
+  const warnings = cells.map((cell) => ({ ...cell, phase: 'warning' }));
+  draw({ ...counter, kind: 'pillar', cells: warnings.reverse() }, 0.75);
+  assert.ok(pillars[0].isEnabled() && !pillars[0].isPickable && !pillars[1].isEnabled());
+  assert.ok(pools[0].isEnabled() && !pools[1].isEnabled());
   assert.equal(pillars[0].parent, pools[0].parent);
   assert.equal(pillars[0].parent.position.z, cells[0].z - raidRoadTravel(0.75));
+  assert.equal(pillars[0].material, pools[0].material);
+  assert.equal(pools[0].material.serialize().floats.pillarWave, 1);
+  const foot = worldBox(pools[0]);
+  assert.ok(foot.maximumWorld.x - foot.minimumWorld.x < width * 0.4);
+  assert.ok(foot.maximumWorld.z - foot.minimumWorld.z < depth * 0.4);
+  const warningColumn = worldBox(pillars[0]);
+  const warningWidth = warningColumn.maximumWorld.x - warningColumn.minimumWorld.x;
+  const warningHeight = warningColumn.maximumWorld.y - warningColumn.minimumWorld.y;
+  assert.ok(warningHeight > warningWidth && warningWidth > 0);
+  assert.ok(Math.abs(warningColumn.minimumWorld.y - foot.maximumWorld.y) < 0.05);
+
+  draw({ ...counter, kind: 'pillar' }, 0.75);
+  assert.ok(pillars[0].isEnabled() && !pillars[1].isEnabled() && !pools[1].isEnabled());
+  const impactColumn = worldBox(pillars[0]);
+  assert.ok(impactColumn.maximumWorld.x - impactColumn.minimumWorld.x > warningWidth);
+  assert.ok(impactColumn.maximumWorld.y - impactColumn.minimumWorld.y > warningHeight);
+  assert.ok(Math.abs(impactColumn.minimumWorld.y - foot.maximumWorld.y) < 0.05);
+
   draw({ ...counter, cells: cells.slice(0, 1) }, 0.75);
   assert.ok(pools[0].isEnabled() && !pools[1].isEnabled());
   assert.ok(pillars.every((pillar) => !pillar.isEnabled()));
   draw(null, 0);
   assert.ok(scene.meshes.every((mesh) => !mesh.isEnabled()));
   draw(counter, 0);
+  checkGroundArcs(0);
   assert.equal(scene.meshes.length, 4);
 });
 
-test('straight and zigzag volleys retain their own glow and core through warning, impact and afterglow', (t) => {
+test('straight and zigzag volleys keep their palette while only the leading pillar warning or actual impact cells appear', (t) => {
   const engine = new NullEngine();
   t.after(() => engine.dispose());
   const scene = new Scene(engine);
@@ -380,7 +410,7 @@ test('straight and zigzag volleys retain their own glow and core through warning
   const boss = new RaidBoss();
   const runners = new RaidMatch().runners;
   const samples = new Map();
-  for (let tick = 1; tick < ROUND_TICKS && samples.size < 4; tick++) {
+  for (let tick = 1; tick < ROUND_TICKS; tick++) {
     boss.step(
       tick,
       runners,
@@ -390,13 +420,20 @@ test('straight and zigzag volleys retain their own glow and core through warning
     const wave = boss.counter;
     if (!wave) continue;
     const key = wave.kind + (wave.zigzag ? '-zigzag' : '-straight');
-    if (samples.has(key)) continue;
-    const indices = [
-      wave.cells.findIndex((cell) => cell.phase === 'warning'),
-      wave.cells.findIndex((cell) => cell.phase === 'impact' && cell.ticks > 2),
-      wave.cells.findIndex((cell) => cell.phase === 'impact' && cell.ticks === 1),
-    ];
-    if (indices.every((i) => i >= 0)) samples.set(key, { wave, indices });
+    if (!samples.has(key)) samples.set(key, { first: wave });
+    const sample = samples.get(key);
+    if (wave.startedAt !== sample.first.startedAt) continue;
+    const impacts = wave.cells.filter((cell) => cell.phase === 'impact');
+    if (!sample.warning && !impacts.length && new Set(wave.cells.map((c) => c.row)).size >= 3)
+      sample.warning = wave;
+    if (
+      !sample.mixed &&
+      impacts.some((c) => c.ticks === 1) &&
+      impacts.some((c) => c.ticks > 2) &&
+      wave.cells.some((c) => c.phase === 'warning')
+    )
+      sample.mixed = wave;
+    if (samples.size === 4 && [...samples.values()].every((s) => s.warning && s.mixed)) break;
   }
   assert.deepEqual([...samples.keys()].sort(), [
     'low-straight',
@@ -405,15 +442,27 @@ test('straight and zigzag volleys retain their own glow and core through warning
     'pillar-zigzag',
   ]);
 
-  function check({ wave, indices }) {
-    draw(wave, 0.5);
-    const strengths = indices.map((i) => {
-      const pool = scene.getMeshByName('wagon electric pool ' + i);
-      const pillar = scene.getMeshByName('wagon electric pillar ' + i);
-      assert.ok(pool.isEnabled());
-      assert.equal(pillar.material, pool.material);
-      assert.equal(pillar.isEnabled(), wave.kind === 'pillar' && wave.cells[i].phase === 'impact');
+  function check(wave, expected) {
+    const subtick = 0.5;
+    draw(wave, subtick);
+    const active = scene.meshes.filter((mesh) => mesh.isEnabled());
+    const pools = active.filter((mesh) => mesh.name.startsWith('wagon electric pool '));
+    const pillars = active.filter((mesh) => mesh.name.startsWith('wagon electric pillar '));
+    function meshesAtCells(meshes, cells) {
+      assert.equal(meshes.length, cells.length);
+      return cells.map((cell) => {
+        const z = cell.z - raidRoadTravel(subtick);
+        const found = meshes.find(
+          (mesh) => mesh.parent.position.x === cell.x && mesh.parent.position.z === z,
+        );
+        assert.ok(found, 'missing effect at column ' + cell.column + ', row ' + cell.row);
+        return found;
+      });
+    }
+    meshesAtCells(pillars, wave.kind === 'pillar' ? expected : []);
+    return meshesAtCells(pools, expected).map((pool) => {
       const { colors3, floats } = pool.material.serialize();
+      assert.equal(floats.pillarWave, Number(wave.kind === 'pillar'));
       const [r, g, b] = colors3.glowColor;
       const [cr, cg, cb] = colors3.coreColor;
       if (wave.zigzag) {
@@ -425,14 +474,30 @@ test('straight and zigzag volleys retain their own glow and core through warning
       }
       return floats.strength;
     });
-    const [warning, impact, afterglow] = strengths;
-    assert.ok(warning < afterglow && afterglow < impact);
   }
-  for (const sample of samples.values()) check(sample);
+  function checkVolley({ first, warning, mixed }) {
+    assert.ok(warning && mixed);
+    assert.equal(new Set(first.cells.map((c) => c.row)).size, 1);
+    check(first, first.cells);
+    // Select by warning deadline and impact phase, independently of mesh allocation order.
+    const deadline = Math.min(...warning.cells.map((cell) => cell.ticks));
+    const lead = warning.cells.filter((cell) => cell.ticks === deadline);
+    const ground = first.kind === 'low';
+    const warningStrengths = check(warning, ground ? warning.cells : lead);
+    const impact = mixed.cells.filter((cell) => cell.phase === 'impact');
+    assert.ok(new Set(impact.map((cell) => cell.row)).size > 1);
+    const visible = ground ? mixed.cells : impact;
+    const strengths = check(mixed, visible);
+    const peak = strengths[visible.findIndex((c) => c.phase === 'impact' && c.ticks > 2)];
+    const afterglow = strengths[visible.findIndex((c) => c.phase === 'impact' && c.ticks === 1)];
+    assert.ok(Math.max(...warningStrengths) < afterglow && afterglow < peak);
+  }
+  for (const sample of samples.values()) checkVolley(sample);
   const meshes = [...scene.meshes];
   const materials = [...scene.materials];
   draw(null, 0);
-  for (const sample of [...samples.values()].reverse()) check(sample);
+  assert.ok(scene.meshes.every((mesh) => !mesh.isEnabled()));
+  for (const sample of [...samples.values()].reverse()) checkVolley(sample);
   assert.deepEqual(scene.meshes, meshes);
   assert.deepEqual(scene.materials, materials);
 });
