@@ -54,7 +54,7 @@ function cropImage(image: HTMLImageElement, [left, top, side]: Crop, width: numb
   image.style.width = (100 * width) / side + '%';
 }
 
-export function addPickFace(card: HTMLButtonElement, hero: RaidHero) {
+export function addPickFace(card: HTMLElement, hero: RaidHero) {
   const model = document.createElement('img');
   model.alt = '';
   model.dataset.hero = hero;

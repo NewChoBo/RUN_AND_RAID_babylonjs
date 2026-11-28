@@ -183,6 +183,24 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     hud.showPanel(null, slot, !!round);
     canvas.inert = true;
   }
+  function finishMatch() {
+    if (state === 'finished') return;
+    const renderFinalFrame = state !== 'paused' && !document.hidden;
+    state = 'finished';
+    clearInterval(timer);
+    course.stopRendering(renderFrame);
+    jetInputs.clear();
+    pressed.clear();
+    aiming = null;
+    aimPointer = null;
+    keyboardAimPoint = null;
+    canvas.inert = true;
+    hud.showPanel(match, slot, !!round, matchOutfits);
+    if (renderFinalFrame) {
+      renderCourse(0, 0);
+      audio.update(match, slot);
+    }
+  }
   // Prepare the arena before joining Photon so renderer startup cannot delay an online round.
   let preparing: Promise<void> | undefined;
   async function prepareCourse(prepareModels?: () => Promise<unknown>) {
@@ -342,7 +360,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       target: cycle,
       pause,
       resume,
-      retry: () => (round ? resetLobby() : begin()),
+      retry: begin,
       leave: () => {
         location.hash = '/home';
       },
@@ -451,14 +469,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
           launch();
           // Keep the authoritative clock independent of rendering, focus and local menus.
           timer = window.setInterval(() => {
-            if (!room || !round || match.result) {
-              clearInterval(timer);
-              if (match.result && state === 'paused') {
-                state = 'finished';
-                hud.showPanel(match, slot, true);
-              }
-              return;
-            }
+            if (!room || !round) return;
             const now = performance.now();
             if (!host) {
               if (now - lastFrameAt > 20000) room.fail('connectError');
@@ -472,6 +483,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
               ticks -= n;
             }
             lastFrameAt = onlineStart + (match.tick * 1000) / RAID_HZ;
+            if (match.result) finishMatch();
           }, 1000 / RAID_HZ);
         },
         intent(sender, data) {
@@ -480,13 +492,11 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
         frames(data) {
           lastFrameAt = performance.now();
           if (!round?.replay(data)) room?.fail('syncError');
+          else if (match.result) finishMatch();
         },
         closed(reason) {
-          if (round?.match.result) {
-            clearInterval(timer);
-            return;
-          }
-          resetLobby(reason);
+          if (round?.match.result) finishMatch();
+          else resetLobby(reason);
         },
       });
     } catch {
@@ -654,6 +664,10 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       carry--;
       if (wasOut && !match.runners[slot]!.respawn) move();
     }
+    if (match.result) {
+      finishMatch();
+      return;
+    }
     const respawning = match.runners[slot]!.respawn > 0;
     if (round) {
       if (onlineRespawning && !respawning) move();
@@ -668,7 +682,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     const subtick = round
       ? Math.min(1, Math.max(0, ((now - lastFrameAt) * RAID_HZ) / 1000))
       : carry;
-    renderCourse(Math.min(dt, 0.1), match.result ? 0 : subtick);
+    renderCourse(Math.min(dt, 0.1), subtick);
     audio.update(match, slot);
     if (
       Math.floor(match.tick / 3) !== Math.floor(lastHudTick / 3) ||
@@ -680,13 +694,6 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     lastHudTick = match.tick;
     if (aiming !== null) refreshKeyboardAim();
     else hud.aimPad.refresh();
-    if (match.result) {
-      state = 'finished';
-      course.stopRendering(renderFrame);
-      pressed.clear();
-      canvas.inert = true;
-      hud.showPanel(match, slot, !!round);
-    }
   }
   return { enter: lobby.open, exit: () => resetLobby(undefined, true) };
 }

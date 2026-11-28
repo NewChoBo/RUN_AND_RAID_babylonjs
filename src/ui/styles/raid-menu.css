@@ -120,39 +120,6 @@ dialog.raid-panel::backdrop {
   outline: 2px solid #ffe79f;
   outline-offset: -2px;
 }
-dialog.raid-panel[data-screen='result'] {
-  width: min(94vw, 420px);
-}
-.raid-panel table {
-  border-collapse: collapse;
-  width: 100%;
-  font-variant-numeric: tabular-nums;
-}
-.raid-panel th {
-  text-align: left;
-}
-.raid-panel td,
-.raid-panel thead th:not(:first-child) {
-  text-align: right;
-}
-.raid-panel tr {
-  border-bottom: 1px solid #97825f55;
-}
-.raid-panel :is(td, th) {
-  padding: 0.22em 0.35em;
-}
-.raid-panel tbody tr:first-child {
-  background: #384b46;
-  color: #c3ffdf;
-}
-.raid-panel tbody + tbody tr:first-child {
-  background: #543b39;
-  color: #ffd1c8;
-}
-.raid-panel th[scope='row'] {
-  padding-left: 1em;
-  font-weight: 400;
-}
 @media (max-height: 310px) {
   dialog.raid-panel[open] {
     --menu-edge: max(4px, env(safe-area-inset-top));

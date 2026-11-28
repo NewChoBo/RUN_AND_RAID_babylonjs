@@ -1,6 +1,7 @@
 import { button, element } from './elements.ts';
 import { createRaidScoreboard } from './raid-scoreboard.ts';
 import { createRaidMenu, type SkillSize } from './raid-menu.ts';
+import { createRaidResult } from './raid-result.ts';
 import { createSkillRack } from './raid-skill-rack.ts';
 import { healthMeter, healthMeterPainter } from './raid-health-meter.ts';
 import { activeSlow } from '../game/raid/raid-control.ts';
@@ -134,6 +135,7 @@ export function createRaidHud(
   const aimPad = new RaidAimPad(root, actions);
   const skills = createSkillRack(deck, aimPad, actions);
   const menu = createRaidMenu(root, actions, skillSize);
+  const result = createRaidResult(actions);
   function update(view: RaidView, aiming: Skill | null, slot = 0) {
     // A keyboard-armed skill can point to either half of the screen.
     if (aiming !== null && !stick.pad.hidden) stick.reset();
@@ -218,7 +220,12 @@ export function createRaidHud(
       hint.textContent = aiming !== null ? t('aim') : '';
     hint.hidden = !!runner.respawn || !hint.textContent;
   }
-  function showPanel(view: RaidView | null, slot = 0, online = false) {
+  function showPanel(
+    view: RaidView | null,
+    slot = 0,
+    online = false,
+    outfits: readonly (string | undefined)[] = [],
+  ) {
     heldJet = null;
     stick.reset();
     ping.close();
@@ -227,7 +234,10 @@ export function createRaidHud(
     actions.clearPreview();
     root.hidden = !!view;
     root.inert = true;
-    menu.show(view, slot, online);
+    if (view?.result) {
+      menu.hide();
+      result.show(view, view.result, slot, online, outfits);
+    } else menu.show(online);
   }
   function showStartCountdown(seconds: number) {
     const text = seconds > 0 ? String(seconds) : '';
@@ -244,6 +254,7 @@ export function createRaidHud(
       heldJet = null;
       ping.close();
       menu.hide();
+      result.hide();
       root.hidden = true;
       aimPad.close();
       stick.reset();
@@ -261,6 +272,7 @@ export function createRaidHud(
     play(seconds: number) {
       feedbackUntil = 0;
       menu.hide();
+      result.hide();
       root.inert = false;
       root.hidden = false;
       showStartCountdown(seconds);

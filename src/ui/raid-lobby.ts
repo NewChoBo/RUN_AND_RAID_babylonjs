@@ -5,7 +5,7 @@ import { hasDraftCatalog } from '../content/raid/draft-loadout.ts';
 import type { RaidRageLoadout } from '../content/raid/rage.ts';
 import { raidRageDamageToFull } from '../content/raid/rage.ts';
 import { addPickFace } from './raid-pick-face.ts';
-import { characterArt } from '../content/raid/gallery.ts';
+import { setRunnerArt } from './raid-runner-art.ts';
 import { officialGuides } from '../content/raid/official-guides.ts';
 import { battleIconIndex, skillLabel } from './raid-skill-icon.ts';
 import { createDraftChat } from './raid-draft-chat.ts';
@@ -20,37 +20,6 @@ import { HERO_IDS, heroKit, PRACTICE_HERO_IDS } from '../game/raid/heroes/hero-i
 import { adaptedSkills } from '../content/raid/draft-profiles.ts';
 import { battleOutfit } from '../content/raid/battle-outfits.ts';
 import type { RaidEntry, RoomError } from '../platform/photon/raid-room.ts';
-
-function setDraftArt(
-  image: HTMLImageElement,
-  hero: RaidHero,
-  thumbnail = false,
-  outfit?: ReturnType<typeof battleOutfit>,
-) {
-  const source = outfit?.image ?? characterArt(hero);
-  if (image.dataset.hero === hero && image.dataset.art === source) return;
-  image.dataset.art = source;
-  image.dataset.hero = hero;
-  image.referrerPolicy = 'no-referrer';
-  const fallback = outfit?.portrait ?? './assets/raid/portraits/' + hero + '.webp';
-  image.style.background =
-    source === fallback ? '' : `url("${fallback}") center / contain no-repeat`;
-  image.onload = () => {
-    image.style.background = '';
-  };
-  image.onerror =
-    source === fallback
-      ? null
-      : () => {
-          image.onerror = null;
-          image.src = fallback;
-        };
-  if (thumbnail && source.startsWith('https://cafeptthumb-phinf.pstatic.net/')) {
-    const url = new URL(source);
-    url.searchParams.set('type', 'w220');
-    image.src = url.href;
-  } else image.src = source;
-}
 
 export function createRaidLobby(
   parent: HTMLElement,
@@ -238,7 +207,7 @@ export function createRaidLobby(
     if (mine) preview = mine;
     loadout.show(preview, !!mine, own?.outfit, own?.rageLoadout);
     const selectedOutfit = battleOutfit(preview, loadout.outfit());
-    setDraftArt(portrait, preview, false, selectedOutfit);
+    setRunnerArt(portrait, preview, false, selectedOutfit);
     for (const [i, { item, team, name, runner, image, state, ready }] of seatViews.entries()) {
       const seat = seats[i];
       const ownSeat = seat?.actor === self;
@@ -252,7 +221,12 @@ export function createRaidLobby(
       runner.textContent = hero ? t(hero) : text;
       runner.classList.toggle('seat-runner-name', !!hero);
       if (hero) {
-        setDraftArt(image, hero, true, ownSeat ? selectedOutfit : battleOutfit(hero, seat?.outfit));
+        setRunnerArt(
+          image,
+          hero,
+          true,
+          ownSeat ? selectedOutfit : battleOutfit(hero, seat?.outfit),
+        );
         image.classList.toggle('tentative-art', !seat?.hero);
         if (!image.parentNode) item.prepend(image);
       } else image.remove();

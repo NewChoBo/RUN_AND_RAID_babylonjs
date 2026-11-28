@@ -1,10 +1,8 @@
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { uiText as ui } from '../content/locales/ui.ts';
-import { RAID_HZ, type RaidView } from '../game/raid/raid-match.ts';
 import { button, element } from './elements.ts';
 import { createBattleSettings } from './battle-settings.ts';
 import { openSettings } from './settings.ts';
-import { matchClock } from './raid-scoreboard.ts';
 import './styles/raid-menu.css';
 
 export interface SkillSize {
@@ -15,7 +13,6 @@ export interface SkillSize {
 }
 interface MenuActions {
   resume(): void;
-  retry(): void;
   leave(): void;
   setSkillSize(percent: number): void;
 }
@@ -24,9 +21,10 @@ export function createRaidMenu(root: HTMLElement, actions: MenuActions, skillSiz
   const panel = element('dialog', document.body);
   panel.className = 'raid-panel';
   panel.hidden = true;
+  panel.dataset.screen = 'settings';
   panel.setAttribute('aria-labelledby', 'raid-menu-title');
   const header = element('header', panel);
-  const title = element('h2', header);
+  const title = element('h2', header, ui('settings'));
   title.id = 'raid-menu-title';
   let moreSettings: HTMLDialogElement | undefined;
   const settings = button(header, '···', () => {
@@ -76,18 +74,15 @@ export function createRaidMenu(root: HTMLElement, actions: MenuActions, skillSiz
   sizeInput.oninput = applySize;
   sizeInput.onchange = () => actions.setSkillSize(sizeInput.valueAsNumber);
 
-  const records = element('table', body);
   const footer = element('footer', panel);
   const surrender = button(footer, ui('surrender'));
   surrender.className = 'raid-surrender';
   surrender.disabled = true;
   element('small', surrender, ui('notImplemented'));
-  const retry = button(footer, t('retry'), actions.retry);
-  retry.dataset.resumeRaid = '';
   button(footer, ui('leaveMatch'), actions.leave).className = 'raid-leave';
   panel.oncancel = (e) => {
     e.preventDefault();
-    if (!resume.hidden) actions.resume();
+    actions.resume();
   };
   panel.addEventListener('keydown', (e) => e.stopPropagation());
   function hide() {
@@ -95,57 +90,13 @@ export function createRaidMenu(root: HTMLElement, actions: MenuActions, skillSiz
     if (panel.open) panel.close();
     panel.hidden = true;
   }
-  function show(view: RaidView | null, slot = 0, online = false) {
-    const teamId = slot < 2 ? 0 : 1;
-    const result = view?.result;
-    if (result) moreSettings?.close();
-    panel.dataset.screen = result ? 'result' : 'settings';
+  function show(online: boolean) {
     panel.hidden = false;
-    title.textContent = result
-      ? t(result.winner === 'draw' ? 'draw' : result.winner === teamId ? 'win' : 'lose')
-      : ui('settings');
-    reason.textContent =
-      view && result
-        ? t('matchRecap', {
-            reason: t(result.reason === 'time' ? 'timeUp' : 'destruction'),
-            duration: matchClock(Math.floor(view.tick / RAID_HZ)),
-            count: view.leadChanges,
-          })
-        : online
-          ? t('onlineMenu')
-          : '';
-    reason.hidden = !reason.textContent;
-    retry.textContent = t(online ? 'backToLobby' : 'retry');
-    card.hidden = settings.hidden = resume.hidden = surrender.hidden = !!result;
-    records.hidden = retry.hidden = !result;
+    reason.textContent = online ? t('onlineMenu') : '';
+    reason.hidden = !online;
     options.refresh();
-    if (view) {
-      records.replaceChildren();
-      const columns = element('tr', records.createTHead());
-      for (const title of [t('runner'), t('boss'), t('kda')])
-        element('th', columns, title).scope = 'col';
-      for (const team of [teamId, 1 - teamId]) {
-        const group = records.createTBody();
-        const teamRow = element('tr', group);
-        const members = view.runners.filter((r) => r.team === team);
-        element('th', teamRow, t(team === teamId ? 'blue' : 'red')).scope = 'rowgroup';
-        element('td', teamRow, String(view.damage[team]));
-        const totals = (['kills', 'deaths', 'assists'] as const).map((stat) =>
-          members.reduce((sum, r) => sum + r[stat], 0),
-        );
-        element('td', teamRow, totals.join(' / '));
-        for (const r of members) {
-          const row = element('tr', group);
-          const name = t(r.hero) + (r.slot === slot ? ' (' + t('you') + ')' : '');
-          element('th', row, name).scope = 'row';
-          element('td', row, String(r.wagonDamage));
-          element('td', row, [r.kills, r.deaths, r.assists].join(' / '));
-        }
-      }
-    }
-
     if (!panel.open) panel.showModal();
-    (result ? retry : resume).focus({ preventScroll: true });
+    resume.focus({ preventScroll: true });
   }
   return { show, hide };
 }
