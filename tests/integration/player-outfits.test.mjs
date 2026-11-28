@@ -3,6 +3,24 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import outfits from '../../src/content/raid/published-outfits.json' with { type: 'json' };
+import { battleOutfits } from '../../src/content/raid/battle-outfits.ts';
+import { ORIGINAL_HERO_IDS, PRACTICE_HERO_IDS } from '../../src/game/raid/heroes/hero-id.ts';
+
+test('every original champion battle outfit and each practice runner includes a waiting motion', () => {
+  for (const outfit of battleOutfits.filter((o) => ORIGINAL_HERO_IDS.includes(o.group))) {
+    assert.ok(outfit.clips.includes('idle'), outfit.id);
+  }
+  for (const hero of PRACTICE_HERO_IDS) {
+    const data = readFileSync(
+      new URL('../../public/assets/raid/' + hero + '.glb', import.meta.url),
+    );
+    const doc = JSON.parse(data.toString('utf8', 20, 20 + data.readUInt32LE(12)));
+    assert.ok(
+      doc.animations.some((a) => a.name === 'idle' && a.channels.length),
+      hero,
+    );
+  }
+});
 
 test('each published Player outfit embeds the advertised clips and renders its body opaque', () => {
   const paths = new Set();
@@ -22,6 +40,12 @@ test('each published Player outfit embeds the advertised clips and renders its b
     assert.equal(createHash('sha256').update(data).digest('hex'), checksums.get(path), path);
     const doc = JSON.parse(data.toString('utf8', 20, 20 + data.readUInt32LE(12)));
     assert.ok(doc.meshes?.length, outfit.model);
+    if (outfit.group === 'drizz' && outfit.skin === 'demon') {
+      const body = doc.nodes.find((node) => node.mesh !== undefined);
+      const joints = doc.skins[body.skin].joints.map((index) => doc.nodes[index].name);
+      for (const name of ['Bip001 Pelvis', 'Rhand_bn', 'Rfinger30'])
+        assert.ok(joints.includes(name));
+    }
     if (outfit.group === 'magnus' && outfit.skin === 'armoredforces') {
       // The equipped shields live on the body rig. Loose copies from the workshop
       // used to render next to the runner and inflate its loading bounds.

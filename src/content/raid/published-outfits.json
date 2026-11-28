@@ -3,79 +3,163 @@
     "group": "abyss",
     "skin": "death",
     "model": "./assets/fighters/abyss-death.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "abyss",
     "skin": "default",
     "model": "./assets/fighters/abyss-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "abyss",
     "skin": "fire",
     "model": "./assets/fighters/abyss-fire.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "abyss",
     "skin": "judgement",
     "model": "./assets/fighters/abyss-judgement.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "airi",
     "skin": "default",
     "model": "./assets/fighters/airi-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic"]
   },
   {
     "group": "airi",
     "skin": "skin2",
     "model": "./assets/fighters/airi-skin2.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic"]
   },
   {
     "group": "alice",
     "skin": "bug",
     "model": "./assets/fighters/alice-bug.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "orbLoop"
+    ]
   },
   {
     "group": "alice",
     "skin": "dark",
     "model": "./assets/fighters/alice-dark.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "orbLoop"
+    ]
   },
   {
     "group": "alice",
     "skin": "default",
     "model": "./assets/fighters/alice-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "orbLoop"
+    ]
   },
   {
     "group": "alice",
     "skin": "dorothy",
     "model": "./assets/fighters/alice-dorothy.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "orbLoop"
+    ]
   },
   {
     "group": "alice",
     "skin": "hanbok",
     "model": "./assets/fighters/alice-hanbok.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "orbLoop"
+    ]
   },
   {
     "group": "alice",
     "skin": "skin3",
     "model": "./assets/fighters/alice-skin3.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "orbLoop"
+    ]
   },
   {
     "group": "alice",
     "skin": "wonderland",
     "model": "./assets/fighters/alice-wonderland.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury", "orbLoop"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "orbLoop"
+    ]
   },
   {
     "group": "base",
@@ -153,13 +237,13 @@
     "group": "drizz",
     "skin": "default",
     "model": "./assets/fighters/drizz-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "drizz",
     "skin": "demon",
     "model": "./assets/fighters/drizz-demon.glb",
-    "clips": []
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "drizz",
@@ -171,25 +255,25 @@
     "group": "dwight",
     "skin": "default",
     "model": "./assets/fighters/dwight-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "fury"]
   },
   {
     "group": "dwight",
     "skin": "suit",
     "model": "./assets/fighters/dwight-suit.glb",
-    "clips": ["run", "walk", "fall", "basic", "pulse", "bolt", "fury"]
+    "clips": ["idle", "run", "walk", "fall", "basic", "pulse", "bolt", "fury"]
   },
   {
     "group": "elfprince",
     "skin": "default",
     "model": "./assets/fighters/elfprince-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "elfprince",
     "skin": "skin2",
     "model": "./assets/fighters/elfprince-skin2.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "ella",
@@ -201,31 +285,31 @@
     "group": "ella",
     "skin": "bird#default",
     "model": "./assets/fighters/ella-bird-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field"]
   },
   {
     "group": "ella",
     "skin": "bird#goddessofvictory",
     "model": "./assets/fighters/ella-bird-goddessofvictory.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field"]
   },
   {
     "group": "ella",
     "skin": "default",
     "model": "./assets/fighters/ella-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "field"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "field"]
   },
   {
     "group": "ella",
     "skin": "goddessofvictory",
     "model": "./assets/fighters/ella-goddessofvictory.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "field"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "field"]
   },
   {
     "group": "ella",
     "skin": "skin2",
     "model": "./assets/fighters/ella-skin2.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "field"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "field"]
   },
   {
     "group": "ent",
@@ -237,61 +321,61 @@
     "group": "flare",
     "skin": "battlemage",
     "model": "./assets/fighters/flare-battlemage.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "flare",
     "skin": "default",
     "model": "./assets/fighters/flare-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "flare",
     "skin": "oriental",
     "model": "./assets/fighters/flare-oriental.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "flare",
     "skin": "police",
     "model": "./assets/fighters/flare-police.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "freesia",
     "skin": "bee",
     "model": "./assets/fighters/freesia-bee.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "freesia",
     "skin": "default",
     "model": "./assets/fighters/freesia-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "froze",
     "skin": "citygirl",
     "model": "./assets/fighters/froze-citygirl.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "froze",
     "skin": "default",
     "model": "./assets/fighters/froze-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "froze",
     "skin": "roadcat",
     "model": "./assets/fighters/froze-roadcat.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "froze",
     "skin": "schoolgirl",
     "model": "./assets/fighters/froze-schoolgirl.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "general",
@@ -309,67 +393,68 @@
     "group": "hammer",
     "skin": "default",
     "model": "./assets/fighters/hammer-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "hammer",
     "skin": "doomguard",
     "model": "./assets/fighters/hammer-doomguard.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "hammer",
     "skin": "royalguard",
     "model": "./assets/fighters/hammer-royalguard.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "hammer",
     "skin": "warmachine",
     "model": "./assets/fighters/hammer-warmachine.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "hof",
     "skin": "astronaut",
     "model": "./assets/fighters/hof-astronaut.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "hof",
     "skin": "default",
     "model": "./assets/fighters/hof-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "hof",
     "skin": "western",
     "model": "./assets/fighters/hof-western.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "jade",
     "skin": "assistant",
     "model": "./assets/fighters/jade-assistant.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "jade",
     "skin": "default",
     "model": "./assets/fighters/jade-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "jade",
     "skin": "masterwizard",
     "model": "./assets/fighters/jade-masterwizard.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "kaiken",
     "skin": "default",
     "model": "./assets/fighters/kaiken-default.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -387,6 +472,7 @@
     "skin": "onimusha",
     "model": "./assets/fighters/kaiken-onimusha.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -404,6 +490,7 @@
     "skin": "sin",
     "model": "./assets/fighters/kaiken-sin.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -421,6 +508,7 @@
     "skin": "suit",
     "model": "./assets/fighters/kaiken-suit.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -437,37 +525,37 @@
     "group": "kali",
     "skin": "default",
     "model": "./assets/fighters/kali-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "kali",
     "skin": "may",
     "model": "./assets/fighters/kali-may.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "kali",
     "skin": "nun",
     "model": "./assets/fighters/kali-nun.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "kali",
     "skin": "nurse",
     "model": "./assets/fighters/kali-nurse.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "kali",
     "skin": "thiefguild",
     "model": "./assets/fighters/kali-thiefguild.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "longshot",
     "skin": "default",
     "model": "./assets/fighters/longshot-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "longshot",
@@ -479,7 +567,7 @@
     "group": "longshot",
     "skin": "hitman",
     "model": "./assets/fighters/longshot-hitman.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "longshot",
@@ -491,7 +579,7 @@
     "group": "longshot",
     "skin": "royalguard",
     "model": "./assets/fighters/longshot-royalguard.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "longshot",
@@ -503,13 +591,14 @@
     "group": "longshot",
     "skin": "thiefguild",
     "model": "./assets/fighters/longshot-thiefguild.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "magnus",
     "skin": "armoredforces",
     "model": "./assets/fighters/magnus-armoredforces.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -530,6 +619,7 @@
     "skin": "default",
     "model": "./assets/fighters/magnus-default.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -550,6 +640,7 @@
     "skin": "oz",
     "model": "./assets/fighters/magnus-oz.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -569,13 +660,14 @@
     "group": "orc",
     "skin": "default",
     "model": "./assets/fighters/orc-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic"]
   },
   {
     "group": "rildin",
     "skin": "default",
     "model": "./assets/fighters/rildin-default.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -595,6 +687,7 @@
     "skin": "fallen",
     "model": "./assets/fighters/rildin-fallen.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -614,6 +707,7 @@
     "skin": "party",
     "model": "./assets/fighters/rildin-party.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -633,6 +727,7 @@
     "skin": "rugged",
     "model": "./assets/fighters/rildin-rugged.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -658,6 +753,7 @@
     "skin": "skin3",
     "model": "./assets/fighters/rildin-skin3.glb",
     "clips": [
+      "idle",
       "run",
       "walk",
       "jump",
@@ -688,102 +784,102 @@
     "group": "silurian",
     "skin": "default",
     "model": "./assets/fighters/silurian-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "swift",
     "skin": "bunny",
     "model": "./assets/fighters/swift-bunny.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "swift",
     "skin": "default",
     "model": "./assets/fighters/swift-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "swift",
     "skin": "musician",
     "model": "./assets/fighters/swift-musician.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "swift",
     "skin": "secretary",
     "model": "./assets/fighters/swift-secretary.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "swift",
     "skin": "skin2",
     "model": "./assets/fighters/swift-skin2.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "swift",
     "skin": "skin3",
     "model": "./assets/fighters/swift-skin3.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "theresa",
     "skin": "default",
     "model": "./assets/fighters/theresa-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "theresa",
     "skin": "retinue",
     "model": "./assets/fighters/theresa-retinue.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "theresa",
     "skin": "skin2",
     "model": "./assets/fighters/theresa-skin2.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "theresa",
     "skin": "skin3",
     "model": "./assets/fighters/theresa-skin3.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "theresa",
     "skin": "skin4",
     "model": "./assets/fighters/theresa-skin4.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "theresa",
     "skin": "varlet",
     "model": "./assets/fighters/theresa-varlet.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "vallet",
     "skin": "default",
     "model": "./assets/fighters/vallet-default.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "vallet",
     "skin": "lady",
     "model": "./assets/fighters/vallet-lady.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "vallet",
     "skin": "navy",
     "model": "./assets/fighters/vallet-navy.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   },
   {
     "group": "vallet",
     "skin": "skin1",
     "model": "./assets/fighters/vallet-skin1.glb",
-    "clips": ["run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
   }
 ]

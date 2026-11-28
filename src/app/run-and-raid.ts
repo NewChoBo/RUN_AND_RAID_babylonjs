@@ -29,6 +29,8 @@ import {
 import { playableViewport } from '../ui/viewport-limit.ts';
 import { closeLoadingScreen, showArenaLoading } from '../ui/loading-screen.ts';
 
+const startDelayMs = 3000;
+
 export function prepareRaid(showStartupError: (error: unknown) => void) {
   const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
   let course: Awaited<ReturnType<typeof openRaidCourse>>;
@@ -62,16 +64,19 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     padBrake = 0;
   const order = (action: RaidCommandName, payload?: unknown) =>
     room ? room.order(action, payload) : solo.dispatch(slot, action, payload);
-  function move() {
+  function steering() {
     const actions = [...pressed.values()];
     const side = padSide + Number(actions.includes('right')) - Number(actions.includes('left'));
-    order('move', {
+    return {
       side: Math.max(-1, Math.min(1, side)),
       brake: actions.includes('walk') ? 1 : padBrake,
-    });
+    };
+  }
+  function move() {
+    if (state === 'playing' || (state === 'countdown' && room)) order('move', steering());
   }
   function held(action: string, down: boolean, source: string) {
-    if (state !== 'playing') return;
+    if (state !== 'playing' && state !== 'countdown') return;
     if (down) pressed.set(source, action);
     else pressed.delete(source);
     move();
@@ -138,8 +143,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   function enterCourse() {
     state = countdownMs > 0 ? 'countdown' : 'playing';
     hud.play(Math.ceil(countdownMs / 1000));
-    canvas.inert = countdownMs > 0;
-    if (!canvas.inert) canvas.focus({ preventScroll: true });
+    canvas.inert = false;
+    canvas.focus({ preventScroll: true });
     course.startRendering(renderFrame);
   }
   function resume() {
@@ -155,7 +160,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     padBrake = 0;
     if (state === 'countdown')
       countdownMs = Math.max(0, countdownMs - (performance.now() - previous));
-    else move();
+    move();
     aiming = null;
     course.showAim(null);
     state = 'paused';
@@ -165,16 +170,19 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   }
   // Prepare the arena before joining Photon so renderer startup cannot delay an online round.
   let preparing: Promise<void> | undefined;
-  async function prepareCourse() {
-    if (course) return true;
+  async function prepareCourse(prepareModels?: () => Promise<unknown>) {
+    if (course && !prepareModels) return true;
     const token = attempt;
     state = 'loading';
     showArenaLoading(() => resetLobby());
     try {
-      await (preparing ??= loadCourse().finally(() => {
-        preparing = undefined;
-      }));
-      return true;
+      if (!course)
+        await (preparing ??= loadCourse().finally(() => {
+          preparing = undefined;
+        }));
+      if (token !== attempt) return false;
+      await prepareModels?.();
+      return token === attempt;
     } catch (error) {
       if (token === attempt) {
         resetLobby();
@@ -195,16 +203,21 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       hud.aimPad.close();
     });
   }
-  async function begin() {
+  function begin() {
     if (room || !playableViewport.matches || (state !== 'setup' && state !== 'finished')) return;
-    const token = attempt;
-    if (!(await prepareCourse()) || token !== attempt) return;
-    launchSolo();
+    return launchSolo();
   }
-  function launchSolo() {
+  async function launchSolo() {
+    const roster = practiceRoster(chosenHero);
+    const ready = await prepareCourse(() =>
+      Promise.all(
+        roster.map((hero, i) => course.prepareRunner(hero, i === 0 ? soloOutfit : undefined)),
+      ),
+    );
+    if (!ready) return;
     slot = 0;
     matchOutfits = [soloOutfit];
-    match = new RaidMatch(practiceRoster(chosenHero), course.viewAspect);
+    match = new RaidMatch(roster, course.viewAspect);
     solo = new RaidSimulation(match, new Set([slot]));
     launch();
   }
@@ -217,10 +230,10 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     carry = 0;
     course.showAim(null);
     lastHud = -1;
-    countdownMs = 3000;
+    countdownMs = startDelayMs;
     document.getElementById('overlay')!.hidden = true;
     hud.update(match, null, slot);
-    renderCourse(0, 0);
+    renderCourse(0, 0, 0);
     if (playableViewport.matches) resume();
     else {
       state = 'paused';
@@ -290,7 +303,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   const hud = createRaidHud(
     {
       steer(side, brake) {
-        if (state !== 'playing' || (padSide === side && padBrake === brake)) return;
+        if (state !== 'playing' && state !== 'countdown') return;
+        if (padSide === side && padBrake === brake) return;
         padSide = side;
         padBrake = brake;
         move();
@@ -388,13 +402,14 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
         waiting: (count) => lobby.waiting(count),
         chat: (actor, text) => lobby.chat(actor, text),
         lobby(seats, self, host, clock) {
+          for (const seat of seats) if (seat.hero) course.prepareRunner(seat.hero, seat.outfit);
           lobby.room(code, seats, self, host, clock);
         },
         solo(hero, outfit) {
           room = undefined;
           chosenHero = hero;
           soloOutfit = outfit;
-          launchSolo();
+          void launchSolo();
         },
         start(seats, self, host) {
           round = new RaidRound(seats);
@@ -402,7 +417,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
           for (const seat of seats) matchOutfits[round.slot(seat.actor)!] = seat.outfit;
           slot = round.slot(self)!;
           match = round.match;
-          onlineStart = performance.now() + 3000;
+          onlineStart = performance.now() + startDelayMs;
           lastFrameAt = onlineStart;
           onlineRespawning = false;
           launch();
@@ -432,7 +447,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
           }, 1000 / RAID_HZ);
         },
         intent(sender, data) {
-          if (performance.now() >= onlineStart) round?.enqueue(sender, data);
+          round?.enqueue(sender, data, performance.now() < onlineStart);
         },
         frames(data) {
           lastFrameAt = performance.now();
@@ -520,7 +535,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   window.addEventListener('keydown', (e) => {
     if (
       state !== 'playing' &&
-      !((state === 'paused' || state === 'countdown') && e.code === 'Escape')
+      state !== 'countdown' &&
+      !(state === 'paused' && e.code === 'Escape')
     )
       return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -530,6 +546,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       if (!e.repeat) held(action, true, e.code);
       return;
     }
+    if (state === 'countdown' && e.code !== 'Escape') return;
     const keys = ['Digit1', 'Digit2', 'Digit3', 'Digit4'];
     if (
       e.code !== jump &&
@@ -567,8 +584,10 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   playableViewport.addEventListener('change', () => {
     if (!playableViewport.matches) pause();
   });
-  function renderCourse(dt: number, subtick: number) {
-    course.render(match, dt, subtick, slot, matchOutfits);
+  function renderCourse(dt: number, subtick: number, waitingSeconds?: number) {
+    const startPose =
+      waitingSeconds === undefined ? undefined : { seconds: waitingSeconds, side: steering().side };
+    course.render(match, dt, subtick, slot, matchOutfits, startPose);
     hud.drawCombatNumbers(
       match.healthChanges,
       match.tick + subtick,
@@ -586,12 +605,13 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       countdownMs -= waiting;
       if (countdownMs > 0) {
         hud.showStartCountdown(Math.ceil(countdownMs / 1000));
-        renderCourse(Math.min(elapsed / 1000, 0.1), 0);
+        renderCourse(Math.min(elapsed / 1000, 0.1), 0, (startDelayMs - countdownMs) / 1000);
         return;
       }
       // Only the part of this frame after the start signal advances the match.
       elapsed -= waiting;
       enterCourse();
+      if (!round) move();
     }
     const dt = elapsed / 1000;
     // Catch up the match clock in fixed ticks, even if a foreground frame takes longer to render.

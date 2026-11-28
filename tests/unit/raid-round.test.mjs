@@ -30,6 +30,44 @@ const players = ['jade', 'rend', 'bastion', 'rime'].map((hero, i) => ({
   actor: [8, 12, 20, 25][i],
   hero,
 }));
+test('countdown steering keeps the latest input per seat for the first tick', () => {
+  const host = new RaidRound(players);
+  const peer = new RaidRound(players);
+  const before = structuredClone(host.match.runners);
+  const [first, second] = players;
+  for (let seq = 1; seq <= 30; seq++) {
+    assert.ok(
+      host.enqueue(
+        first.actor,
+        { seq, action: 'move', payload: { side: seq / 30, brake: 0.5 } },
+        true,
+      ),
+    );
+  }
+  for (const action of ['jump', 'cast', 'lock', 'call']) {
+    assert.equal(host.enqueue(first.actor, { seq: 31, action }, true), false);
+  }
+  assert.ok(
+    host.enqueue(second.actor, { seq: 1, action: 'move', payload: { side: -1, brake: 1 } }, true),
+  );
+  assert.ok(
+    host.enqueue(second.actor, { seq: 2, action: 'move', payload: { side: 0, brake: 0 } }, true),
+  );
+  assert.equal(
+    host.enqueue(second.actor, { seq: 1, action: 'move', payload: { side: -1, brake: 1 } }, true),
+    false,
+  );
+  assert.equal(host.match.tick, 0);
+  assert.deepEqual(host.match.runners, before);
+  const batch = host.advance(1);
+  assert.equal(batch.frames[0].length, 2);
+  const moving = host.match.runners[host.slot(first.actor)];
+  assert.ok(moving.x > before[moving.slot].x);
+  assert.equal(moving.brake, 0.5);
+  assert.equal(host.match.runners[host.slot(second.actor)].side, 0);
+  assert.ok(peer.replay(batch));
+  assert.deepEqual(peer.match.runners, host.match.runners);
+});
 test('the three sword users and moving Hammer spin replay from the same four-player inputs', () => {
   const seats = ['rildin', 'kaiken', 'swift', 'hammer'].map((hero, i) => ({ hero, actor: i + 1 }));
   const host = new RaidRound(seats),

@@ -45,12 +45,13 @@ export class RaidRound {
     return this.#slots.get(actor);
   }
   // Only the transport's authenticated sender identifies the player.
-  enqueue(actor: number, input: unknown) {
+  enqueue(actor: number, input: unknown, beforeStart = false) {
     const slot = this.slot(actor);
     if (
       slot === undefined ||
       !record(input) ||
       !action(input.action) ||
+      (beforeStart && input.action !== 'move') ||
       typeof input.seq !== 'number' ||
       !Number.isSafeInteger(input.seq) ||
       input.seq <= (this.#seq.get(actor) ?? 0) ||
@@ -58,6 +59,14 @@ export class RaidRound {
     )
       return false;
     this.#seq.set(actor, input.seq);
+    // The countdown can receive many stick samples before the first simulation tick.
+    if (beforeStart) {
+      const previous = this.#pending.find((order) => order.slot === slot);
+      if (previous) {
+        previous.payload = input.payload;
+        return true;
+      }
+    }
     this.#pendingCounts[slot] = this.#pendingCounts[slot]! + 1;
     this.#pending.push({ slot, action: input.action, payload: input.payload ?? null });
     return true;

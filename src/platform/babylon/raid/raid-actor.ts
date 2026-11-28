@@ -22,7 +22,11 @@ import {
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { raidColors, raidMaterial } from './raid-material.ts';
 import { ModelMotion } from '../actors/model-motion.ts';
-import { raidActiveAction, raidFacing } from '../../../game/raid/raid-facing.ts';
+import {
+  raidActiveAction,
+  raidFacing,
+  raidSteeringFacing,
+} from '../../../game/raid/raid-facing.ts';
 import { RAID_JUMP_TICKS } from '../../../game/raid/runner-motion.ts';
 import { RaidActionPlayback } from './raid-action-playback.ts';
 import {
@@ -118,10 +122,10 @@ export function createRaidActor(
   let current: Awaited<ReturnType<typeof loadModel>> | undefined;
   let requested: string | undefined;
   let generation = 0;
-  let loading = false;
+  let loading: Promise<void> | undefined;
   // The team-colored body remains visible and pickable until its model is ready.
   function prepareModel(outfit?: string) {
-    if ((current || loading) && requested === outfit) return;
+    if ((current || loading) && requested === outfit) return loading;
     const version = ++generation;
     current?.model.dispose();
     current = undefined;
@@ -136,8 +140,7 @@ export function createRaidActor(
     ward.scaling.set(1, 1.39, 1);
     bar.position.y = defaultBarHeight;
     requested = outfit;
-    loading = true;
-    return loadModel(scene, hero, rig, outfit).then(
+    loading = loadModel(scene, hero, rig, outfit).then(
       (loaded) => {
         if (version !== generation) {
           loaded.model.dispose();
@@ -158,17 +161,18 @@ export function createRaidActor(
             .set(Math.max(size.x, size.y * 0.6), size.y, Math.max(size.z, size.y * 0.6))
             .scaleInPlace(1.15 / wardDiameter);
         } else bar.position.y = defaultBarHeight * RAID_MODEL_SCALE;
-        loading = false;
+        loading = undefined;
         if (art.empoweredMesh)
           greatsword = rig.getChildMeshes().find((mesh) => mesh.name === art.empoweredMesh);
         hit.visibility = 0;
       },
       (error: unknown) => {
         if (version !== generation) return;
-        loading = false;
+        loading = undefined;
         if (!scene.isDisposed) console.warn('Could not load raid model', hero, error);
       },
     );
+    return loading;
   }
   const ring = MeshBuilder.CreateTorus(
     hero + ' team marking',
@@ -256,6 +260,8 @@ export function createRaidActor(
     subtick: number,
     dt: number,
     localTeam = 0,
+    waitingSeconds?: number,
+    startSide = 0,
   ) {
     const now = tick + subtick;
     if (orb) {
@@ -285,6 +291,13 @@ export function createRaidActor(
     rig.rotation.z = 0.26 * Math.min(1, Math.max(r.staggered, r.stunned) / 4);
     if (!current) return;
     if (greatsword) greatsword.scaling.setAll((r.heroView.empoweredUntil ?? 0) > tick ? 1.45 : 1);
+    if (waitingSeconds !== undefined) {
+      rig.rotation.y = raidSteeringFacing(startSide);
+      if (motion?.has('idle')) motion.loop('idle', waitingSeconds, dt);
+      else if (hero === 'bird') motion?.loop('run', waitingSeconds, dt);
+      else motion?.seek('run', 0, dt);
+      return;
+    }
     if (r.respawn) {
       motion?.once('fall', (fallAge + subtick) / RAID_HZ, dt);
       return;

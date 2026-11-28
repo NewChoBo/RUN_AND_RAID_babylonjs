@@ -11,6 +11,7 @@ import numpy as np
 from mathutils.kdtree import KDTree
 
 from assemble_player import rig_and_body
+from drizz_skin import restore_drizz_skin
 from library import ROOT, WORK, read_json
 from prepare_motion_reference import (
     REFERENCE,
@@ -141,8 +142,19 @@ def expectations(group, outlines):
         base = scenes[meta["source"].lower()]
         bpy.context.window.scene = base
         base.frame_set(base.frame_start)
+        parts = restore_drizz_skin(base, scenes) if meta.get("skinSources") else []
         arm, obj = rig_and_body(base)
-        _, native = native_mesh(base, obj)
+        if parts:
+            groups = {}
+            for scene, part, indices in parts:
+                _, sample = native_mesh(scene, part)
+                for n, g in sample["groups"].items():
+                    ids = [i for vertex in g["ids"] for i in indices[vertex]]
+                    if g["rigid"] >= len(g["ids"]) and n not in groups:
+                        groups[n] = {"ids": ids, "rigid": len(ids)}
+            native = {"groups": groups}
+        else:
+            _, native = native_mesh(base, obj)
         bind = vertices(obj)
         span = np.linalg.norm(np.ptp(bind, axis=0))
         points = {

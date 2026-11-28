@@ -11,11 +11,13 @@ from pathlib import Path
 
 import bpy
 from activate import activate, fighter_materials, write_glb_json
+from drizz_skin import restore_drizz_skin
 from asset_names import outfit_name
 from library import PUBLIC, ROOT, WORK, read_json, save_json
 from mathutils import Matrix
 
 STANDARD = {
+    "idle": "idle",
     "run": "run",
     "walk": "walk",
     "jump": "jump_loop",
@@ -195,8 +197,10 @@ def assemble(blend, outfit=None, item=None, plan=None):
     scenes = {s["source_max"].lower(): s for s in bpy.data.scenes}
     base = scenes[item["path"].lower() if item else f"{hero}/{hero}#default.max"]
     skin = outfit["skin"] if outfit else "default"
+    skin_parts = restore_drizz_skin(base, scenes) if (hero, skin) == ("drizz", "demon") else []
     if plan is not None:
         plan["bodies"].add(base["source_max"].lower())
+        plan["bodies"].update(s["source_max"].lower() for s, _, _ in skin_parts)
     output = WORK / "player-release" / "Fighters" / hero / outfit_name(hero, skin)
     output.parent.mkdir(parents=True, exist_ok=True)
 
@@ -247,7 +251,11 @@ def assemble(blend, outfit=None, item=None, plan=None):
         takes = []
         for stage in stages:
             tokens = [stage, "run", "fly", "idle"] if clip in {"run", "walk"} else [stage]
-            found = find_take(scenes, dict.fromkeys(prefixes), tokens, weights)
+            choices = scenes
+            # The musician's dedicated take keeps the default file name inside its own folder.
+            if clip == "idle" and (hero, skin) == ("swift", "musician"):
+                choices = {k: v for k, v in scenes.items() if "/musician/" in k}
+            found = find_take(choices, dict.fromkeys(prefixes), tokens, weights)
             if found:
                 takes.append(found)
         if len(takes) != len(stages):
@@ -317,7 +325,10 @@ def assemble(blend, outfit=None, item=None, plan=None):
         tmp.write_bytes(fighter_materials(tmp.read_bytes()))
         activate(hero, tmp)
     tmp.replace(out)
-    save_json(out.with_suffix(".json"), {"source": base["source_max"], "clips": paths})
+    metadata = {"source": base["source_max"], "clips": paths}
+    if skin_parts:
+        metadata["skinSources"] = [s["source_max"] for s, _, _ in skin_parts]
+    save_json(out.with_suffix(".json"), metadata)
     print("Assembled", hero, skin, list(paths), flush=True)
 
 

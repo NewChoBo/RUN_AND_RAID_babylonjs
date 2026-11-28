@@ -312,6 +312,14 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     return z >= 0 && z <= 1 && x >= 0 && x <= 1 && y >= 0 && y <= 1 ? { x, y } : null;
   }
   let displayedMatch: RaidView | undefined;
+  function actorFor(hero: RaidHero) {
+    let actor = actors.get(hero);
+    if (!actor) {
+      actor = createRaidActor(scene, hero, blue, red, shadowMat);
+      actors.set(hero, actor);
+    }
+    return actor;
+  }
   let pullback = 0;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   function render(
@@ -320,6 +328,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     subtick: number,
     slot = 0,
     outfits: readonly (string | undefined)[] = [],
+    startPose?: { seconds: number; side: number },
   ) {
     const player = view.runners[slot]!;
     const localTeam = player.team;
@@ -347,11 +356,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
       rivalBodies.push(wagonBody);
       for (const actor of actors.values()) actor.hide();
       for (const { hero, slot: target, team } of view.runners) {
-        let actor = actors.get(hero);
-        if (!actor) {
-          actor = createRaidActor(scene, hero, blue, red, shadowMat);
-          actors.set(hero, actor);
-        }
+        const actor = actorFor(hero);
         actor.prepareModel(outfits[target]);
         (team === localTeam ? alliedBodies : rivalBodies).push({ target, meshes: [actor.hit] });
       }
@@ -360,7 +365,17 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     for (const r of view.runners)
       actors
         .get(r.hero)!
-        .draw(r, positions[r.slot]!, view.actions, view.tick, subtick, dt, localTeam);
+        .draw(
+          r,
+          positions[r.slot]!,
+          view.actions,
+          view.tick,
+          subtick,
+          dt,
+          localTeam,
+          startPose?.seconds,
+          r.slot === slot ? startPose?.side : 0,
+        );
     effects(view, subtick);
     const jade = view.runners.find((r) => r.hero === 'jade' && !r.respawn);
     lightningOrb.setEnabled(!!jade);
@@ -481,6 +496,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   }
   return {
     render,
+    prepareRunner: (hero: RaidHero, outfit?: string) => actorFor(hero).prepareModel(outfit),
     projectHealthChange,
     placement: (event: ScreenPoint, caster: RaidPoint, range: number, kind: 'field' | 'leap') =>
       pickRaidGroundAim(camera, canvas.getBoundingClientRect(), event, caster, range, kind),
