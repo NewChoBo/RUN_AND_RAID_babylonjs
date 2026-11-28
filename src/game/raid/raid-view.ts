@@ -111,7 +111,6 @@ export interface Runner extends RaidPoint, RaidControl {
   hp: number;
   rage: number;
   readonly rageLoadout: RaidRageLoadout;
-  target: RaidTarget | null;
   lastStrike: RaidTarget | null;
   lastWard: number | null;
   side: number;

@@ -7,7 +7,7 @@ import {
 } from '../../src/content/raid/battle-outfits.ts';
 import { HERO_IDS } from '../../src/game/raid/heroes/hero-id.ts';
 import { RaidSimulation } from '../../src/game/raid/raid-simulation.ts';
-import { RaidMatch } from '../../src/game/raid/raid-match.ts';
+import { HEROES, RaidMatch } from '../../src/game/raid/raid-match.ts';
 import { RaidRound } from '../../src/game/raid/raid-round.ts';
 import {
   isRaidRoster,
@@ -44,7 +44,7 @@ test('countdown steering keeps the latest input per seat for the first tick', ()
       ),
     );
   }
-  for (const action of ['jump', 'cast', 'lock', 'call']) {
+  for (const action of ['jump', 'cast', 'call']) {
     assert.equal(host.enqueue(first.actor, { seq: 31, action }, true), false);
   }
   assert.ok(
@@ -109,6 +109,48 @@ test('two Full Moon taps replay the forward dash and one spin at the interruptio
     ['dash', 'spin'],
   );
 });
+test('host and peer select the nearest basic target independently of pings, targeted skills and repeat casts', () => {
+  const roster = ['rend', 'longshot', 'jade', 'hammer'].map((hero, index) => ({
+    actor: index + 1,
+    hero,
+  }));
+  const host = new RaidRound(roster);
+  const peer = new RaidRound(roster);
+  for (const { match } of [host, peer]) {
+    for (const runner of match.runners)
+      Object.assign(runner, { x: 0, z: 6, brake: 0.4, appliedBrake: 0.4, basic: 1000 });
+    match.runners[0].basic = 0;
+    match.runners[2].z = 7;
+    match.runners[3].z = 7.6;
+  }
+  const legacy = { action: 'lock', payload: 'wagon' };
+  assert.equal(host.enqueue(1, { ...legacy, seq: 1 }), false);
+  assert.equal(peer.replay({ tick: 0, frames: [[{ ...legacy, slot: 0 }]] }), false);
+  assert.ok(host.enqueue(1, { seq: 1, action: 'call', payload: 'wagon' }));
+  assert.ok(host.enqueue(1, { seq: 2, action: 'cast', payload: { skill: 1, target: 3 } }));
+
+  for (const repeat of [false, true]) {
+    if (repeat) {
+      for (const { match } of [host, peer]) {
+        match.runners[0].basic = 0;
+        match.runners[0].cooldowns[1] = 0;
+      }
+      assert.ok(host.enqueue(1, { seq: 3, action: 'cast', payload: { skill: 1, repeat: true } }));
+    }
+    assert.ok(peer.replay(host.advance(1)));
+    assert.equal(host.match.calls[0].target, 'wagon');
+    const hits = host.match.healthChanges.filter((hit) => hit.tick === host.match.tick);
+    assert.deepEqual(
+      hits.map(({ target, amount }) => [target, amount]),
+      [
+        [3, -3 * HEROES.rend.power],
+        [2, -HEROES.rend.basicAttack],
+      ],
+    );
+    assert.deepEqual(host.match.healthChanges, peer.match.healthChanges);
+  }
+});
+
 test('a team attack request is validated once, guides its bot, replays and expires', () => {
   const roster = players.slice(0, 2);
   const host = new RaidRound(roster),
@@ -116,6 +158,10 @@ test('a team attack request is validated once, guides its bot, replays and expir
   const actor = roster[0].actor;
   const own = host.slot(actor),
     enemy = host.slot(roster[1].actor);
+  for (const round of [host, peer]) {
+    round.match.runners[1].x = 0;
+    round.match.runners[enemy].x = 3;
+  }
   for (const [seq, target] of [own, enemy, 'wagon'].entries())
     assert.ok(host.enqueue(actor, { seq: seq + 1, action: 'call', payload: target }));
   const first = host.advance(6);
@@ -124,7 +170,7 @@ test('a team attack request is validated once, guides its bot, replays and expir
     [enemy],
   );
   assert.ok(peer.replay(first));
-  assert.equal(host.match.runners[1].target, enemy);
+  assert.equal(host.match.runners[1].side, 1);
   assert.deepEqual(host.match.calls, peer.match.calls);
   assert.equal(host.match.calls[1], null);
   for (let i = 6; i < 120; i += 6) assert.ok(peer.replay(host.advance(6)));

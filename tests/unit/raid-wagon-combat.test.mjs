@@ -45,7 +45,7 @@ test('a ground cast can clip the body, while a just-clear circle misses it', () 
   assert.ok(runner.wagonDamage > 0);
 });
 
-test('a sliver of wagon side on screen permits a lock and a basic only inside the visible arc and reach', () => {
+test('a sliver of wagon side on screen permits a basic only inside the visible arc and reach', () => {
   let aspect = 4 / 3;
   const match = practice('longshot', () => aspect);
   for (let i = 0; i < 180; i++) match.step();
@@ -55,7 +55,7 @@ test('a sliver of wagon side on screen permits a lock and a basic only inside th
   caster.z = 8;
   assert.equal(inRaidSight(caster, center, 2, aspect), false);
   assert.equal(inRaidSight(caster, wagonContact(caster, match.tick), 2, aspect), false);
-  assert.ok(match.lock(0, 'wagon'));
+  assert.ok(match.canTarget(0, 'wagon'));
   aspect = 0.5;
   assert.equal(match.canTarget(0, 'wagon'), false);
 

@@ -300,7 +300,7 @@ for (const [hero, reach, ticks] of [
   });
 }
 
-test('forward dashes and blinks respect the running limit even when the locked boss is farther ahead', () => {
+test('forward dashes and blinks respect the running limit even when the targeted boss is farther ahead', () => {
   assert.equal(RAID_FRONT_Z, WAGON.z - 1.6);
   for (const [hero, skill, input] of [
     ['rildin', 2, { dx: 0.3, dz: 1 }],
@@ -509,7 +509,7 @@ test('Swift designates a quarry, closes over time and blinks behind a visible ta
   assert.equal(r.rage, 0);
 });
 
-test('a designated hit repeats independently of the basic lock and cannot transfer to a new life', () => {
+test('a designated hit repeats independently of a team ping and cannot transfer to a new life', () => {
   const { match, send } = battle(['rend', 'abyss', 'longshot', 'jade']);
   const [caster, , rival] = match.runners;
   assert.equal(send(0, 'cast', { skill: 1, repeat: true }), false);
@@ -517,7 +517,7 @@ test('a designated hit repeats independently of the basic lock and cannot transf
   assert.equal(caster.lastStrike, null);
   advance(match, 1);
   assert.equal(caster.lastStrike, rival.slot);
-  assert.equal(send(0, 'lock', 'wagon'), true);
+  assert.ok(send(0, 'call', 'wagon'));
   caster.cooldowns[1] = 0;
   assert.equal(send(0, 'cast', { skill: 1, repeat: true, target: 'wagon' }), false);
   rival.z = -40;
@@ -529,7 +529,7 @@ test('a designated hit repeats independently of the basic lock and cannot transf
   advance(match, 1);
   assert.ok(rival.respawn);
   assert.equal(caster.lastStrike, null);
-  assert.equal(caster.target, 'wagon');
+  assert.equal(match.calls[0].target, 'wagon');
 });
 
 test('an ally ward remembers its own recipient and a chain cannot consume the remembered cast', () => {
@@ -790,11 +790,11 @@ test('a wounded ally heals inside the grove and receives no further healing afte
   advance(match, RAID_HZ);
   assert.equal(ally.hp - before, 10);
 });
-test('only connected runners can lock an opponent and spend a ready, in-range skill', () => {
+test('only connected runners can spend a ready, in-range skill', () => {
   const { match, send } = battle('rend');
   for (const r of match.runners) r.basic = 10;
   assert.equal(send(9, 'jump'), false);
-  assert.equal(send(0, 'lock', 1), false);
+  assert.equal(send(0, 'lock', 'wagon'), false);
   assert.equal(send(0, 'cast', { skill: 2, x: Infinity, z: 0 }), false);
   assert.equal(send(0, 'cast', { skill: 2, x: 0, z: -30 }), false);
   assert.equal(send(0, 'cast', { skill: 3, target: 'wagon' }), false);
@@ -804,20 +804,18 @@ test('only connected runners can lock an opponent and spend a ready, in-range sk
   assert.ok(match.damage[0] > 0);
   assert.equal(match.damage[1], 0);
 });
-test('Bolt requires its own target and never changes the basic attack target', () => {
+test('Bolt requires its own valid target and cannot redirect itself during cooldown', () => {
   const { match, send } = battle(['rend', 'abyss', 'longshot', 'jade']);
   const runner = match.runners[0];
   assert.equal(send(0, 'cast', { skill: 1 }), false);
   for (const target of [1, 9, 2.5]) {
     assert.equal(send(0, 'cast', { skill: 1, target }), false);
-    assert.equal(runner.target, 'wagon');
     assert.equal(runner.cooldowns[1], 0);
   }
   assert.ok(send(0, 'cast', { skill: 1, target: 2 }));
   const cooldown = runner.cooldowns[1];
   assert.ok(cooldown > 0);
   assert.equal(send(0, 'cast', { skill: 1, target: 3 }), false);
-  assert.equal(runner.target, 'wagon');
   assert.equal(runner.cooldowns[1], cooldown);
   match.step();
   assert.equal(match.runners[2].hp, HEROES.longshot.hp - 33);
@@ -975,7 +973,37 @@ test('out-of-range or malformed steering preserves both previous axes', () => {
     assert.deepEqual([side, brake], [-0.6, 0.4]);
   }
 });
-test('a locked opponent crossing just behind the runner escapes basics but can still be hit by Bolt', () => {
+test('automatic basics reconsider the wagon and runners every attack, including ties and taunts', () => {
+  const { match } = battle(['rend', 'jade', 'longshot', 'hammer']);
+  const [attacker, ally, first, second] = match.runners;
+  for (const r of match.runners)
+    Object.assign(r, { x: 0, z: 6, brake: 0.4, appliedBrake: 0.4, basic: 1000 });
+  ally.z = 6.1;
+  function attack() {
+    attacker.basic = 0;
+    match.step();
+    return match.healthChanges
+      .filter((hit) => hit.tick === match.tick && hit.from === attacker.slot)
+      .map((hit) => hit.target);
+  }
+  first.z = 7;
+  second.z = 7.5;
+  assert.deepEqual(attack(), [first.slot]);
+  second.z = first.z;
+  assert.deepEqual(attack(), [second.slot]);
+  // Both opponents leave the forward cone. The nearby ally is ineligible.
+  first.z = second.z = 5;
+  assert.deepEqual(attack(), ['wagon']);
+  first.z = 7;
+  second.z = 7.5;
+  attacker.taunt = { from: second.slot, until: match.tick + 3 };
+  assert.deepEqual(attack(), [second.slot]);
+  second.z = 5;
+  assert.deepEqual(attack(), []);
+  assert.deepEqual(attack(), [first.slot]);
+});
+
+test('an opponent crossing just behind the runner escapes basics but can still be hit by Bolt', () => {
   const { match, send } = battle(['rend', 'abyss', 'longshot', 'jade']);
   const [player, , rival] = match.runners;
   // Keep the wagon outside automatic basic range throughout this crossing.
@@ -983,21 +1011,17 @@ test('a locked opponent crossing just behind the runner escapes basics but can s
   match.runners[3].z = -40;
   send(0, 'move', { side: 1, walk: true });
   advance(match, 20);
-  assert.ok(send(0, 'lock', 2));
-  assert.ok(send(2, 'lock', 0));
   send(0, 'move', { side: 0, walk: false });
   send(2, 'move', { side: 0, walk: true });
   for (let i = 0; i < 45 && rival.z >= player.z; i++) match.step();
   assert.ok(rival.z < player.z && player.z - rival.z < 0.45);
   assert.ok(Math.hypot(player.x - rival.x, player.z - rival.z) < HEROES.rend.reach);
-  assert.equal(player.target, 2);
   const hpBehind = rival.hp;
   send(2, 'move', { side: 0, walk: false });
   advance(match, 30);
   assert.equal(rival.hp, hpBehind);
   assert.equal(player.basic, 0);
   assert.ok(player.hp < HEROES.rend.hp);
-  assert.ok(send(0, 'lock', 2));
   assert.ok(send(0, 'cast', { skill: 1, target: 2 }));
   assert.ok(player.cooldowns[1] > 0);
   match.step();
@@ -1010,7 +1034,6 @@ test('an opponent beside the runner enters basic attack range only after moving 
   send(0, 'move', { side: 1, walk: false });
   match.step();
   send(0, 'move', { side: 0, walk: false });
-  assert.ok(send(0, 'lock', 2));
   advance(match, 30);
   assert.ok(Math.hypot(player.x - rival.x, player.z - rival.z) < HEROES.hammer.reach);
   assert.equal(rival.hp, HEROES.longshot.hp);
@@ -1020,32 +1043,30 @@ test('an opponent beside the runner enters basic attack range only after moving 
   assert.ok(rival.z - player.z >= Math.abs(rival.x - player.x));
   assert.equal(rival.hp, HEROES.longshot.hp - HEROES.hammer.basicAttack);
 });
-test('a viewport edge limits player locks but leaves in-range fields and bot vision independent', () => {
+test('a viewport edge limits player targeting but leaves in-range fields and bot vision independent', () => {
   let aspect = 16 / 9;
   const { match, send } = battle(['rend', 'abyss', 'longshot', 'jade'], () => aspect);
   send(0, 'move', { side: 0, walk: true });
   send(3, 'move', { side: -1, walk: true });
   advance(match, 20);
-  assert.ok(send(0, 'lock', 2));
+  assert.ok(match.canTarget(0, 2));
   aspect = 0.15;
   assert.equal(send(0, 'cast', { skill: 1, target: 2 }), false);
   assert.ok(send(0, 'cast', { skill: 2, x: 5, z: 0 }));
   assert.ok(match.runners[0].cooldowns[2] > 0);
-  assert.ok(send(3, 'lock', 1));
-  match.step();
-  assert.equal(match.runners[0].target, null);
-  assert.equal(match.runners[3].target, 1);
+  assert.equal(match.canTarget(0, 2), false);
+  assert.ok(match.canTarget(3, 1));
   aspect = 16 / 9;
-  assert.ok(send(0, 'lock', 2));
+  assert.ok(match.canTarget(0, 2));
 });
-test('targeted attacks and wards can use the extra aiming view while basic locks keep the running view', () => {
+test('targeted attacks and wards can use the extra aiming view while ordinary target visibility uses the running view', () => {
   const { match, send } = battle(['rend', 'jade', 'longshot', 'abyss']);
   const [player, ally, rival] = match.runners;
   player.z = 6;
   ally.z = 6;
   rival.x = player.x;
   rival.z = 0;
-  assert.equal(match.lock(0, 2), false);
+  assert.equal(match.canTarget(0, 2), false);
   assert.equal(match.previewSkill(0, 1, null, 2).status, 'ready');
   assert.ok(send(0, 'cast', { skill: 1, target: 2 }));
   player.z = 0;
@@ -1057,24 +1078,20 @@ test('targeted attacks and wards can use the extra aiming view while basic locks
   assert.equal(send(0, 'cast', { skill: 1, target: 2 }), false);
 });
 test('bots can target a closer opponent behind them with skills while that opponent is on camera', () => {
-  const { match, send } = battle();
-  // Enter the rear runner's skirmish phase with the starting formation intact.
-  for (const r of match.runners) send(r.slot, 'move', { side: 0, brake: 0.4 });
-  advance(match, 216);
-  for (const r of match.runners) send(r.slot, 'move', { side: 0, brake: 0 });
-  send(0, 'move', { side: 0, walk: true });
-  send(3, 'move', { side: -1, walk: false });
-  advance(match, 12);
-  send(3, 'move', { side: -1, walk: true });
-  advance(match, 16);
-  const bot = match.runners[3];
-  assert.ok(match.runners[0].z < bot.z);
-  assert.ok(match.canTarget(3, 1));
-  const orders = [];
+  const { match } = battle(['hammer', 'abyss', 'longshot', 'rend']);
+  // A rear runner's next cast opportunity during the skirmish phase.
+  advance(match, 268);
+  const [near, far, , bot] = match.runners;
+  Object.assign(bot, { x: 0, z: 0, silenced: 0, staggered: 0, stunned: 0 });
+  Object.assign(near, { x: 0, z: -1 });
+  Object.assign(far, { x: 4, z: 1 });
+  bot.cooldowns[0] = 99;
+  assert.ok(match.canTarget(bot.slot, near.slot));
+  const casts = [];
   driveRaidBots(match, (slot, action, payload) => {
-    if (slot === 3 && action === 'lock') orders.push(payload);
+    if (slot === bot.slot && action === 'cast') casts.push(payload);
   });
-  assert.deepEqual(orders, [0]);
+  assert.deepEqual(casts, [{ skill: 1, target: near.slot }]);
 });
 test('the approaching low electric tile can be avoided by jumping or sidestepping', () => {
   function hit(mode) {
@@ -1105,7 +1122,6 @@ test('PvP earns rage and a knockout, then the defeated runner rejoins behind the
   advance(match, 20);
   const wagonDamage = [...match.damage];
   for (const slot of [0, 1]) {
-    send(slot, 'lock', 2);
     send(slot, 'cast', { skill: 1, target: victim.slot });
     send(slot, 'cast', { skill: 2, x: victim.x, z: victim.z });
   }
@@ -1384,7 +1400,7 @@ test('a bot-assisted round can destroy the wagon early and the result freezes th
   assert.equal(JSON.stringify([match.tick, match.damage, match.runners]), finished);
 });
 
-test('free-aim shots ignore the lock, accept empty space, and spend cooldown on a miss', () => {
+test('free-aim shots ignore a supplied target, accept empty space, and spend cooldown on a miss', () => {
   for (const [hero, skill] of [
     ['flare', 0],
     ['longshot', 0],
@@ -1404,7 +1420,6 @@ test('free-aim shots ignore the lock, accept empty space, and spend cooldown on 
       ['direction', 'ready', undefined, undefined],
     );
     assert.ok(send(0, 'cast', { skill, dx: -1, dz: 0 }));
-    assert.equal(match.runners[0].target, 'wagon');
     assert.ok(match.runners[0].cooldowns[skill] > 0);
     assert.equal(match.projectiles.length, hero === 'flare' ? 1 : 7);
     const control = battle(hero).match;
@@ -1435,13 +1450,13 @@ test('a runner can dodge a fireball in flight or run into a shot aimed ahead', (
   }
 });
 
-test('both bot formations open on the wagon and space their casts across all four loadouts', () => {
+test('both bot formations steer without a manual lock and space their casts across all loadouts', () => {
   for (const hero of HERO_IDS) {
     const { match, send } = battle(hero);
     const lastCast = new Map();
     for (let i = 0; i < 8 * RAID_HZ; i++) {
       driveRaidBots(match, (slot, action, payload) => {
-        if (action === 'lock' && i < RAID_HZ) assert.equal(payload, 'wagon');
+        assert.notEqual(action, 'lock');
         if (action === 'cast') {
           assert.ok(i >= RAID_HZ);
           assert.ok(i - (lastCast.get(slot) ?? -Infinity) >= 32);
@@ -1454,15 +1469,16 @@ test('both bot formations open on the wagon and space their casts across all fou
     assert.equal(lastCast.size, 3);
   }
 });
-test('each loadout contests wagon damage per active team member with one objective skill every 1.5 seconds', () => {
-  for (const hero of HERO_IDS) {
-    const { match, send } = battle(hero);
+test('each loadout contests wagon damage per active runner when the same teams swap sides', () => {
+  function play({ match, send }, slot) {
+    const hero = match.runners[slot].hero;
+    const humanSlots = new Set([slot]);
     const activeTicks = [0, 0];
     while (!match.result) {
       for (const runner of match.runners) if (!runner.respawn) activeTicks[runner.team]++;
-      driveRaidBots(match, send);
+      driveRaidBots(match, send, humanSlots);
       if (match.tick % 45 === 0) {
-        const r = match.runners[0];
+        const r = match.runners[slot];
         const priority = [3];
         const towers = r.heroView.turrets;
         const wagon = wagonCenter(match.tick);
@@ -1473,7 +1489,7 @@ test('each loadout contests wagon damage per active team member with one objecti
           // Advance closes on the road while the wagon keeps moving. Weave basics once in reach.
           const gap = distance(r, contact);
           if (gap > raidBasicReach(r, match.tick)) priority.push(2);
-          if (gap <= match.skillRange(0, 0).range) priority.push(0);
+          if (gap <= match.skillRange(slot, 0).range) priority.push(0);
         } else if (hero === 'longshot') {
           priority.push(1, 0);
         } else if (hero === 'jade') {
@@ -1506,16 +1522,30 @@ test('each loadout contests wagon damage per active team member with one objecti
                   : kind === 'ward'
                     ? { skill, ally: r.slot }
                     : { skill };
-          if (send(0, 'cast', payload)) break;
+          if (send(slot, 'cast', payload)) break;
         }
       }
       match.step();
     }
-    // On a time finish no team necessarily reaches WAGON_HP. Compare the damage per
-    // living runner-tick actually achieved by the two teams, and check match pace separately.
-    const rates = activeTicks.map((ticks, team) => match.damage[team] / ticks);
-    assert.ok(Math.min(...rates) >= Math.max(...rates) * 0.75, hero + ' ' + rates);
+    assert.ok(
+      match.damage.every((damage) => damage > 0),
+      hero + ' ' + match.damage,
+    );
     assert.ok(match.damage[0] + match.damage[1] >= WAGON_HP, hero + ' ' + match.damage);
+    return { damage: match.damage, activeTicks };
+  }
+  for (const hero of HERO_IDS) {
+    const first = battle(hero);
+    const [a, b, c, d] = first.match.runners.map((runner) => runner.hero);
+    const blue = play(first, 0);
+    const red = play(battle([c, d, a, b]), 2);
+    // Aggregate damage and living runner-ticks by lineup across the two spawn sides.
+    const rates = [0, 1].map(
+      (team) =>
+        (blue.damage[team] + red.damage[1 - team]) /
+        (blue.activeTicks[team] + red.activeTicks[1 - team]),
+    );
+    assert.ok(Math.min(...rates) >= Math.max(...rates) * 0.75, hero + ' ' + rates);
   }
 });
 

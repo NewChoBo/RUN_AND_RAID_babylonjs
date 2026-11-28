@@ -3,7 +3,7 @@ import type { RaidTarget } from '../raid-view.ts';
 import type { SkillInfo, ResolvedCast } from './skill-rule.ts';
 import type { SkillInput, TargetRead } from './skill-targeting.ts';
 
-/** Per-life input history. Impacts, auto-attacks and lock changes never write here. */
+/** Per-life history of successful aimed skill inputs. */
 export class LastAim {
   private enemy?: RaidTarget;
   private ally?: number;

@@ -204,13 +204,6 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     (hero) => actors.get(hero)?.dashShoulders,
   );
   const drawCounter = createRaidCounterVisual(scene);
-  const lock = MeshBuilder.CreateTorus(
-    'target lock',
-    { diameter: 1.6, thickness: 0.09, tessellation: 28 },
-    scene,
-  );
-  lock.material = ember;
-  lock.isPickable = false;
   const callMarker = MeshBuilder.CreateLines(
     'team attack request',
     {
@@ -381,19 +374,6 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     drawQuarryMarks(view, positions, subtick, barHeight);
     drawHealing(view, positions, subtick, localTeam, barHeight, reducedMotion.matches);
     drawStatus(view, positions, subtick, localTeam, barHeight, reducedMotion.matches);
-    const target =
-      player.target === null
-        ? null
-        : player.target === 'wagon'
-          ? carriage
-          : positions[player.target];
-    lock.setEnabled(!!target && (!aimKind || aimKind === 'field' || aimKind === 'pulse'));
-    if (target) {
-      lock.position.set(target.x, 0.085, target.z);
-      if (player.target === 'wagon')
-        lock.scaling.set((WAGON_BODY.halfWidth + 0.3) / 0.8, 1, (WAGON_BODY.halfDepth + 0.3) / 0.8);
-      else lock.scaling.setAll(RAID_RUNNER_SCALE);
-    }
     const call = activeTeamCall(view, localTeam);
     const mark = call && 'target' in call ? call : null;
     const markedPoint = mark

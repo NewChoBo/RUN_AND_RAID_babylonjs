@@ -188,7 +188,8 @@ export const raidText = defineMessages(
     controls:
       'Drag the left pad sideways to steer or pull it down to walk. Tap a skill marked with a crosshair, then aim and release. Other skills cast with one tap. Drag an aimed skill off its button to reuse the previous target or aim. On a keyboard, press Shift + its number.',
     pingTeam: 'Team ping',
-    pingHelp: 'Drag ! up to advance, down to fall back, or toward an enemy portrait to focus fire.',
+    pingHelp:
+      'Drag ! up to advance, down to fall back, or toward an enemy portrait to focus fire. Press G to open the ping menu, or point at an enemy or the wagon and press G to call for focus fire.',
     advance: 'Advance',
     retreat: 'Fall back',
     enemy1: 'Enemy 1',
@@ -296,8 +297,6 @@ export const raidText = defineMessages(
     hp: 'Health',
     rage: 'Rage',
     rageThreshold: 'Base rage meter fills after losing {hp} HP in total',
-    target: 'Basic target',
-    noTarget: 'None',
     wagon: 'Wagon',
     pulse: 'Pulse',
     bolt: 'Bolt',

@@ -30,7 +30,6 @@ interface RaidActions extends RaidAimActions {
   repeatCast(slot: Skill): void;
   ping(intent: RaidPing): void;
   skill(slot: Skill): void;
-  target(): void;
   pause(): void;
   resume(): void;
   retry(): void;
@@ -114,9 +113,6 @@ export function createRaidHud(
   const condition = element('output', vitals);
   condition.className = 'raid-condition';
   condition.hidden = true;
-  const orders = element('div', vitals);
-  orders.className = 'raid-orders';
-  const lock = hudButton(orders, '', actions.target);
   const ping = createRaidPing(deck, actions.ping);
   const jump = button(deck, '');
   const jumpLabel = element('span', jump, t('jump'));
@@ -225,14 +221,6 @@ export function createRaidHud(
     if (runner.heroView.shieldMode !== undefined)
       resources.push(t(runner.heroView.shieldMode ? 'magnusFury' : 'magnusBattle'));
     rage.textContent = resources.join(' · ');
-    const target =
-      runner.target === null
-        ? 'noTarget'
-        : runner.target === 'wagon'
-          ? 'wagon'
-          : view.runners[runner.target]!.hero;
-    lock.textContent = t('target') + ' · ' + t(target);
-    lock.disabled = !!runner.respawn || !!view.result;
     skills.update(runner, aiming);
     if (runner.respawn) {
       const remaining = t('respawn', { seconds: Math.ceil(runner.respawn / RAID_HZ) });
@@ -271,6 +259,7 @@ export function createRaidHud(
   }
   return {
     aimPad,
+    togglePingMenu: ping.toggleKeyboardMenu,
     updateSkills: skills.update,
     drawCombatNumbers,
     reset() {

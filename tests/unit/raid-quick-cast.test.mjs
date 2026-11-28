@@ -48,11 +48,11 @@ function battle(hero) {
   return { match, cast, r: match.runners[0], enemy: match.runners[2] };
 }
 
-test('directional quick cast keeps a successful bearing across misses, lock changes and malformed commands', () => {
+test('directional quick cast keeps a successful bearing across misses, team pings and malformed commands', () => {
   const { match, cast, r } = battle('longshot');
   assert.equal(cast({ skill: 2, repeat: true }), false);
   assert.ok(cast({ skill: 0, dx: -2, dz: 1 }));
-  assert.ok(match.lock(0, 'wagon'));
+  assert.ok(match.callTarget(0, 'wagon'));
   assert.equal(cast({ skill: 2, dx: 0, dz: 0 }), false);
   assert.equal(cast({ skill: 2, repeat: true, dx: 1 }), false);
   assert.equal(r.cooldowns[2], 0);
@@ -178,7 +178,7 @@ test('Freesia can shield an ally or blind an enemy, conceal herself, and plant a
   assert.equal(enemy.slowed, 90);
 });
 
-test('a missed Fist of Ruin never moves Drizz or damages the selected basic target', () => {
+test('a missed Fist of Ruin never moves Drizz or damages a nearby enemy', () => {
   const { match, r, cast, enemy } = battle('drizz');
   r.rage = 100;
   const hp = enemy.hp;

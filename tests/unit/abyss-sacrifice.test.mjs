@@ -30,7 +30,6 @@ test('Sacrifice checks a 5m inclusive radius at spell impact before barriers and
     assert.equal(match.healthChanges.filter((h) => h.target === target.slot).length, 1);
     const afterSpell = target.hp;
     Object.assign(target, { x: 0, z: 3 });
-    assert.ok(match.lock(0, target.slot));
     caster.basic = 0;
     match.step();
     assert.equal(afterSpell - target.hp, HEROES.abyss.basicAttack);

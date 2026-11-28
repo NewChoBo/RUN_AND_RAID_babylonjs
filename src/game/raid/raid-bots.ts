@@ -118,7 +118,6 @@ export function driveRaidBots(
     const evade = counter?.kind === 'low' && arrival <= 16;
     if (evade) send(r.slot, 'jump', r.jetFuel !== undefined ? true : undefined);
     else if (r.air?.thrust) send(r.slot, 'jump', false);
-    send(r.slot, 'lock', target?.slot ?? 'wagon');
     // Space casts just over a second apart. Steering and hazard reactions still run every eight ticks.
     if (
       actionLocked(r) ||

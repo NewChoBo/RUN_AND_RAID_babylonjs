@@ -106,21 +106,18 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     hud.update(match, aiming, slot);
     if (aiming !== null) refreshKeyboardAim();
   }
-  function cycle() {
-    if (state !== 'playing') return;
-    const options = (['wagon', ...match.runners.map((r) => r.slot)] as RaidTarget[]).filter(
-      (target) => match.canTarget(slot, target),
-    );
-    if (!options.length) return;
-    const current = match.runners[slot]!.target;
-    const next = current === null ? 0 : (options.indexOf(current) + 1) % options.length;
-    order('lock', options[next]!);
-    hud.update(match, aiming, slot);
-  }
-  function callTarget() {
-    if (state !== 'playing') return;
-    const r = match.runners[slot]!;
-    if (r.target !== null && match.canTarget(slot, r.target)) order('call', r.target);
+  function keyboardPing() {
+    if (state !== 'playing' || aiming !== null || hud.aimPad.skill !== null) return;
+    if (keyboardAimPoint && canvas.matches(':hover')) {
+      const { target } = course.pickTarget(keyboardAimPoint, 'enemies', RAID_AIM_RADIUS, (id) =>
+        match.canTarget(slot, id),
+      );
+      if (target !== undefined) {
+        order('call', target);
+        return;
+      }
+    }
+    hud.togglePingMenu();
   }
   function repeatCast(skill: Skill) {
     if (state !== 'playing') return;
@@ -359,7 +356,6 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       },
       drop,
       skill: cast,
-      target: cycle,
       pause,
       resume,
       retry: begin,
@@ -554,18 +550,16 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     if (aiming === null) course.showAim(null);
   });
   canvas.addEventListener('pointerdown', (e) => {
-    if (state !== 'playing' || e.defaultPrevented || hud.aimPad.skill !== null || e.button !== 0)
+    if (
+      state !== 'playing' ||
+      aiming === null ||
+      e.defaultPrevented ||
+      hud.aimPad.skill !== null ||
+      e.button !== 0
+    )
       return;
-    if (aiming !== null) {
-      aimPointer = e.pointerId;
-      canvas.setPointerCapture(e.pointerId);
-      return;
-    }
-    const { target } = course.pickTarget(e, 'enemies', RAID_AIM_RADIUS, (id) =>
-      match.canTarget(slot, id),
-    );
-    if (target !== undefined) order('lock', target);
-    hud.update(match, aiming, slot);
+    aimPointer = e.pointerId;
+    canvas.setPointerCapture(e.pointerId);
   });
   const moves = new Map([
     [left, 'left'],
@@ -588,16 +582,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     }
     if (state === 'countdown' && e.code !== 'Escape') return;
     const keys = ['Digit1', 'Digit2', 'Digit3', 'Digit4'];
-    if (
-      e.code !== jump &&
-      e.code !== 'Tab' &&
-      e.code !== 'KeyG' &&
-      e.code !== 'Escape' &&
-      !keys.includes(e.code)
-    )
+    if (e.code !== jump && e.code !== 'KeyG' && e.code !== 'Escape' && !keys.includes(e.code))
       return;
-    // Tab cycles targets on the game canvas; focused HUD controls retain normal keyboard traversal.
-    if (e.code === 'Tab' && e.target !== canvas) return;
     e.preventDefault();
     if (e.repeat) return;
     if (e.code === 'Escape') {
@@ -609,8 +595,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
         hud.update(match, null, slot);
       } else pause();
     } else if (e.code === jump) evade(true, 'key');
-    else if (e.code === 'Tab') cycle();
-    else if (e.code === 'KeyG') callTarget();
+    else if (e.code === 'KeyG') keyboardPing();
     else if (e.shiftKey) repeatCast(keys.indexOf(e.code) as Skill);
     else cast(keys.indexOf(e.code) as Skill);
   });

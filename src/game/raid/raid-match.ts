@@ -124,7 +124,6 @@ const makeRunner = (
   hp: HEROES[hero].hp,
   rage: 0,
   rageLoadout,
-  target: 'wagon',
   lastStrike: null,
   lastWard: null,
   side: 0,
@@ -292,8 +291,7 @@ export class RaidMatch implements RaidView {
     const other = this.#runners[target];
     return other && other.team !== r.team && !other.respawn ? other : undefined;
   }
-  #visibleTarget(r: Runner, target: RaidTarget | null, pullback = 0) {
-    if (target === null) return;
+  #visibleTarget(r: Runner, target: RaidTarget, pullback = 0) {
     const point = this.#position(r, target);
     if (!point) return;
     if (target === 'wagon') return this.#visibleWagonSide(r, point, pullback);
@@ -455,12 +453,6 @@ export class RaidMatch implements RaidView {
       ground,
       target,
     ).preview;
-  }
-  lock(slot: number, target: RaidTarget) {
-    const r = this.#active(slot);
-    if (!r || !this.#visibleTarget(r, target)) return false;
-    r.target = target;
-    return true;
   }
   callTarget(slot: number, intent: RaidTarget | RaidPing) {
     const r = this.#active(slot);
@@ -634,7 +626,7 @@ export class RaidMatch implements RaidView {
     this.#heroes[r.slot]!.events.onDashEnd?.(this.#contexts[r.slot]!, dash.target);
     this.#impact(r, dash.skill, 'dashEnd', r, dash.target);
   }
-  #basicTarget(r: Runner, target: RaidTarget | null) {
+  #basicTarget(r: Runner, target: RaidTarget) {
     if (target === 'wagon') {
       const point = wagonSectorContact(r, this.tick, RAID_BASIC_HALF_ANGLE);
       return point ? this.#visibleWagonSide(r, point) : undefined;
@@ -644,24 +636,21 @@ export class RaidMatch implements RaidView {
   }
   #autoAttack(r: Runner) {
     const stats = HEROES[r.hero];
-    const reach = raidBasicReach(r, this.tick);
-    // Prefer the lock in reach, then the nearest legal target. A distant lock cannot suppress melee.
-    let target = r.taunt?.from ?? r.target;
-    let point = this.#basicTarget(r, target);
-    if (target === null || !point || distance(r, point) > reach) {
-      if (r.taunt) return;
-      let nearest: number = reach;
-      point = undefined;
-      for (const candidate of RAID_TARGETS) {
-        const p = this.#basicTarget(r, candidate);
-        if (p && distance(r, p) <= nearest) {
-          nearest = distance(r, p);
-          target = candidate;
-          point = p;
-        }
+    let nearest = raidBasicReach(r, this.tick);
+    let target: RaidTarget | undefined;
+    let point: RaidPoint | undefined;
+    const candidates = r.taunt ? [r.taunt.from] : RAID_TARGETS;
+    for (const candidate of candidates) {
+      const position = this.#basicTarget(r, candidate);
+      if (!position) continue;
+      const metres = distance(r, position);
+      if (metres <= nearest) {
+        nearest = metres;
+        target = candidate;
+        point = position;
       }
     }
-    if (target === null || !point) return;
+    if (target === undefined || !point) return;
     const attack = this.#heroes[r.slot]!.events.onBasicAttack?.(this.#contexts[r.slot]!);
     this.#strike(r, target, attack?.amount ?? stats.basicAttack);
     r.basic = attack?.cooldown ?? stats.cooldown;
@@ -696,7 +685,6 @@ export class RaidMatch implements RaidView {
           r.z = -6;
           if (previous) previous[r.slot] = { x: r.x, z: r.z, height: 0 };
           this.#heroes[r.slot]!.events.onRespawn?.(this.#contexts[r.slot]!);
-          r.target = 'wagon';
           r.shield = 45;
         }
         continue;
@@ -793,7 +781,6 @@ export class RaidMatch implements RaidView {
         r.lastStrike = null;
       if (r.respawn || (r.lastWard !== null && this.#runners[r.lastWard]!.respawn))
         r.lastWard = null;
-      if (r.target !== null && (r.respawn || !this.#visibleTarget(r, r.target))) r.target = null;
       this.#heroes[r.slot]!.events.onTickEnd?.(this.#contexts[r.slot]!);
     }
     for (const team of [0, 1] as const) {

@@ -1,7 +1,7 @@
 import type { GameFeature, CommandResult } from '../session/game-feature.ts';
 import { raidRunnerAimKind, type RaidMatch } from './raid-match.ts';
 
-export type RaidCommandName = 'move' | 'jump' | 'lock' | 'call' | 'cast';
+export type RaidCommandName = 'move' | 'jump' | 'call' | 'cast';
 export type RaidOrder = (slot: number, action: RaidCommandName, payload?: unknown) => void;
 
 const result = (ok: boolean): CommandResult =>
@@ -34,10 +34,6 @@ export function createRaidFeature(match: RaidMatch): GameFeature<RaidPlayer> {
             p === 'wagon' ||
             (typeof p === 'number' && Number.isInteger(p))) &&
             match.callTarget(slot, p),
-        ),
-      lock: ({ slot }, p) =>
-        result(
-          (p === 'wagon' || (typeof p === 'number' && Number.isInteger(p))) && match.lock(slot, p),
         ),
       cast: ({ slot }, p) => {
         if (!p || typeof p !== 'object' || !('skill' in p)) return result(false);

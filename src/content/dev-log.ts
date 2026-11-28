@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T20:03+09:00',
+    tag: 'controls',
+    title: '평타 표적 자동 선택',
+    body: '주자와 봇 모두 평타를 칠 때마다 전방 사거리 안에서 가장 가까운 적 주자나 마차를 공격합니다. 평타 표적 전환 버튼을 없앴습니다. 느낌표로 아군에게 집중 공격을 요청하거나 스킬로 적을 직접 조준할 수 있습니다.',
+  },
+  {
     updatedAt: '2026-11-28T19:49+09:00',
     tag: 'controls',
     title: '픽창에서도 제자리에 있는 설정 버튼',

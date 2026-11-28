@@ -95,14 +95,18 @@ export function createRaidPing(parent: HTMLElement, send: (intent: RaidPing) => 
   trigger.onpointercancel = trigger.onlostpointercapture = (e) => {
     if (contact?.id === e.pointerId) close();
   };
-  trigger.onclick = (e) => {
-    if (e.detail !== 0) return;
+  function toggleKeyboardMenu() {
+    if (trigger.disabled || contact) return;
     if (!choices.hidden) {
       close();
+      trigger.focus({ preventScroll: true });
       return;
     }
     open();
     entries[0]!.button.focus();
+  }
+  trigger.onclick = (e) => {
+    if (e.detail === 0) toggleKeyboardMenu();
   };
   pad.onkeydown = (e) => {
     if (e.key === ' ' || e.key === 'Enter') {
@@ -126,6 +130,7 @@ export function createRaidPing(parent: HTMLElement, send: (intent: RaidPing) => 
   });
   return {
     close,
+    toggleKeyboardMenu,
     update(view: RaidView, team: Team, disabled: boolean) {
       if (disabled && !choices.hidden) close();
       trigger.disabled = disabled;
