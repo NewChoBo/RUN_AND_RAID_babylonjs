@@ -27,6 +27,7 @@ import { hitRaidTarget, nearestRaidTarget, type RaidTargetBody } from './raid-ta
 import { createRaidAimGuide } from './raid-aim-guide.ts';
 import { pickRaidGroundAim } from './raid-ground-aim.ts';
 import { createRaidCauseway } from './raid-causeway.ts';
+import { createRaidHorizon } from './raid-horizon.ts';
 import { loadInkApparition } from '../chapter/chapter-creatures.ts';
 import { RAID_COUNTERS } from '../../../game/raid/raid-boss.ts';
 import {
@@ -82,7 +83,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   scene.skipPointerMovePicking = scene.skipPointerDownPicking = scene.skipPointerUpPicking = true;
   scene.clearColor = new Color4(0.49, 0.72, 0.87, 1);
   scene.fogMode = Scene.FOGMODE_LINEAR;
-  scene.fogColor = new Color3(0.59, 0.75, 0.82);
+  scene.fogColor = new Color3(0.63, 0.72, 0.77);
   const camera = new FreeCamera('chase camera', new Vector3(0, 6.7, -12), scene);
   camera.fov = RAID_CAMERA.fov;
   camera.minZ = RAID_CAMERA.near;
@@ -120,6 +121,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     return mesh;
   }
   const { ground, update: drawCauseway } = createRaidCauseway(scene);
+  const horizon = createRaidHorizon(scene);
   const wagon = new TransformNode('siege wagon', scene);
   wagon.position.z = WAGON.z + 1;
   box('wagon bed', wagon, 0, 1.05, 0, 3.4, 0.4, 3.55, iron);
@@ -290,6 +292,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     const positions = view.runners.map((r) => raidRunnerPositionAfter(r, subtick));
     const runnerPosition = positions[player.slot]!;
     drawCauseway(runnerPosition.z, view.tick + subtick);
+    horizon.position.z = runnerPosition.z;
     for (const wheel of wheels) wheel.rotation.x = scroll / 0.77;
     selfMark.setEnabled(!player.respawn && !view.result);
     selfMark.position.set(runnerPosition.x, 0.09, runnerPosition.z - 0.78 * RAID_RUNNER_SCALE);
@@ -383,8 +386,8 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     const pose = raidCameraPose(runnerPosition, pullback);
     // Keep the wagon readable when the runner brakes far behind it.
     const fogOffset = pullback + Math.max(0, WAGON.z - runnerPosition.z - 36);
-    scene.fogStart = 25 + fogOffset;
-    scene.fogEnd = 92 + fogOffset;
+    scene.fogStart = 31 + fogOffset;
+    scene.fogEnd = 115 + fogOffset;
     camera.position.copyFromFloats(pose.eye.x, pose.eye.y, pose.eye.z);
     look.set(pose.look.x, pose.look.y, pose.look.z);
     camera.setTarget(look);
