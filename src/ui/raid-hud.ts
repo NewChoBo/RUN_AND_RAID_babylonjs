@@ -67,15 +67,13 @@ export function createRaidHud(
   root.className = 'raid-hud';
   root.hidden = true;
   const drawCombatNumbers = createRaidCombatNumbers(root);
-  const updateScore = createRaidScoreboard(root);
+  const { update: updateScore, hint } = createRaidScoreboard(root);
   const pauseButton = hudButton(root, '⚙︎', actions.pause);
   pauseButton.className = 'raid-pause';
   pauseButton.setAttribute('aria-label', t('pause'));
   pauseButton.setAttribute('aria-haspopup', 'dialog');
   pauseButton.title = t('pause');
-  const hint = element('output', root);
   let feedbackUntil = 0;
-  hint.className = 'raid-hint';
   const respawn = element('div', root);
   respawn.className = 'raid-respawn';
   respawn.hidden = true;

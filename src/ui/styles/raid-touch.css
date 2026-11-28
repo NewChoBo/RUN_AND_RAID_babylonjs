@@ -556,7 +556,6 @@ body.raid-mode .title-copy h1 {
   outline-offset: 2px;
 }
 .raid-hint {
-  top: calc(var(--hud-top) + clamp(62px, 16dvh, 110px));
   max-width: 48%;
   width: max-content;
   border-radius: 5px;

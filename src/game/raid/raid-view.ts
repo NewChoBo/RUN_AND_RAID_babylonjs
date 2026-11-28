@@ -149,3 +149,8 @@ export interface RaidView {
   readonly result: Readonly<{ reason: 'destruction' | 'time'; winner: Team | 'draw' }> | null;
   readonly hazard: RaidCounter | null;
 }
+
+export function activeTeamCall(view: RaidView, team: Team) {
+  const call = view.calls[team];
+  return call && !view.result && view.tick < call.until ? call : null;
+}

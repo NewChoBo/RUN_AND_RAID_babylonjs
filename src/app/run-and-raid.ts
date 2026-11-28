@@ -1,5 +1,6 @@
 import { canPressJump } from '../game/raid/air-movement.ts';
 import { RaidRound } from '../game/raid/raid-round.ts';
+import { activeTeamCall, type RaidView } from '../game/raid/raid-view.ts';
 import { raidSkill } from '../game/raid/heroes/hero-catalog.ts';
 import type { RaidEntry, RaidRoom, RoomError } from '../platform/photon/raid-room.ts';
 import { createRaidLobby } from '../ui/raid-lobby.ts';
@@ -61,6 +62,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   let onlineRespawning = false;
   let state: 'setup' | 'loading' | 'countdown' | 'playing' | 'paused' | 'finished' = 'setup';
   let countdownMs = 0;
+  let lastHudCall: RaidView['calls'][number] = null;
   let aiming: Skill | null = null;
   let carry = 0,
     previous = 0,
@@ -265,6 +267,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     course.showAim(null);
     lastHudTick = -1;
     countdownMs = startDelayMs;
+    lastHudCall = null;
     document.getElementById('overlay')!.hidden = true;
     hud.update(match, null, slot);
     renderCourse(0, 0, 0);
@@ -683,7 +686,9 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       : carry;
     renderCourse(Math.min(dt, 0.1), subtick);
     audio.update(match, slot);
+    const call = activeTeamCall(match, match.runners[slot]!.team);
     if (
+      call !== lastHudCall ||
       Math.floor(match.tick / 3) !== Math.floor(lastHudTick / 3) ||
       wasRespawning !== respawning ||
       lostAim
@@ -691,6 +696,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       hud.update(match, aiming, slot);
     } else if (match.tick !== lastHudTick) hud.updateSkills(match.runners[slot]!, aiming);
     lastHudTick = match.tick;
+    lastHudCall = call;
     if (aiming !== null) refreshKeyboardAim();
     else hud.aimPad.refresh();
   }

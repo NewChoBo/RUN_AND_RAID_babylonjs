@@ -254,10 +254,6 @@ body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
   top: 3%;
 }
 .raid-hint {
-  position: absolute;
-  top: 25%;
-  left: 50%;
-  transform: translateX(-50%);
   background: #181c26eb;
   color: #ffe6ab;
   padding: 0.6em 1em;

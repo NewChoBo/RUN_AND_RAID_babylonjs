@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T19:18+09:00',
+    tag: 'controls',
+    title: '팀원 핑을 따라가는 지면 화살표',
+    body: '팀원이 전진이나 후퇴를 요청하면 상단에 금색 메시지가 뜨고 길 위에 화살표가 나타납니다. 집중공격 요청을 받으면 내 발밑의 화살표가 지정한 적이나 마차의 위치를 따라갑니다.',
+  },
+  {
     updatedAt: '2026-11-28T19:06+09:00',
     tag: 'controls',
     title: '조준 스킬에 붙는 작은 조준선',

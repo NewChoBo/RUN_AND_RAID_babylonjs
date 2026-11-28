@@ -8,7 +8,7 @@ import {
 } from '../game/raid/raid-match.ts';
 import { element } from './elements.ts';
 
-import type { RaidRunner } from '../game/raid/raid-view.ts';
+import { activeTeamCall, type RaidRunner, type Team } from '../game/raid/raid-view.ts';
 export function matchClock(seconds: number) {
   return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
 }
@@ -16,6 +16,17 @@ const counterLabels = {
   low: ['counterLow', 'counterLowZigzag'],
   pillar: ['counterPillar', 'counterPillarZigzag'],
 } as const;
+export function teamCallMessage(view: RaidView, team: Team) {
+  const call = activeTeamCall(view, team);
+  if (!call) return null;
+  const text =
+    'movement' in call
+      ? t(call.movement === 'advance' ? 'advanceRequest' : 'retreatRequest')
+      : call.target === 'wagon'
+        ? t('wagonRequest')
+        : t('attackRequest', { target: t(view.runners[call.target]!.hero) });
+  return { text, label: t('teamMessageFrom', { name: t(view.runners[call.from]!.hero) }) };
+}
 export function createRaidScoreboard(root: HTMLElement) {
   const score = element('header', root);
   score.className = 'raid-score';
@@ -47,14 +58,18 @@ export function createRaidScoreboard(root: HTMLElement) {
   enemyHeading.id = 'raid-enemy-respawns-title';
   const enemyList = element('ul', enemyRespawns);
   enemyList.setAttribute('aria-labelledby', enemyHeading.id);
-  const warning = element('output', score);
-  warning.className = 'raid-counter';
-  warning.hidden = true;
-  const callout = element('output', score);
+  const announcements = element('div', score);
+  announcements.className = 'raid-announcements';
+  const callout = element('output', announcements);
   callout.className = 'raid-callout';
   callout.hidden = true;
-  return function update(view: RaidView, runner: RaidRunner) {
-    const request = view.calls[runner.team];
+  const warning = element('output', announcements);
+  warning.className = 'raid-counter';
+  warning.hidden = true;
+  const hint = element('output', announcements);
+  hint.className = 'raid-hint';
+  hint.hidden = true;
+  function update(view: RaidView, runner: RaidRunner) {
     const fallen = view.runners.filter((r) => r.team !== runner.team && r.respawn > 0);
     enemyRespawns.hidden = fallen.length === 0;
     while (enemyList.children.length > fallen.length) enemyList.lastElementChild!.remove();
@@ -63,18 +78,11 @@ export function createRaidScoreboard(root: HTMLElement) {
       const text = t('runnerRespawn', { name: t(r.hero), seconds: Math.ceil(r.respawn / RAID_HZ) });
       if (row.textContent !== text) row.textContent = text;
     });
-    const from = request && t(view.runners[request.from]!.hero);
-    let message = '';
-    if (request && from) {
-      message =
-        'movement' in request
-          ? t('moveRequest', { from, movement: t(request.movement) })
-          : t('attackRequest', {
-              from,
-              target: t(request.target === 'wagon' ? 'wagon' : view.runners[request.target]!.hero),
-            });
-    }
-    if (callout.textContent !== message) callout.textContent = message;
+    const message = teamCallMessage(view, runner.team);
+    const text = message?.text ?? '';
+    const label = message?.label ?? null;
+    if (callout.textContent !== text) callout.textContent = text;
+    if (callout.ariaLabel !== label) callout.ariaLabel = label;
     callout.hidden = !message;
     const counterText = view.hazard
       ? t(counterLabels[view.hazard.kind][view.hazard.zigzag ? 1 : 0])
@@ -100,5 +108,6 @@ export function createRaidScoreboard(root: HTMLElement) {
       if (side.bonus.textContent !== bonus) side.bonus.textContent = bonus;
       side.bonus.hidden = !percent;
     });
-  };
+  }
+  return { update, hint };
 }

@@ -15,9 +15,10 @@ import {
   type AbstractEngine,
 } from '@babylonjs/core';
 import { raidMaterial } from './raid-material.ts';
-import type { RaidHealthChange } from '../../../game/raid/raid-view.ts';
+import { activeTeamCall, type RaidHealthChange } from '../../../game/raid/raid-view.ts';
 import { createRaidActor } from './raid-actor.ts';
 import { createQuarryMarks } from './raid-quarry-mark.ts';
+import { createRaidPingArrow } from './raid-ping-arrow.ts';
 import { RAID_RUNNER_SCALE } from './hero-appearance.ts';
 import { createRenderer } from '../rendering/renderer.ts';
 import { observeRaidResolution } from './raid-resolution.ts';
@@ -223,6 +224,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   );
   callMarker.color = Color3.FromHexString('#ffd253');
   callMarker.isPickable = false;
+  const drawPingArrow = createRaidPingArrow(scene);
   const drawQuarryMarks = createQuarryMarks(scene);
   // The local runner remains identifiable when a teammate overlaps the same team ring.
   const selfMark = MeshBuilder.CreateRibbon(
@@ -381,12 +383,17 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
         lock.scaling.set((WAGON_BODY.halfWidth + 0.3) / 0.8, 1, (WAGON_BODY.halfDepth + 0.3) / 0.8);
       else lock.scaling.setAll(RAID_RUNNER_SCALE);
     }
-    const call = view.calls[localTeam];
+    const call = activeTeamCall(view, localTeam);
     const mark = call && 'target' in call ? call : null;
-    callMarker.setEnabled(!!mark && !view.result);
-    if (mark) {
+    const markedPoint = mark
+      ? mark.target === 'wagon'
+        ? carriage
+        : positions[mark.target]
+      : undefined;
+    drawPingArrow(player.respawn ? null : call, runnerPosition, markedPoint, carriage.x);
+    callMarker.setEnabled(!!markedPoint);
+    if (mark && markedPoint) {
       const onWagon = mark.target === 'wagon';
-      const point = onWagon ? carriage : positions[mark.target]!;
       const height = onWagon
         ? boss
           ? 5.85
@@ -395,9 +402,9 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
           0.2 * RAID_RUNNER_SCALE +
           raidRunnerHeight(view.runners[mark.target]!, subtick);
       callMarker.position.set(
-        point.x,
+        markedPoint.x,
         height + 0.12 * Math.sin((view.tick + subtick) / 4),
-        point.z,
+        markedPoint.z,
       );
     }
     const hazard = view.hazard;
