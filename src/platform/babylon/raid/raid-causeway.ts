@@ -270,18 +270,19 @@ function bridgeStonework(scene: Scene) {
       stone(x, 1.64, z, 1.6, 0.13, 1.89, 0.8);
       stone(x, 2.06, z, 1.49, 0.71, 1.82, 0.96);
       stone(x, 2.44, z, 1.54, 0.07, 1.87, 1);
+      // Every other parapet post backs onto a tall pier rooted below the bridge deck.
+      if (bay % 2 === 0) {
+        const pierX = side * (halfRoad + 2.1);
+        stone(pierX, -2.5, z, 3.2, 6, 3.6, 0.77, 0.94);
+        stone(pierX, 0.65, z, 2.98, 0.3, 3.25, 0.9);
+        stone(pierX, 3.8, z, 2.45, 6, 2.7, 0.84, 0.88);
+        stone(pierX, 7.3, z, 2.28, 1, 2.63, 0.94, 1.55);
+        stone(pierX, 7.9, z, 3.64, 0.2, 4.18, 1);
+      }
     }
   }
   const rails = finish('moulded stone parapets');
   for (const side of [-1, 1]) {
-    for (let i = 0; i < 4; i++) {
-      const h = 12.2 - 0.95 * i,
-        x = side * 11.1,
-        z = -15 + i * 8.7;
-      stone(x, h / 2, z, 2.65, h, 2.9, 0.81, 0.88);
-      stone(x - side * 0.25, h + 0.32, z, 2.44, 1.65, 2.7, 0.91, 1.63);
-      stone(x - side * 0.25, h + 1.24, z, 4.05, 0.2, 4.49, 1);
-    }
     stone(side * 5, 3.1, 0, 1.65, 6.2, 2.8, 0.84);
     stone(side * 5, 5.85, 0, 1.75, 0.78, 2.86, 0.9, 1.4);
   }
@@ -438,18 +439,21 @@ export function createRaidCauseway(scene: Scene) {
   ];
   return {
     ground,
+    gate,
     update(runnerZ: number, tick: number) {
       const origin = raidElectricRowZ(0, tick);
       const relative = runnerZ - origin;
       // Two grid rows are one texture repeat. Recentring preserves both pavement and damage cells.
       const row = 2 * Math.floor(relative / (2 * grid.depth)) + 8;
       ground.position.z = raidElectricRowZ(row, tick);
-      const first = Math.floor(relative / spanLength) - 1;
+      // Keep the visible sections on their road coordinates. Only recycle beyond the camera.
+      const first = Math.floor(relative / spanLength + 0.5) - 1;
       for (let i = 0; i < sections.length; i++) {
-        const z = origin + (first + i) * spanLength;
-        for (const part of sections[i]!) part.position.z = z;
+        const span = first + i;
+        const slot = ((span % sections.length) + sections.length) % sections.length;
+        const z = origin + span * spanLength;
+        for (const part of sections[slot]!) part.position.z = z;
       }
-      gate.position.z = runnerZ + 69;
       streaks.vOffset = (-(tick / RAID_HZ) * 0.59) % 1;
     },
   };

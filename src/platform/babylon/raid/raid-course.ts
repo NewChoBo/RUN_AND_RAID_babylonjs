@@ -120,8 +120,8 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     mesh.isPickable = false;
     return mesh;
   }
-  const { ground, update: drawCauseway } = createRaidCauseway(scene);
-  const horizon = createRaidHorizon(scene);
+  const { ground, gate, update: drawCauseway } = createRaidCauseway(scene);
+  const horizon = createRaidHorizon(scene, gate);
   const wagon = new TransformNode('siege wagon', scene);
   box('wagon bed', wagon, 0, 1.05, 0, 3.4, 0.4, 3.55, iron);
   box('wagon keep', wagon, 0, 1.95, 0, 2.88, 1.6, 3.25, oak);

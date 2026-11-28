@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T18:38+09:00',
+    tag: 'arena',
+    title: '돌다리 양옆을 스쳐 가는 석주',
+    body: '협곡의 높은 돌기둥이 이제 난간과 함께 길 양옆을 지나갑니다. 달릴 때는 기둥을 빠르게 지나치고, 걷는 동안에는 천천히 지나칩니다. 먼 석문과 산은 정면의 풍경으로 남습니다.',
+  },
+  {
     updatedAt: '2026-11-28T18:32+09:00',
     tag: 'controls',
     title: '출발 신호까지 정면에서 대기',

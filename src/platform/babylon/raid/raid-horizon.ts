@@ -1,5 +1,6 @@
 import {
   Color3,
+  type Mesh,
   MeshBuilder,
   RawTexture,
   type Scene,
@@ -9,8 +10,10 @@ import {
 } from '@babylonjs/core';
 
 /** The mountain pass and its beacon stay beyond the moving causeway. */
-export function createRaidHorizon(scene: Scene) {
+export function createRaidHorizon(scene: Scene, gate: Mesh) {
   const horizon = new TransformNode('far end of the canyon', scene);
+  gate.parent = horizon;
+  gate.position.z = 69;
   const sky = new Texture('./assets/raid/environment/canyon-horizon.webp', scene);
   sky.wrapU = sky.wrapV = Texture.CLAMP_ADDRESSMODE;
   // Extend the outermost sky pixels past wide viewports without stretching the central valley.
