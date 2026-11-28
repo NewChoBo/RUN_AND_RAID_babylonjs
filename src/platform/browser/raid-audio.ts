@@ -1,5 +1,6 @@
 import { heroKit } from '../../game/raid/heroes/hero-id.ts';
 import { raidSkill } from '../../game/raid/heroes/hero-catalog.ts';
+import { RAID_COUNTERS } from '../../game/raid/raid-boss.ts';
 import type { RaidAction, RaidView } from '../../game/raid/raid-view.ts';
 import { audioVolume } from './battle-settings.ts';
 
@@ -50,6 +51,25 @@ export function createRaidAudio() {
   const active = new Set<AudioBufferSourceNode>();
   let seen = new WeakSet<object>();
   let countdown = -1;
+  let lastDischargeTick = -1;
+  function electricCue(view: RaidView, slot: number) {
+    const counter = view.hazard;
+    if (!counter) return;
+    const runner = view.runners[slot]!;
+    let newest = lastDischargeTick;
+    let volume = 0;
+    for (const cell of counter.cells) {
+      if (cell.phase !== 'impact') continue;
+      const released = view.tick + cell.ticks - RAID_COUNTERS[counter.kind].active;
+      newest = Math.max(newest, released);
+      if (released <= lastDischargeTick || view.tick - released > 3) continue;
+      const distance = Math.hypot(runner.x - cell.x, runner.z - cell.z);
+      volume = Math.max(volume, 0.3 * Math.max(0, 1 - distance / 22));
+    }
+    // Adjacent pillars discharge together. One spatially attenuated crackle covers the whole row.
+    if (volume > 0) play('spark', volume, counter.kind === 'low' ? 1.65 : 1.12);
+    lastDischargeTick = newest;
+  }
   function unlock() {
     if (location.hash !== '#/ready' || !window.AudioContext) return;
     try {
@@ -111,8 +131,10 @@ export function createRaidAudio() {
       stop();
       seen = new WeakSet();
       countdown = -1;
+      lastDischargeTick = -1;
     },
     skipPast(view: RaidView) {
+      lastDischargeTick = view.tick;
       for (const cue of view.actions) if (releaseTick(cue) <= view.tick) seen.add(cue);
       for (const change of view.healthChanges) seen.add(change);
       for (const r of view.runners ?? []) {
@@ -127,6 +149,7 @@ export function createRaidAudio() {
       play(seconds ? 'count' : 'signal', 0.29);
     },
     update(view: RaidView, slot: number) {
+      electricCue(view, slot);
       for (const cue of view.actions) {
         if (seen.has(cue)) continue;
         const age = view.tick - releaseTick(cue);

@@ -13,9 +13,8 @@ export function matchClock(seconds: number) {
   return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
 }
 const counterLabels = {
-  lane: 'counterLane',
-  mortar: 'counterMortar',
-  wave: 'counterWave',
+  low: ['counterLow', 'counterLowZigzag'],
+  pillar: ['counterPillar', 'counterPillarZigzag'],
 } as const;
 export function createRaidScoreboard(root: HTMLElement) {
   const score = element('header', root);
@@ -77,7 +76,9 @@ export function createRaidScoreboard(root: HTMLElement) {
     }
     if (callout.textContent !== message) callout.textContent = message;
     callout.hidden = !message;
-    const counterText = view.hazard ? t(counterLabels[view.hazard.kind]) : '';
+    const counterText = view.hazard
+      ? t(counterLabels[view.hazard.kind][view.hazard.zigzag ? 1 : 0])
+      : '';
     if (warning.textContent !== counterText) warning.textContent = counterText;
     warning.hidden = !counterText || !!view.result;
     const seconds = Math.ceil((ROUND_TICKS - view.tick) / RAID_HZ);

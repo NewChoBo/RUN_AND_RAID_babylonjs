@@ -19,6 +19,7 @@ import {
 import { createRaidFeature } from '../../src/game/raid/raid-feature.ts';
 import { raidRageDamageToFull, raidRageGain } from '../../src/content/raid/rage.ts';
 import { driveRaidBots } from '../../src/game/raid/raid-bots.ts';
+import { RAID_COUNTERS, RAID_ELECTRIC_GRID } from '../../src/game/raid/raid-boss.ts';
 import { RAID_FRONT_Z } from '../../src/game/raid/runner-motion.ts';
 import { GameSession } from '../../src/game/session/game-session.ts';
 
@@ -960,11 +961,14 @@ test('bots can target a closer opponent behind them with skills while that oppon
   });
   assert.deepEqual(orders, [0]);
 });
-test('the warned wagon lane can be avoided by jumping or sidestepping', () => {
+test('the approaching low electric tile can be avoided by jumping or sidestepping', () => {
   function hit(mode) {
     const { match, send } = battle();
     advance(match, 60);
-    assert.equal(match.hazard.x, match.runners[0].x);
+    assert.equal(match.hazard.kind, 'low');
+    assert.ok(
+      Math.abs(match.hazard.cells[0].x - match.runners[0].x) < RAID_ELECTRIC_GRID.width / 2,
+    );
     if (mode === 'side') send(0, 'move', { side: -1, walk: false });
     advance(match, 18);
     if (mode === 'jump') {
@@ -1122,11 +1126,20 @@ test('a wagon hit gives no charge while its hazard charges from health lost', ()
   match.step();
   assert.equal(match.damage[0], 33);
   assert.equal(player.rage, raidRageGain(player.hero, HEROES.rend.hp - player.hp));
-  advance(match, 88);
-  const { rage, hp } = player;
-  match.step();
-  assert.equal(hp - player.hp, 26);
-  assert.equal(player.rage, Math.min(100, rage + raidRageGain(player.hero, 26)));
+  for (let i = 0; i < 180; i++) {
+    const { rage, hp } = player;
+    match.step();
+    if (
+      match.healthChanges.some(
+        (h) => h.tick === match.tick && h.from === null && h.target === player.slot,
+      )
+    ) {
+      assert.equal(hp - player.hp, RAID_COUNTERS.low.damage);
+      assert.equal(player.rage, Math.min(100, rage + raidRageGain(player.hero, hp - player.hp)));
+      return;
+    }
+  }
+  assert.fail('the moving low discharge never reached the braking runner');
 });
 test('taking a ground strike can ready Fury for a visible rear rival', () => {
   const { match, send } = battle(['rend', 'alice', 'bastion', 'rime']);

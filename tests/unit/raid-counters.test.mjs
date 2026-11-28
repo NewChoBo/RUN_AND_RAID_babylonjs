@@ -1,63 +1,213 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { activeSlow, applyCrowdControl, slow } from '../../src/game/raid/raid-control.ts';
-import { RaidBoss } from '../../src/game/raid/raid-boss.ts';
+import {
+  RaidBoss,
+  RAID_COUNTERS,
+  RAID_ELECTRIC_GRID,
+  inElectricCell,
+  raidElectricRowZ,
+} from '../../src/game/raid/raid-boss.ts';
 import {
   RaidMatch,
+  ROUND_TICKS,
   canUseRaidSkill,
   raidRunnerPositionAfter,
 } from '../../src/game/raid/raid-match.ts';
 import { RaidRound } from '../../src/game/raid/raid-round.ts';
+import { driveRaidBots } from '../../src/game/raid/raid-bots.ts';
+import { RAID_FRONT_Z } from '../../src/game/raid/runner-motion.ts';
 
-test('the mortar locks its circle on warning, hits airborne runners inside, and misses runners who leave', () => {
+test('low electricity warns each road cell before striking, reaches rear runners later and only hits grounded runners once', () => {
   const boss = new RaidBoss();
-  const runners = [
-    { slot: 0, x: 0, z: 1, respawn: 0 },
-    { slot: 1, x: 0, z: 1, respawn: 0 },
-    { slot: 2, x: 0, z: 1, respawn: 20 },
-  ];
+  const runners = [8.4, 0, 0, -40, 0].map((z, slot) => ({
+    slot,
+    x: slot === 4 ? 3.6 : 0,
+    z,
+    respawn: 0,
+  }));
   const hits = [];
-  const step = (tick) =>
+  let first;
+  for (let tick = 60; tick < 204; tick++) {
     boss.step(
       tick,
       runners,
-      () => 1.3,
-      (slot, damage) => hits.push([tick, slot, damage]),
+      (r) => (r.slot === 2 ? 1.2 : 0),
+      (slot, damage) => hits.push({ slot, tick, damage }),
     );
-  step(192);
-  assert.deepEqual(boss.counter, { kind: 'mortar', phase: 'warning', x: 0, z: 1, ticks: 42 });
-  runners[1].x = 3;
-  for (let tick = 193; tick < 234; tick++) step(tick);
-  assert.deepEqual(hits, []);
-  step(234);
-  assert.deepEqual(hits, [[234, 0, 32]]);
-  runners[1].x = 0;
-  for (let tick = 235; tick <= 242; tick++) step(tick);
-  assert.deepEqual(hits, [[234, 0, 32]]);
-  assert.equal(boss.counter, null);
-});
-
-test('the shockwave reaches the front first, hits once per runner and passes beneath a timed jump', () => {
-  const boss = new RaidBoss();
-  const runners = [8, 0, 0, -5].map((z, slot) => ({ slot, x: 0, z, respawn: 0 }));
-  const hits = [];
-  for (let tick = 324; tick <= 402; tick++) {
-    boss.step(
-      tick,
-      runners,
-      (r) => (r.slot === 2 && tick >= 374 && tick <= 379 ? 1.2 : 0),
-      (slot, damage) => hits.push({ slot, damage, tick }),
-    );
-    if (tick === 324) assert.equal(boss.counter.kind, 'wave');
-    if (tick === 349) assert.deepEqual(hits, []);
+    const hazard = boss.counter;
+    if (tick === 60) {
+      assert.equal(hazard.kind, 'low');
+      assert.equal(hazard.startedAt, tick);
+      assert.equal(hazard.zigzag, false);
+      assert.equal(hazard.cells.length, 1);
+      [first] = hazard.cells;
+      assert.equal(first.ticks, RAID_COUNTERS.low.windup);
+    }
+    if (tick < 60 + RAID_COUNTERS.low.windup) assert.deepEqual(hits, []);
+    if (hazard) {
+      assert.ok(
+        hazard.cells.every((c) => c.x === first.x && c.z === raidElectricRowZ(c.row, tick)),
+      );
+      const leading = hazard.cells.find((c) => c.row === first.row);
+      if (leading)
+        assert.equal(leading.phase, tick < 60 + RAID_COUNTERS.low.windup ? 'warning' : 'impact');
+    }
   }
   assert.deepEqual(
     hits.map((h) => h.slot),
     [0, 1, 3],
   );
-  assert.ok(hits.every((h) => h.damage === 22));
+  assert.ok(hits.every((h) => h.damage === RAID_COUNTERS.low.damage));
   assert.ok(hits[0].tick < hits[1].tick && hits[1].tick < hits[2].tick);
+  assert.equal(first.phase, 'warning'); // A saved frame is never mutated by the next tick.
   assert.equal(boss.counter, null);
+});
+
+test('lightning pillars leave a safe flank and can hit airborne runners after the warning', () => {
+  const boss = new RaidBoss();
+  const runners = [0, 1, 2, 3].map((slot) => ({ slot, x: 0, z: 0, respawn: slot === 3 ? 30 : 0 }));
+  const hits = [];
+  for (let tick = 204; tick < 348; tick++) {
+    boss.step(
+      tick,
+      runners,
+      () => 2.5,
+      (slot, damage) => hits.push([slot, damage]),
+    );
+    if (tick === 204) {
+      assert.equal(boss.counter.kind, 'pillar');
+      assert.deepEqual(
+        boss.counter.cells.map((c) => c.column),
+        [0, 1, 2],
+      );
+      runners[1].x = 6.6;
+      runners[2].x = -6.6;
+    }
+    if (tick < 204 + RAID_COUNTERS.pillar.windup) assert.deepEqual(hits, []);
+  }
+  assert.deepEqual(hits, [
+    [0, RAID_COUNTERS.pillar.damage],
+    [2, RAID_COUNTERS.pillar.damage],
+  ]);
+  assert.equal(boss.counter, null);
+});
+
+test('neighboring cells share one edge and scroll with their road tile', () => {
+  const center = { x: 0, z: 0 },
+    edge = RAID_ELECTRIC_GRID.width / 2;
+  const right = { x: 2 * edge, z: 0 };
+  assert.equal(inElectricCell(center, { x: edge, z: 0 }), false);
+  assert.equal(inElectricCell(right, { x: edge, z: 0 }), true);
+  assert.equal(inElectricCell(center, { x: 0, z: edge }), false);
+  assert.equal(inElectricCell(center, { x: 0, z: -edge }), true);
+  assert.equal(raidElectricRowZ(0, 15), raidElectricRowZ(0, 0) - 3);
+});
+
+test('all four runner slots take turns drawing low electricity and each bank width appears on both flanks', () => {
+  const boss = new RaidBoss();
+  const runners = [-6.6, -3.6, 3.6, 6.6].map((x, slot) => ({ slot, x, z: 0, respawn: 0 }));
+  const low = [],
+    pillar = [];
+  for (let turn = 0; turn < 8; turn++) {
+    boss.step(
+      60 + 144 * turn,
+      runners,
+      () => 0,
+      () => {},
+    );
+    const cells = boss.counter.cells.map((c) => c.column);
+    if (boss.counter.kind === 'low') low.push(...cells);
+    else pillar.push(cells);
+  }
+  assert.deepEqual(low, [0, 1, 3, 4]);
+  assert.deepEqual(pillar, [
+    [0, 1, 2],
+    [3, 4],
+    [0, 1],
+    [2, 3, 4],
+  ]);
+  runners[0].respawn = 100;
+  boss.step(
+    60 + 8 * 144,
+    runners,
+    () => 0,
+    () => {},
+  );
+  assert.notEqual(boss.counter.cells[0].column, 0);
+});
+
+test('a bot jumps the low tile, holds the open flank through the pillars, then returns to its attack position', () => {
+  const match = new RaidMatch(['longshot', 'hammer', 'rime', 'jade']);
+  const bot = match.runners[1],
+    humans = new Set([0, 2, 3]);
+  for (const r of match.runners) r.basic = 9999;
+  match.runners[2].respawn = match.runners[3].respawn = 9999;
+  match.runners[0].x = bot.x = 0;
+  bot.z = RAID_FRONT_Z;
+  const hp = bot.hp;
+  let jumpedOverTile = false,
+    dodgedPillars = false;
+  while (match.tick < 330) {
+    driveRaidBots(
+      match,
+      (slot, action, payload) => {
+        if (action === 'move') match.move(slot, payload.side, payload.brake);
+        if (action === 'jump') match.jump(slot, payload);
+      },
+      humans,
+    );
+    match.step();
+    const hazard = match.hazard;
+    const active = hazard?.cells.filter((c) => c.phase === 'impact') ?? [];
+    if (hazard?.kind === 'low' && active.some((c) => inElectricCell(c, bot))) {
+      assert.ok(bot.jumping);
+      jumpedOverTile = true;
+    }
+    if (hazard?.kind === 'pillar' && active.some((c) => inElectricCell(c, { x: 0, z: bot.z }))) {
+      assert.ok(bot.x >= RAID_ELECTRIC_GRID.width / 2);
+      assert.equal(bot.jumping, 0);
+      dodgedPillars = true;
+    }
+  }
+  assert.ok(jumpedOverTile && dodgedPillars);
+  assert.equal(bot.hp, hp);
+  assert.ok(bot.x < 0 && Math.abs(bot.x) < RAID_ELECTRIC_GRID.width / 2);
+});
+
+test('late discharges progress row by row and reverse horizontally at both edges', () => {
+  const firstLate = 60 + Math.ceil((ROUND_TICKS / 2 - 60) / 144) * 144;
+  for (const start of [firstLate, firstLate + 144]) {
+    const boss = new RaidBoss();
+    const rows = new Map();
+    for (let tick = start; tick < start + 144; tick++) {
+      boss.step(
+        tick,
+        [{ slot: 0, x: 0, z: 0, respawn: 0 }],
+        () => 0,
+        () => {},
+      );
+      if (!boss.counter) continue;
+      assert.ok(boss.counter.zigzag);
+      const active = boss.counter.cells.filter((c) => c.phase === 'impact');
+      for (const cell of active) {
+        if (!rows.has(cell.row))
+          rows.set(
+            cell.row,
+            active.filter((c) => c.row === cell.row).map((c) => c.column),
+          );
+      }
+    }
+    const indices = [...rows.keys()],
+      path = [...rows.values()];
+    assert.ok(indices.length > 8);
+    assert.ok(indices.slice(1).every((row, i) => row === indices[i] - 1));
+    assert.ok(path.every((cols) => cols.length >= 1 && cols.length < RAID_ELECTRIC_GRID.columns));
+    assert.ok(path.some((cols) => cols.includes(0)) && path.some((cols) => cols.includes(4)));
+    const steps = path.slice(1).map((cols, i) => cols[0] - path[i][0]);
+    assert.ok(steps.every((step) => Math.abs(step) === 1));
+    assert.ok(steps.filter((step, i) => i && step !== steps[i - 1]).length >= 2);
+  }
 });
 
 test('stagger holds steering and basic attacks, denies jumps and casts, then restores held movement while a subsequent stun bypasses stagger recovery', () => {
@@ -112,21 +262,23 @@ test('frost slows opponents without blocking casts; a shorter frost hit preserve
   assert.equal(victim.slowed, 0);
 });
 
-test('four-player replay reproduces all three boss strikes and PvP stagger from accepted input', () => {
+test('four-player replay reproduces both discharges, late zigzags and PvP stagger from accepted input', () => {
   const seats = ['bastion', 'rime', 'jade', 'hammer'].map((hero, i) => ({ hero, actor: i + 1 }));
   const host = new RaidRound(seats),
     guest = new RaidRound(seats);
   assert.ok(host.enqueue(1, { seq: 1, action: 'cast', payload: { skill: 0 } }));
   const impacts = new Set();
-  for (let i = 0; i < 404; i++) {
+  for (let i = 0; i < ROUND_TICKS / 2 + 320; i++) {
     const frames = host.advance(1);
     assert.ok(guest.replay(JSON.parse(JSON.stringify(frames))));
     if (i === 0) assert.equal(guest.match.runners[2].staggered, 12);
     assert.deepEqual(guest.match.hazard, host.match.hazard);
     assert.deepEqual(guest.match.runners, host.match.runners);
-    if (guest.match.hazard?.phase === 'impact') impacts.add(guest.match.hazard.kind);
+    const hazard = guest.match.hazard;
+    if (hazard?.cells.some((c) => c.phase === 'impact'))
+      impacts.add(hazard.kind + (hazard.zigzag ? '-zigzag' : ''));
   }
-  assert.deepEqual([...impacts], ['lane', 'mortar', 'wave']);
+  assert.deepEqual(impacts, new Set(['low', 'pillar', 'low-zigzag', 'pillar-zigzag']));
 });
 
 test('each slow has its own expiry and only the strongest active slow changes steering', () => {

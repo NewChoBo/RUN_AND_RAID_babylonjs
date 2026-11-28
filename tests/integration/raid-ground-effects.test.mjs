@@ -3,7 +3,7 @@ import test from 'node:test';
 import { NullEngine, Scene, Vector3 } from '@babylonjs/core';
 import { RaidMatch, raidRoadTravel } from '../../src/game/raid/raid-match.ts';
 import { createRaidCounterVisual } from '../../src/platform/babylon/raid/raid-counter-visual.ts';
-import { RAID_COUNTERS } from '../../src/game/raid/raid-boss.ts';
+import { RAID_ELECTRIC_GRID } from '../../src/game/raid/raid-boss.ts';
 import { createRaidEffects } from '../../src/platform/babylon/raid/raid-effects.ts';
 
 test('blade waves reuse meshes, keep their contact width and switch between horizontal, upright and cross', (t) => {
@@ -189,30 +189,42 @@ test('Chain Slash draws the frontal sector at its cast-time reach even after a l
   assert.equal(rim.getBoundingInfo().boundingBox.minimum.z, 0);
 });
 
-test('boss tells retain the hit width and the shockwave crest follows its damaging front', (t) => {
+test('electric tells follow individual road cells, raise pillars only on impact and reuse their meshes', (t) => {
   const engine = new NullEngine();
   t.after(() => engine.dispose());
   const scene = new Scene(engine);
   const draw = createRaidCounterVisual(scene);
-  const strip = scene.getMeshByName('wagon strike strip'),
-    disc = scene.getMeshByName('wagon mortar zone');
-  const shell = scene.getMeshByName('descending mortar shell'),
-    crest = scene.getMeshByName('wagon shockwave crest');
-  const counter = { kind: 'lane', phase: 'warning', x: -2, z: 0, ticks: 15 };
+  const { width, depth } = RAID_ELECTRIC_GRID;
+  const cells = [
+    { row: 10, column: 2, x: 0, z: 1.5, phase: 'impact', ticks: 3 },
+    { row: 11, column: 3, x: width, z: 1.5 + depth, phase: 'warning', ticks: 10 },
+  ];
+  const counter = { kind: 'low', startedAt: 20, zigzag: false, cells };
   draw(counter, 0.5);
-  assert.equal(strip.position.x, -2);
-  assert.equal(strip.scaling.x, 2 * RAID_COUNTERS.lane.halfWidth);
-  assert.ok(strip.isEnabled() && !disc.isEnabled());
-  draw({ ...counter, kind: 'mortar', z: -1 }, 0.5);
-  assert.ok(disc.isEnabled() && shell.isEnabled() && !strip.isEnabled());
-  assert.deepEqual([disc.position.x, disc.position.z], [-2, -1]);
-  assert.equal(disc.getBoundingInfo().boundingBox.maximum.x, RAID_COUNTERS.mortar.radius);
-  draw({ ...counter, kind: 'wave', phase: 'impact', x: 0, z: 3 }, 0.5);
-  assert.ok(crest.isEnabled() && !shell.isEnabled());
-  assert.equal(strip.position.z, 3 - 0.5 * RAID_COUNTERS.wave.metresPerTick);
-  assert.equal(crest.position.z, strip.position.z);
+  const pools = cells.map((_, i) => scene.getMeshByName('wagon electric pool ' + i));
+  const pillars = cells.map((_, i) => scene.getMeshByName('wagon electric pillar ' + i));
+  for (const [i, pool] of pools.entries()) {
+    const cell = cells[i];
+    assert.deepEqual(
+      [pool.parent.position.x, pool.parent.position.z],
+      [cell.x, cell.z - raidRoadTravel(0.5)],
+    );
+    assert.ok(pool.isEnabled() && !pool.isPickable && !pillars[i].isEnabled());
+    const { minimum, maximum } = pool.getBoundingInfo().boundingBox;
+    assert.ok(Math.abs(maximum.x - minimum.x - width) < 1e-6);
+    assert.ok(Math.abs(maximum.z - minimum.z - depth) < 1e-6);
+  }
+  draw({ ...counter, kind: 'pillar', zigzag: true }, 0.75);
+  assert.ok(pillars[0].isEnabled() && !pillars[1].isEnabled());
+  assert.equal(pillars[0].parent, pools[0].parent);
+  assert.equal(pillars[0].parent.position.z, cells[0].z - raidRoadTravel(0.75));
+  draw({ ...counter, cells: cells.slice(0, 1) }, 0.75);
+  assert.ok(pools[0].isEnabled() && !pools[1].isEnabled());
+  assert.ok(pillars.every((pillar) => !pillar.isEnabled()));
   draw(null, 0);
-  assert.ok([strip, disc, shell, crest].every((mesh) => !mesh.isEnabled()));
+  assert.ok(scene.meshes.every((mesh) => !mesh.isEnabled()));
+  draw(counter, 0);
+  assert.equal(scene.meshes.length, 4);
 });
 
 test('persistent ground rings and sigils stay on the same road tile between ticks and across bridge spans', (t) => {

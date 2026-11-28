@@ -26,9 +26,8 @@ import { createRaidEffects } from './raid-effects.ts';
 import { hitRaidTarget, nearestRaidTarget, type RaidTargetBody } from './raid-target-pick.ts';
 import { createRaidAimGuide } from './raid-aim-guide.ts';
 import { pickRaidGroundAim } from './raid-ground-aim.ts';
-import { createCastleExterior } from '../citadel/castle-exterior.ts';
+import { createRaidCauseway } from './raid-causeway.ts';
 import { loadInkApparition } from '../chapter/chapter-creatures.ts';
-import { RAID_ROAD_WIDTH } from '../../../game/raid/raid-rules.ts';
 import { RAID_COUNTERS } from '../../../game/raid/raid-boss.ts';
 import {
   RAID_BASIC_HALF_ANGLE,
@@ -81,30 +80,26 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   scene.preventDefaultOnPointerDown = false;
   // Gameplay picks its own target bodies after the HUD has handled the gesture.
   scene.skipPointerMovePicking = scene.skipPointerDownPicking = scene.skipPointerUpPicking = true;
-  scene.clearColor = new Color4(0.035, 0.045, 0.085, 1);
+  scene.clearColor = new Color4(0.49, 0.72, 0.87, 1);
   scene.fogMode = Scene.FOGMODE_LINEAR;
-  scene.fogColor = new Color3(0.016, 0.02, 0.036);
+  scene.fogColor = new Color3(0.59, 0.75, 0.82);
   const camera = new FreeCamera('chase camera', new Vector3(0, 6.7, -12), scene);
   camera.fov = RAID_CAMERA.fov;
   camera.minZ = RAID_CAMERA.near;
   camera.maxZ = RAID_CAMERA.far;
-  const sky = createCastleExterior(scene);
-  const fill = new HemisphericLight('starlight', Vector3.Up(), scene);
-  fill.diffuse = new Color3(0.78, 0.84, 1);
-  fill.groundColor = new Color3(0.22, 0.16, 0.19);
-  fill.intensity = 1;
+  const fill = new HemisphericLight('canyon skylight', Vector3.Up(), scene);
+  fill.diffuse = new Color3(0.85, 0.89, 0.94);
+  fill.groundColor = new Color3(0.32, 0.26, 0.19);
+  fill.intensity = 0.83;
   const sun = new DirectionalLight('low warm sidelight', new Vector3(0.55, -0.9, 0.32), scene);
-  sun.diffuse = new Color3(1, 0.78, 0.54);
-  sun.intensity = 1.15;
-  const stone = raidMaterial(scene, 'bridge stone', '#969396'),
-    iron = raidMaterial(scene, 'tempered iron', '#424451'),
+  sun.diffuse = new Color3(1, 0.91, 0.73);
+  sun.intensity = 0.93;
+  const iron = raidMaterial(scene, 'tempered iron', '#424451'),
     oak = raidMaterial(scene, 'wagon oak', '#aa8263'),
     brass = raidMaterial(scene, 'bronze bands', '#cba264'),
     ember = raidMaterial(scene, 'ward amber', '#ffb355', 0.65);
   const blue = raidMaterial(scene, 'allied ward', '#61dad0', 0.65),
     red = raidMaterial(scene, 'rival ward', '#ff667a', 0.65);
-  const stoneTexture = new Texture('./assets/citadel/ashlar.jpg', scene);
-  stone.diffuseTexture = stoneTexture;
   oak.diffuseTexture = new Texture('./assets/polyhaven/old_wooden_floor_01_diff_1k.jpg', scene);
   function box(
     name: string,
@@ -124,42 +119,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     mesh.isPickable = false;
     return mesh;
   }
-  // Keep two extra rear spans under the wider aiming camera, including after a backward leap.
-  const roadLength = 144;
-  const pavingTilesPerMetre = 24 / 104;
-  const ground = MeshBuilder.CreateGround(
-    'raid causeway',
-    { width: RAID_ROAD_WIDTH, height: roadLength },
-    scene,
-  );
-  const road = raidMaterial(scene, 'paved causeway', '#bec0c6');
-  const paving = new Texture('./assets/citadel/flagstone.jpg', scene);
-  paving.uScale = (3 / 14) * RAID_ROAD_WIDTH;
-  paving.vScale = roadLength * pavingTilesPerMetre;
-  road.diffuseTexture = paving;
-  ground.material = road;
-  // Instance each architectural piece. Only one segment's transform per span changes per frame.
-  const span = new TransformNode('first bridge span', scene);
-  for (const side of [-1, 1]) {
-    const wallX = side * (RAID_ROAD_WIDTH / 2 - 0.1);
-    box('coping', span, wallX, 0.38, 0, 0.55, 0.76, 8, stone);
-    for (const z of [-3, 1]) box('merlon', span, wallX, 0.95, z, 0.58, 0.5, 1.8, stone);
-    box('lamp pedestal', span, wallX, 1.5, 3, 0.72, 2.15, 0.75, stone);
-    box('lamp cornice', span, wallX, 2.55, 3, 0.9, 0.19, 0.9, brass);
-    box('beacon', span, wallX, 2.86, 3, 0.38, 0.46, 0.38, ember);
-  }
-  const pieces = span.getChildMeshes();
-  const spans = [span];
-  for (let i = 1; i < 17; i++) {
-    const next = new TransformNode('bridge span ' + i, scene);
-    for (const mesh of pieces) {
-      const part = mesh as ReturnType<typeof MeshBuilder.CreateBox>;
-      const copy = part.createInstance(part.name);
-      copy.parent = next;
-      copy.isPickable = false;
-    }
-    spans.push(next);
-  }
+  const { ground, update: drawCauseway } = createRaidCauseway(scene);
   const wagon = new TransformNode('siege wagon', scene);
   wagon.position.z = WAGON.z + 1;
   box('wagon bed', wagon, 0, 1.05, 0, 3.4, 0.4, 3.55, iron);
@@ -329,16 +289,8 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     const scroll = raidRoadTravel(view.tick + subtick);
     const positions = view.runners.map((r) => raidRunnerPositionAfter(r, subtick));
     const runnerPosition = positions[player.slot]!;
-    // Recycle whole paving tiles and bridge spans around the camera runner without sliding the road.
-    ground.position.z =
-      32 + Math.floor(runnerPosition.z * pavingTilesPerMetre) / pavingTilesPerMetre;
-    paving.vOffset = scroll * pavingTilesPerMetre;
-    const spanOrigin = Math.floor((runnerPosition.z + scroll) / 8) * 8 - scroll;
-    spans.forEach((s, i) => {
-      s.position.z = spanOrigin + i * 8 - 32;
-    });
+    drawCauseway(runnerPosition.z, view.tick + subtick);
     for (const wheel of wheels) wheel.rotation.x = scroll / 0.77;
-    sky.update(dt);
     selfMark.setEnabled(!player.respawn && !view.result);
     selfMark.position.set(runnerPosition.x, 0.09, runnerPosition.z - 0.78 * RAID_RUNNER_SCALE);
     basicRange.setEnabled(!aimKind && !player.respawn && !view.result);
@@ -407,12 +359,18 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     }
     const hazard = view.hazard;
     if (boss) {
-      const windup = hazard?.phase === 'warning';
-      const duration = hazard ? RAID_COUNTERS[hazard.kind][windup ? 'windup' : 'active'] : 1;
+      const elapsed = hazard ? view.tick + subtick - hazard.startedAt : 0;
+      const timing = hazard && RAID_COUNTERS[hazard.kind];
+      const winding = !!timing && elapsed < timing.windup;
+      const releasing = !!timing && elapsed < timing.windup + timing.active;
       boss.pose(dt, false, 0, {
         kind: 'ranged',
-        phase: hazard ? (windup ? 'windup' : 'recovery') : 'ready',
-        progress: hazard ? Math.min(1, 1 - (hazard.ticks - subtick) / duration) : 0,
+        phase: winding ? 'windup' : releasing ? 'recovery' : 'ready',
+        progress: winding
+          ? elapsed / timing.windup
+          : releasing
+            ? (elapsed - timing.windup) / timing.active
+            : 0,
       });
     }
     drawCounter(hazard, subtick);
@@ -425,8 +383,8 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     const pose = raidCameraPose(runnerPosition, pullback);
     // Keep the wagon readable when the runner brakes far behind it.
     const fogOffset = pullback + Math.max(0, WAGON.z - runnerPosition.z - 36);
-    scene.fogStart = 19 + fogOffset;
-    scene.fogEnd = 66 + fogOffset;
+    scene.fogStart = 25 + fogOffset;
+    scene.fogEnd = 92 + fogOffset;
     camera.position.copyFromFloats(pose.eye.x, pose.eye.y, pose.eye.z);
     look.set(pose.look.x, pose.look.y, pose.look.z);
     camera.setTarget(look);

@@ -1,7 +1,7 @@
 import { actionLocked } from './raid-control.ts';
 import { RAID_BASIC_HALF_ANGLE } from './raid-sight.ts';
 import { RAID_RUN_LIMIT_X } from './raid-rules.ts';
-import { RAID_COUNTERS, inRaidCounter } from './raid-boss.ts';
+import { RAID_COUNTERS, RAID_ELECTRIC_GRID, type RaidCounter } from './raid-boss.ts';
 import {
   limitRaidPlacement,
   raidGroundPointAfter,
@@ -25,6 +25,23 @@ import {
 import type { RaidOrder } from './raid-feature.ts';
 
 const soloSlot = new Set([0]);
+
+// Consider the whole impact window: the road can carry an already live tile under the runner.
+function approachingCell(counter: RaidCounter, r: RaidRunner, goalX: number) {
+  const { width, depth } = RAID_ELECTRIC_GRID;
+  for (const cell of counter.cells) {
+    const begin = cell.phase === 'impact' ? 0 : cell.ticks;
+    const end =
+      begin + (cell.phase === 'impact' ? cell.ticks : RAID_COUNTERS[counter.kind].active) - 1;
+    const near = raidRunnerPositionAfter(r, begin).z - cell.z + raidRoadTravel(begin);
+    const far = raidRunnerPositionAfter(r, end).z - cell.z + raidRoadTravel(end);
+    if (Math.max(near, far) < -depth / 2 || Math.min(near, far) >= depth / 2) continue;
+    // Keep a safe flank until the original formation position is clear as well.
+    if (Math.min(r.x, goalX) < cell.x + width / 2 && Math.max(r.x, goalX) >= cell.x - width / 2) {
+      return { cell, arrival: begin };
+    }
+  }
+}
 
 /** Bots see the same positions, danger warning and target availability as a local player. */
 export function driveRaidBots(
@@ -70,16 +87,18 @@ export function driveRaidBots(
     const insideArc = (WAGON.z - r.z) * Math.tan(RAID_BASIC_HALF_ANGLE) - 0.5;
     let goalX = target?.x ?? (r.team === 0 ? -1 : 1) * Math.min(formationX, insideArc);
     const counter = view.hazard;
-    if (
-      counter?.kind === 'mortar' &&
-      counter.phase === 'warning' &&
-      Math.abs(r.z - counter.z) <= RAID_COUNTERS.mortar.radius + 1
-    ) {
-      const offset = RAID_COUNTERS.mortar.radius + 0.7;
-      const left = counter.x - offset,
-        right = counter.x + offset;
+    const threat = counter && approachingCell(counter, r, goalX);
+    const danger = threat?.cell;
+    const arrival = threat?.arrival ?? Infinity;
+    if (counter?.kind === 'pillar' && danger) {
+      const row = counter.cells.filter((cell) => cell.row === danger.row);
+      const margin = RAID_ELECTRIC_GRID.width / 2 + 0.65;
+      const left = row[0]!.x - margin;
+      const right = row[row.length - 1]!.x + margin;
       goalX =
-        left < -RAID_RUN_LIMIT_X || (right <= RAID_RUN_LIMIT_X && r.x > counter.x) ? right : left;
+        left < -RAID_RUN_LIMIT_X || (right <= RAID_RUN_LIMIT_X && right - r.x < r.x - left)
+          ? right
+          : left;
     }
     // Ranged runners need their duel target in front of them to land a basic attack.
     const keepDistance =
@@ -93,17 +112,7 @@ export function driveRaidBots(
             ? 0.4
             : Number(!target && partner.respawn > 0 && r.hp < 40 && r.z > 0),
     });
-    const waveArrival =
-      counter?.kind === 'wave'
-        ? (counter.phase === 'warning' ? counter.ticks : 0) +
-          (counter.z - r.z) / RAID_COUNTERS.wave.metresPerTick
-        : Infinity;
-    const evade =
-      (counter?.kind === 'lane' &&
-        counter.phase === 'warning' &&
-        counter.ticks <= 16 &&
-        inRaidCounter(counter, r)) ||
-      (waveArrival >= 0 && waveArrival <= 16);
+    const evade = counter?.kind === 'low' && arrival <= 16;
     if (evade) send(r.slot, 'jump', r.jetFuel !== undefined ? true : undefined);
     else if (r.air?.thrust) send(r.slot, 'jump', false);
     send(r.slot, 'lock', target?.slot ?? 'wagon');
@@ -148,9 +157,7 @@ export function driveRaidBots(
         ? needsHealing || repositionOrb
         : distance <= pulse.range;
     const needsEvasion =
-      !!nearest &&
-      nearestDistance < 4 &&
-      (r.hp < HEROES[r.hero].hp * 0.55 || (!!counter && inRaidCounter(counter, r)));
+      !!nearest && nearestDistance < 4 && (r.hp < HEROES[r.hero].hp * 0.55 || !!danger);
     const canFlyBy = r.hero !== 'longshot' || needsEvasion || (!!target && distance <= 7);
     const canDischarge = r.hero !== 'jade' || orbGap <= 6;
     const inSlamRange = leap.kind !== 'leap' || distance <= HEROES[r.hero].radius;
@@ -177,8 +184,7 @@ export function driveRaidBots(
     }
     const ultimate = raidSkill(r.hero, 3).attack;
     const windup = ultimate.kind === 'projectile' && ultimate.windupTicks;
-    const unsafeCharge =
-      windup && (needsEvasion || (counter && counter.ticks <= windup && inRaidCounter(counter, r)));
+    const unsafeCharge = windup && (needsEvasion || arrival <= windup);
     const turretInRange =
       !r.heroView.turrets ||
       r.heroView.turrets.some((t) =>
