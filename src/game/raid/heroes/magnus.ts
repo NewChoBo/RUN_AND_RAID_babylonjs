@@ -5,12 +5,13 @@ import { RAID_HZ } from '../raid-rules.ts';
 
 class Magnus implements HeroEvents {
   readonly view = { shieldMode: false };
-  private readonly inactiveCooldowns = [0, 0, 0];
+  private readonly inactiveReadyAt = [0, 0, 0];
   changeMode(c: HeroCombat) {
+    const now = c.tick();
     for (const slot of [0, 1, 2] as const) {
       const previous = c.self.cooldowns[slot]!;
-      c.self.cooldowns[slot] = this.inactiveCooldowns[slot]!;
-      this.inactiveCooldowns[slot] = previous;
+      c.self.cooldowns[slot] = Math.max(0, this.inactiveReadyAt[slot]! - now);
+      this.inactiveReadyAt[slot] = now + previous;
     }
     this.view.shieldMode = !this.view.shieldMode;
   }
@@ -31,8 +32,6 @@ class Magnus implements HeroEvents {
     return Math.round(hit.amount * (this.rageUntil > c.tick() ? 1.3 : 1)) + (opening ? 10 : 0);
   }
   onTimersAdvanced(c: HeroCombat) {
-    for (const slot of [0, 1, 2] as const)
-      if (this.inactiveCooldowns[slot]!) this.inactiveCooldowns[slot]!--;
     if (this.magnetUntil >= c.tick() && (this.magnetUntil - c.tick()) % RAID_HZ === 0) {
       for (const id of c.enemies(c.self, 5)) c.strike(id, { powerScale: 1 }, 1);
     }

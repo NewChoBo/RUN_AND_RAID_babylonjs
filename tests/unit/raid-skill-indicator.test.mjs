@@ -54,6 +54,37 @@ test('combo charges and rage never cover a running cooldown', () => {
   assert.equal(raidSkillIndicator(hammer, 3).ready, false);
 });
 
+test('a knockout keeps counting cooldowns and only unlocks elapsed skills on respawn', () => {
+  const match = new RaidMatch(['hammer', 'jade', 'rend', 'longshot']);
+  const runner = match.runners[0];
+  for (const r of match.runners) r.basic = 1000;
+  assert.ok(match.cast(0, 0));
+  assert.ok(match.cast(0, 2));
+  runner.hp = 1;
+  assert.ok(match.cast(2, 1, 0));
+  match.step();
+  const wait = runner.respawn;
+  assert.equal(wait, 10 * RAID_HZ);
+  const start = [...runner.cooldowns];
+  for (let elapsed = 1; elapsed <= wait; elapsed++) {
+    match.step();
+    assert.deepEqual(
+      runner.cooldowns,
+      start.map((ticks) => Math.max(0, ticks - elapsed)),
+    );
+    assert.equal(runner.respawn, wait - elapsed);
+    if (elapsed < wait) {
+      assert.equal(raidSkillIndicator(runner, 0).ready, false);
+      assert.equal(match.cast(0, 0), false);
+    }
+    if (elapsed === RAID_HZ) assert.equal(raidSkillIndicator(runner, 2).value, '13');
+  }
+  assert.equal(raidSkillIndicator(runner, 0).ready, true);
+  assert.ok(match.cast(0, 0));
+  assert.equal(raidSkillIndicator(runner, 2).value, '4');
+  assert.equal(match.cast(0, 2), false);
+});
+
 test('immediate follow-ups display their actionable state despite the underlying cooldown', () => {
   for (const hero of ['kaiken', 'vallet']) {
     const match = new RaidMatch(hero),

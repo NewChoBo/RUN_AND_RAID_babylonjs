@@ -671,6 +671,7 @@ export class RaidMatch implements RaidView {
       this.#actions.shift();
     }
     for (const r of this.#runners) {
+      for (const skill of [0, 1, 2, 3]) if (r.cooldowns[skill]!) r.cooldowns[skill]!--;
       if (r.respawn) {
         if (--r.respawn === 0) {
           r.hp = HEROES[r.hero].hp;
@@ -703,7 +704,6 @@ export class RaidMatch implements RaidView {
       if (r.barrier && r.barrier.until <= this.tick) r.barrier = null;
       if (r.taunt && (r.taunt.until <= this.tick || this.#runners[r.taunt.from]!.respawn))
         r.taunt = null;
-      for (const skill of [0, 1, 2, 3]) if (r.cooldowns[skill]!) r.cooldowns[skill]!--;
       this.#heroes[r.slot]!.events.onTimersAdvanced?.(this.#contexts[r.slot]!);
       if (r.basic) r.basic--;
     }

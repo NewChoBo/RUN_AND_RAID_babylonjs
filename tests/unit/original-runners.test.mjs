@@ -423,3 +423,22 @@ test('Magnus spends and recovers each mode cooldown independently', () => {
   assert.ok(m.cast(0, 3));
   assert.equal(r.cooldowns[1], 17 * RAID_HZ - 300);
 });
+
+test('both Magnus stances recover during a knockout and keep their own remaining times', () => {
+  const m = arena('magnus', 'rend');
+  const r = m.runners[0];
+  assert.ok(m.cast(0, 2));
+  advance(m, RAID_HZ);
+  assert.ok(m.cast(0, 3));
+  assert.ok(m.cast(0, 1));
+  r.hp = 1;
+  assert.ok(m.cast(2, 1, 0));
+  m.step();
+  assert.equal(r.respawn, 10 * RAID_HZ);
+  assert.equal(r.heroView.shieldMode, false);
+  advance(m, r.respawn);
+  assert.equal(r.cooldowns[2], 17 * RAID_HZ - (11 * RAID_HZ + 1));
+  assert.ok(m.cast(0, 3));
+  assert.equal(r.cooldowns[1], 17 * RAID_HZ - (10 * RAID_HZ + 1));
+  assert.equal(m.cast(0, 1), false);
+});
