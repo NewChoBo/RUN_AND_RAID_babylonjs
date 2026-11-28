@@ -17,7 +17,7 @@
 
 ## 2. 새 Photon Realtime 앱 연결
 
-사용자가 [Photon 대시보드](https://dashboard.photonengine.com/en-US/Applications)에서 **Realtime** 앱을 만든다. 리전 허용 목록을 사용한다면 `asia`를 허용한다. 현재 클라이언트는 `src/platform/photon/raid-room.ts`에서 이 리전에 접속하며 앱 버전은 `run-and-raid-29`이다. 방 연결과 이벤트 전송은 Photon이 담당한다. 경기 입력을 호스트가 확정하면 모든 클라이언트가 같은 틱에서 마차의 횡이동, 차체 피격, 도로 각 칸의 전기 위치와 피해를 계산한다.
+사용자가 [Photon 대시보드](https://dashboard.photonengine.com/en-US/Applications)에서 **Realtime** 앱을 만든다. 리전 허용 목록을 사용한다면 `asia`를 허용한다. 현재 클라이언트는 `src/platform/photon/raid-room.ts`에서 이 리전에 접속하며 앱 버전은 `run-and-raid-30`이다. 방 연결과 이벤트 전송은 Photon이 담당한다. 경기 입력을 호스트가 확정하면 모든 클라이언트가 같은 틱에서 마차의 횡이동, 차체 피격, 도로 각 칸의 전기 위치와 피해를 계산한다.
 
 1. 공개 빌드에는 [저장소 Actions 변수](https://github.com/NewChoBo/RUN_AND_RAID_babylonjs/settings/variables/actions)에 `VITE_PHOTON_APP_ID`를 등록한다. 로컬 개발에는 프로젝트 루트의 `.env.local`에 같은 이름을 사용한다. Vite가 웹 클라이언트에 포함하는 값은 Realtime **App ID**다.
 2. 변수 등록 후 Pages 워크플로를 다시 실행한다. 이미 배포된 JavaScript에는 새 값이 자동으로 반영되지 않는다.

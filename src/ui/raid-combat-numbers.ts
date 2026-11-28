@@ -23,6 +23,8 @@ export function createRaidCombatNumbers(parent: HTMLElement) {
     const stacks = new Map<RaidHealthChange['target'], number>();
     for (let i = changes.length - 1; i >= 0; i--) {
       const change = changes[i]!;
+      const displayTick = change.displayTick ?? change.tick;
+      if (tick < displayTick) continue;
       if (change.from !== slot && change.target !== slot) continue;
       const anchor = project(change);
       let label = labels.get(change);
@@ -40,7 +42,7 @@ export function createRaidCombatNumbers(parent: HTMLElement) {
         labels.set(change, label);
       }
       label.hidden = false;
-      const age = Math.min(1, Math.max(0, (tick - change.tick) / RAID_HZ));
+      const age = Math.min(1, Math.max(0, (tick - displayTick) / RAID_HZ));
       const row = stacks.get(change.target) ?? 0;
       stacks.set(change.target, row + 1);
       label.style.left = anchor.x * 100 + '%';

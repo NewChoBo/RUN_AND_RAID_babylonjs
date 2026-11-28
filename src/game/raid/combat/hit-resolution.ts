@@ -1,9 +1,21 @@
 import { raidRageGain } from '../../../content/raid/rage.ts';
 import type { HeroCombat, HeroEvents, Hit } from '../heroes/hero-definition.ts';
-import { RAID_HZ, raidRespawnTicks, WAGON_HP } from '../raid-rules.ts';
+import {
+  RAID_HZ,
+  RAID_KO_HEAL_TRAVEL,
+  raidKnockoutHeal,
+  raidRespawnTicks,
+  WAGON_HP,
+} from '../raid-rules.ts';
 import { wagonCenter } from '../wagon.ts';
 import { limitRaidPlacement, raidRunnerHeight } from '../runner-motion.ts';
-import type { RaidHealthChange, RaidRunner, RaidTarget, Runner } from '../raid-view.ts';
+import type {
+  RaidHealingFlight,
+  RaidHealthChange,
+  RaidRunner,
+  RaidTarget,
+  Runner,
+} from '../raid-view.ts';
 import { applyCrowdControl } from '../raid-control.ts';
 export function raidBossBonusPercent(runners: readonly RaidRunner[], attackingTeam: number) {
   return (
@@ -21,6 +33,10 @@ function chargeRageFromDamage(runner: Runner, damage: number) {
 export class RaidHitResolution {
   readonly damage: [number, number] = [0, 0];
   readonly #changes: RaidHealthChange[] = [];
+  readonly #flights: RaidHealingFlight[] = [];
+  get healingFlights(): readonly RaidHealingFlight[] {
+    return this.#flights;
+  }
   get healthChanges(): readonly RaidHealthChange[] {
     return this.#changes;
   }
@@ -42,12 +58,19 @@ export class RaidHitResolution {
   enqueue(hit: Hit) {
     this.#hits.push(hit);
   }
-  #record(tick: number, from: number | null, target: RaidTarget, amount: number) {
+  #record(
+    tick: number,
+    from: number | null,
+    target: RaidTarget,
+    amount: number,
+    displayTick?: number,
+  ) {
     if (!amount) return;
     const runner = target === 'wagon' ? undefined : this.contexts[target]!.self;
     const { x, z } = runner ?? wagonCenter(tick);
     this.#changes.push({
       tick,
+      ...(displayTick !== undefined && { displayTick }),
       from,
       target,
       amount,
@@ -56,15 +79,35 @@ export class RaidHitResolution {
       elevation: runner ? raidRunnerHeight(runner) : 0,
     });
   }
-  heal(tick: number, from: Runner, target: number, amount: number) {
+  heal(tick: number, from: Runner, target: number, amount: number, displayTick?: number) {
     const { self, stats } = this.contexts[target]!;
     const healed = Math.min(amount, stats.hp - self.hp);
     self.hp += healed;
-    this.#record(tick, from.slot, target, healed);
+    this.#record(tick, from.slot, target, healed, displayTick);
+  }
+  #sendRecovery(tick: number, killer: Runner, victim: Runner, ally: Runner) {
+    if (victim.team === killer.team || ally.team !== killer.team || ally.respawn || ally.hp <= 0)
+      return;
+    this.#flights.push({
+      started: tick,
+      arrives: tick + RAID_KO_HEAL_TRAVEL,
+      x: victim.x,
+      z: victim.z,
+      elevation: raidRunnerHeight(victim),
+      victim: victim.slot,
+      killer: killer.slot,
+      target: ally.slot,
+    });
   }
   resolve(tick: number) {
-    while (this.#changes.length && tick - this.#changes[0]!.tick >= RAID_HZ) this.#changes.shift();
+    for (let i = this.#changes.length - 1; i >= 0; i--) {
+      const change = this.#changes[i]!;
+      if (tick - (change.displayTick ?? change.tick) >= RAID_HZ) this.#changes.splice(i, 1);
+    }
+    for (let i = this.#flights.length - 1; i >= 0; i--)
+      if (tick >= this.#flights[i]!.arrives) this.#flights.splice(i, 1);
     if (!this.#hits.length) return;
+    const firstNewFlight = this.#flights.length;
     // Hits land simultaneously. A knockout in this batch affects hits from the next tick.
     const runners = this.contexts.map((c) => c.self);
     const bonuses = [raidBossBonusPercent(runners, 0), raidBossBonusPercent(runners, 1)] as const;
@@ -147,9 +190,12 @@ export class RaidHitResolution {
       if (victim.hp === 0) {
         if (attacker) {
           attacker.kills++;
+          this.#sendRecovery(tick, attacker, victim, attacker);
           for (const [slot, lastHitTick] of contributors)
-            if (slot !== attacker.slot && tick - lastHitTick <= 5 * RAID_HZ)
+            if (slot !== attacker.slot && tick - lastHitTick <= 5 * RAID_HZ) {
               this.contexts[slot]!.self.assists++;
+              this.#sendRecovery(tick, attacker, victim, runners[slot]!);
+            }
         }
         contributors.clear();
         victim.deaths++;
@@ -174,5 +220,24 @@ export class RaidHitResolution {
       }
     }
     this.#hits.length = 0;
+    // Apply once, after simultaneous damage. Original footage shows the HP bar filling before contact.
+    let kept = 0;
+    for (let i = 0; i < this.#flights.length; i++) {
+      const flight = this.#flights[i]!;
+      const target = this.contexts[flight.target]!;
+      if (target.self.respawn) continue;
+      if (i >= firstNewFlight) {
+        if (target.self.hp >= target.stats.hp) continue;
+        this.heal(
+          tick,
+          runners[flight.killer]!,
+          flight.target,
+          raidKnockoutHeal(target.stats.hp, flight.target !== flight.killer),
+          flight.arrives,
+        );
+      }
+      this.#flights[kept++] = flight;
+    }
+    this.#flights.length = kept;
   }
 }

@@ -251,6 +251,9 @@ export class RaidMatch implements RaidView {
   get healthChanges() {
     return this.#hits.healthChanges;
   }
+  get healingFlights() {
+    return this.#hits.healingFlights;
+  }
   get leadChanges() {
     return this.#leadChanges;
   }

@@ -1,4 +1,8 @@
 export const RAID_HZ = 30;
+// Team recovery after a champion knockout. See the footage and balance notes in COMBAT-AUDIT.
+export const RAID_KO_HEAL_TRAVEL = Math.round(1.4 * RAID_HZ);
+export const raidKnockoutHeal = (maxHp: number, assist: boolean) =>
+  Math.round(maxHp * (assist ? 0.08 : 0.16));
 export const RAID_ROAD_WIDTH = 18;
 // Runner centre to paving edge, estimated from the near-wall chase in docs/CAMERA.md.
 export const RAID_RUN_LIMIT_X = RAID_ROAD_WIDTH / 2 - 2.4;

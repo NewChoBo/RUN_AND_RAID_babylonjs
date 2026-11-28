@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T19:32+09:00',
+    tag: 'runner',
+    title: '쓰러진 적에게서 날아오는 회복의 빛',
+    body: '적 주자를 처치하거나 도우면 체력이 회복됩니다. 쓰러진 적에게서 초록빛이 날아와 몸에 닿을 때 십자가와 실제 회복량이 뜹니다. 기절하면 머리 위에 금색 별이 돌고, 감속되면 발목에 서리가 생깁니다.',
+  },
+  {
     updatedAt: '2026-11-28T19:18+09:00',
     tag: 'controls',
     title: '팀원 핑을 따라가는 지면 화살표',

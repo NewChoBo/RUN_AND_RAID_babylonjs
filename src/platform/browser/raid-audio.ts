@@ -136,7 +136,8 @@ export function createRaidAudio() {
     skipPast(view: RaidView) {
       lastDischargeTick = view.tick;
       for (const cue of view.actions) if (releaseTick(cue) <= view.tick) seen.add(cue);
-      for (const change of view.healthChanges) seen.add(change);
+      for (const change of view.healthChanges)
+        if ((change.displayTick ?? change.tick) <= view.tick) seen.add(change);
       for (const r of view.runners ?? []) {
         for (const arrow of r.heroView.airArrows ?? []) seen.add(arrow);
         for (const turret of r.heroView.turrets ?? []) if (turret.shot) seen.add(turret.shot);
@@ -176,8 +177,16 @@ export function createRaidAudio() {
         heal = false;
       for (const change of view.healthChanges) {
         if (seen.has(change)) continue;
+        const displayTick = change.displayTick ?? change.tick;
+        if (view.tick < displayTick) continue;
         seen.add(change);
-        if (view.tick - change.tick > 9 || (change.target !== slot && change.from !== slot))
+        if (
+          (change.displayTick !== undefined &&
+            change.target !== 'wagon' &&
+            view.runners[change.target]!.respawn) ||
+          view.tick - displayTick > 9 ||
+          (change.target !== slot && change.from !== slot)
+        )
           continue;
         if (change.amount > 0) heal = true;
         else hit = true;

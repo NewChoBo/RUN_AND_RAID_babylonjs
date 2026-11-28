@@ -18,6 +18,8 @@ import { raidMaterial } from './raid-material.ts';
 import { activeTeamCall, type RaidHealthChange } from '../../../game/raid/raid-view.ts';
 import { createRaidActor } from './raid-actor.ts';
 import { createQuarryMarks } from './raid-quarry-mark.ts';
+import { createRaidHealingEffects } from './raid-healing-effects.ts';
+import { createRaidStatusEffects } from './raid-status-effects.ts';
 import { createRaidPingArrow } from './raid-ping-arrow.ts';
 import { RAID_RUNNER_SCALE } from './hero-appearance.ts';
 import { createRenderer } from '../rendering/renderer.ts';
@@ -226,6 +228,8 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   callMarker.isPickable = false;
   const drawPingArrow = createRaidPingArrow(scene);
   const drawQuarryMarks = createQuarryMarks(scene);
+  const drawHealing = createRaidHealingEffects(scene);
+  const drawStatus = createRaidStatusEffects(scene);
   // The local runner remains identifiable when a teammate overlaps the same team ring.
   const selfMark = MeshBuilder.CreateRibbon(
     'local runner chevron',
@@ -269,11 +273,16 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     return (runner && actors.get(runner.hero)?.barHeight) ?? 2.2 * RAID_RUNNER_SCALE;
   }
   function projectHealthChange(change: RaidHealthChange) {
+    const recipient =
+      change.displayTick !== undefined && change.target !== 'wagon'
+        ? displayedMatch?.runners[change.target]
+        : undefined;
+    if (recipient?.respawn) return null;
     impact.set(
-      change.x,
-      change.elevation +
+      recipient?.x ?? change.x,
+      (recipient ? raidRunnerHeight(recipient) : change.elevation) +
         (change.target === 'wagon' ? 3.75 : barHeight(change.target) + 0.15 * RAID_RUNNER_SCALE),
-      change.z,
+      recipient?.z ?? change.z,
     );
     // Project into the normalized canvas viewport, independently of the drawing-buffer density.
     Vector3.ProjectToRef(
@@ -370,6 +379,8 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
       lightningOrb.position.set(p.x, 2 + raidRunnerHeight(carrier, subtick), p.z);
     }
     drawQuarryMarks(view, positions, subtick, barHeight);
+    drawHealing(view, positions, subtick, localTeam, barHeight, reducedMotion.matches);
+    drawStatus(view, positions, subtick, localTeam, barHeight, reducedMotion.matches);
     const target =
       player.target === null
         ? null

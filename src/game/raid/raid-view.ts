@@ -25,6 +25,14 @@ export interface RaidPoint {
   z: number;
 }
 export type RaidTarget = 'wagon' | number;
+export interface RaidHealingFlight extends Readonly<RaidPoint> {
+  readonly started: number;
+  readonly arrives: number;
+  readonly elevation: number;
+  readonly victim: number;
+  readonly killer: number;
+  readonly target: number;
+}
 export type RaidMovementPing = 'advance' | 'retreat';
 export type RaidPing = RaidMovementPing | 'enemy1' | 'enemy2';
 export const enemySlots = [
@@ -37,6 +45,8 @@ type RaidCall = Readonly<
 /** Effective HP delta at the impact position, in the wagon frame. A null source is the boss. */
 export interface RaidHealthChange extends Readonly<RaidPoint> {
   readonly tick: number;
+  /** KO recovery is applied with the kill, but the number and crosses arrive with the energy. */
+  readonly displayTick?: number;
   readonly from: number | null;
   readonly target: RaidTarget;
   readonly amount: number;
@@ -136,6 +146,7 @@ export type RaidRunner = Readonly<Omit<Runner, 'cooldowns'>> & {
   readonly cooldowns: readonly number[];
 };
 export interface RaidView {
+  readonly healingFlights: readonly RaidHealingFlight[];
   readonly healthChanges: readonly RaidHealthChange[];
   readonly calls: readonly (RaidCall | null)[];
   readonly projectiles: readonly RaidProjectile[];
