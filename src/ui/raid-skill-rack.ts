@@ -1,9 +1,10 @@
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { heroKit } from '../game/raid/heroes/hero-id.ts';
-import { canUseRaidSkill, raidRunnerAimKind, raidSkill } from '../game/raid/heroes/hero-catalog.ts';
-import { RAID_HZ, type RaidView, type Skill } from '../game/raid/raid-match.ts';
+import { raidRunnerAimKind } from '../game/raid/heroes/hero-catalog.ts';
+import type { RaidView, Skill } from '../game/raid/raid-match.ts';
 import type { RaidAimPad } from './raid-aim-pad.ts';
 import { battleIconIndex, setSkillIcon } from './raid-skill-icon.ts';
+import { raidSkillIndicator } from './raid-skill-indicator.ts';
 import { button, element } from './elements.ts';
 const skills = ['pulse', 'bolt', 'field', 'fury'] as const;
 const skillNames = ['Pulse', 'Bolt', 'Field', 'Fury'] as const;
@@ -87,71 +88,62 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
     b.onclick = (e) => {
       if (e.detail === 0 && !gesture) actions.skill(slot);
     };
-    return { b, art, charge, name, glyph, type };
+    return { slot, b, art, charge, name, glyph, type };
   });
   function update(runner: RaidView['runners'][number], aiming: Skill | null) {
     displayedRunner = runner;
-    buttons.forEach(({ b, art, charge, name, glyph, type }, i) => {
+    buttons.forEach(({ slot, b, art, charge, name, glyph, type }) => {
       setSkillIcon(
         art,
         runner.hero,
-        battleIconIndex(runner.hero, i as Skill, runner.heroView.shieldMode),
+        battleIconIndex(runner.hero, slot, runner.heroView.shieldMode),
       );
-      const rule = raidSkill(runner.hero, i as Skill);
-      const instant = rule.kind === 'pulse';
+      const status = raidSkillIndicator(runner, slot);
+      const instant = status.kind === 'pulse';
       const typeLabel = t(
         instant
           ? 'typeInstant'
-          : rule.kind === 'direction'
+          : status.kind === 'direction'
             ? 'typeDirection'
-            : rule.kind === 'field' || rule.kind === 'leap'
+            : status.kind === 'field' || status.kind === 'leap'
               ? 'typeGround'
               : 'typeTarget',
       );
-      b.dataset.kind = rule.kind;
+      if (b.dataset.kind !== status.kind) b.dataset.kind = status.kind;
       if (type.textContent !== typeLabel) {
         glyph.textContent = instant ? '✴' : '◎';
         type.textContent = typeLabel;
       }
-      const recastMoon = runner.dash?.skill === i && instant && !!rule.recastDuringDash;
-      const canLand = i === 2 && !!runner.heroView.escapeTicks;
-      name.textContent = canLand
-        ? t('valletLand')
-        : recastMoon
-          ? t('moonFinish')
-          : t(`${heroKit(runner.hero)}${skillNames[i]!}`);
-      if (runner.heroView.shieldMode)
-        name.textContent = t(
-          (['magnusCharge', 'magnusTaunt', 'magnusCry', 'magnusBattle'] as const)[i]!,
-        );
-      const cd = Math.ceil(runner.cooldowns[i]! / RAID_HZ);
-      b.disabled = !canUseRaidSkill(runner, i as Skill);
-      if (b.disabled && gesture?.slot === i) endGesture();
-      if (b.disabled && aimPad.skill === i) aimPad.close();
-      if (i === 3 && !rule.noRageCost) {
-        const recasts = runner.heroView.ultimateRecasts;
-        rack.toggleAttribute('data-rage', true);
+      let label = t(`${heroKit(runner.hero)}${skillNames[slot]}`);
+      if (status.land) label = t('valletLand');
+      else if (status.finishDash) label = t('moonFinish');
+      else if (runner.heroView.shieldMode)
+        label = t((['magnusCharge', 'magnusTaunt', 'magnusCry', 'magnusBattle'] as const)[slot]);
+      if (name.textContent !== label) name.textContent = label;
+      if (b.disabled !== !status.ready) b.disabled = !status.ready;
+      if (b.disabled && gesture?.slot === slot) endGesture();
+      if (b.disabled && aimPad.skill === slot) aimPad.close();
+      b.toggleAttribute('data-cooling', status.ticks > 0);
+      const angle = status.degrees + 'deg';
+      if (b.style.getPropertyValue('--cooldown') !== angle)
+        b.style.setProperty('--cooldown', angle);
+      if (slot === 3) rack.toggleAttribute('data-rage', status.usesRage);
+      if (status.usesRage) {
         rack.style.setProperty('--rage-fill', runner.rage + '%');
-        b.style.setProperty('--rage-fill', recasts ? '100%' : runner.rage + '%');
-        charge.textContent = recasts
-          ? t('bladeCharges', { count: recasts }) + (cd ? ' · ' + cd + 's' : '')
-          : Math.floor(runner.rage) + '%';
-      } else {
-        if (i === 3) rack.removeAttribute('data-rage');
-        const fraction = canLand
-          ? 0
-          : runner.cooldowns[i]! / Math.max(1, runner.cooldownDurations[i]!);
-        b.style.setProperty('--cooldown', Math.round(fraction * 360) + 'deg');
-        const slashes = i === 0 ? (runner.heroView.slashes ?? 0) : 0;
-        charge.textContent =
-          recastMoon || canLand ? '' : slashes ? 4 - slashes + '/4' : cd ? cd + 's' : '';
+        b.style.setProperty(
+          '--rage-fill',
+          runner.heroView.ultimateRecasts ? '100%' : runner.rage + '%',
+        );
       }
-      b.title = [name.textContent, typeLabel].join(' · ');
-      b.setAttribute(
-        'aria-label',
-        [name.textContent, typeLabel, charge.textContent].filter(Boolean).join(' · '),
-      );
-      b.classList.toggle('armed', i === aiming);
+      if (charge.textContent !== status.value) charge.textContent = status.value;
+      const title = label + ' · ' + typeLabel;
+      if (b.title !== title) b.title = title;
+      const detail = status.ticks
+        ? t('cooldownRemaining', { seconds: status.value })
+        : status.value;
+      const accessible = detail ? title + ' · ' + detail : title;
+      if (b.getAttribute('aria-label') !== accessible) b.setAttribute('aria-label', accessible);
+      b.classList.toggle('armed', slot === aiming);
     });
   }
   return { update, endGesture };

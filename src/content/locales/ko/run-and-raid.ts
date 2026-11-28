@@ -102,6 +102,7 @@ export const korean = {
   shadowCombo: '연계 {count}/3',
   poisonArmed: '중독 준비',
   bladeCharges: '잔여 {count}회',
+  cooldownRemaining: '재사용까지 {seconds}초',
   swift: '스위프트',
   rildinInfo:
     '대검 검사 · 평타 직후 연속베기를 눌러 다음 평타를 앞당기세요. 네 번까지 벨 수 있습니다. 반격은 한 번 막고 주변을 기절시키며, 해방된 검은 사거리를 늘리고 연속베기를 다시 엽니다.',

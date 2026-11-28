@@ -1,4 +1,3 @@
-import { actionLocked } from '../game/raid/raid-control.ts';
 import { canPressJump } from '../game/raid/air-movement.ts';
 import { RaidRound } from '../game/raid/raid-round.ts';
 import { raidSkill } from '../game/raid/heroes/hero-catalog.ts';
@@ -65,7 +64,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   let aiming: Skill | null = null;
   let carry = 0,
     previous = 0,
-    lastHud = -1;
+    lastHudTick = -1;
   const pressed = new Map<string, string>();
   let keyboardAimPoint: AimPoint | null = null;
   let padSide = 0,
@@ -129,9 +128,9 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     aimPointer = null;
     hud.aimPad.close();
     course.showAim(null);
-    hud.update(match, null, slot);
     if (preview?.status === 'ready') order('cast', { skill, repeat: true });
     else hud.showFeedback(raidText(preview ? 'repeatUnavailable' : 'repeatMissing'));
+    hud.update(match, null, slot);
   }
   const jetInputs = new Set<'key' | 'pad'>();
   function evade(down?: boolean, source: 'key' | 'pad' = 'pad') {
@@ -246,7 +245,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     aiming = null;
     carry = 0;
     course.showAim(null);
-    lastHud = -1;
+    lastHudTick = -1;
     countdownMs = startDelayMs;
     document.getElementById('overlay')!.hidden = true;
     hud.update(match, null, slot);
@@ -660,10 +659,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       if (onlineRespawning && !respawning) move();
       onlineRespawning = respawning;
     }
-    if (
-      aiming !== null &&
-      (respawning || match.runners[slot]!.silenced || actionLocked(match.runners[slot]!))
-    ) {
+    const lostAim = aiming !== null && !canUseRaidSkill(match.runners[slot]!, aiming);
+    if (lostAim) {
       aiming = null;
       course.showAim(null);
     }
@@ -673,10 +670,14 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       : carry;
     renderCourse(Math.min(dt, 0.1), match.result ? 0 : subtick);
     audio.update(match, slot);
-    if (Math.floor(match.tick / 3) !== lastHud || wasRespawning !== respawning) {
+    if (
+      Math.floor(match.tick / 3) !== Math.floor(lastHudTick / 3) ||
+      wasRespawning !== respawning ||
+      lostAim
+    ) {
       hud.update(match, aiming, slot);
-      lastHud = Math.floor(match.tick / 3);
-    }
+    } else if (match.tick !== lastHudTick) hud.updateSkills(match.runners[slot]!, aiming);
+    lastHudTick = match.tick;
     if (aiming !== null) refreshKeyboardAim();
     else hud.aimPad.refresh();
     if (match.result) {

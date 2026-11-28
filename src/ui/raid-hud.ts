@@ -238,6 +238,7 @@ export function createRaidHud(
   }
   return {
     aimPad,
+    updateSkills: skills.update,
     drawCombatNumbers,
     reset() {
       heldJet = null;

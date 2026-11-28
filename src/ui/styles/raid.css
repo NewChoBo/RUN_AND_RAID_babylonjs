@@ -326,7 +326,7 @@ body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
   isolation: isolate;
   overflow: hidden;
 }
-.raid-hud .raid-skills[data-rage] [data-skill='fury']::before {
+.raid-hud .raid-skills[data-rage] [data-skill='fury']:not([data-cooling])::before {
   content: '';
   position: absolute;
   inset: 0;

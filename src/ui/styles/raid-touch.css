@@ -448,12 +448,14 @@ body.raid-mode .title-copy h1 {
 .raid-skills button:has(> .raid-skill-art:not([hidden])) i {
   display: none;
 }
-.raid-skills button::before {
+.raid-skills button[data-cooling]::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: conic-gradient(#0a101bc9 var(--cooldown), transparent 0);
+  pointer-events: none;
+  background:
+    conic-gradient(#05091288 var(--cooldown), transparent 0), linear-gradient(#080c1659, #080c1659);
 }
 .raid-hud .raid-skills [data-skill='bolt'] {
   --ink: #f2dca2;
@@ -491,6 +493,15 @@ body.raid-mode .title-copy h1 {
   border-color: #938e83;
   color: #ccc7ba;
 }
+.raid-skills button:disabled .raid-skill-art {
+  filter: brightness(0.61) saturate(0.72);
+}
+.raid-skills button[data-cooling] .raid-skill-art {
+  filter: brightness(0.8) saturate(0.8);
+}
+.raid-skills button[data-cooling] .raid-skill-meta {
+  visibility: hidden;
+}
 .raid-skills button:has(small:not(:empty)) i {
   display: none;
 }
@@ -498,11 +509,32 @@ body.raid-mode .title-copy h1 {
   font-size: 1em;
   color: #fff0cf;
 }
-.raid-skills button:has(> .raid-skill-art:not([hidden])) > small:not(:empty) {
+.raid-skills button:not([data-cooling]):has(> .raid-skill-art:not([hidden])) > small:not(:empty) {
   font: 800 clamp(11px, calc(var(--disc) * 0.28), 23px)/1 var(--font-ui);
   text-shadow:
     0 1px 2px #000,
     0 0 4px #000;
+}
+.raid-hud .raid-skills button[data-cooling] > small {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font: 800 clamp(14px, calc(var(--disc) * 0.45), 34px)/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 3px #000;
+}
+.raid-skills button[data-cooling] .raid-skill-name {
+  position: absolute;
+  bottom: 7%;
+  max-width: 78%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.85em;
 }
 .raid-skills[data-rage]::after {
   content: '';

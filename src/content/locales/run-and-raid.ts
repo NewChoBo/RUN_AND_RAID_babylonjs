@@ -106,6 +106,7 @@ export const raidText = defineMessages(
     shadowCombo: 'Combo {count}/3',
     poisonArmed: 'Poison ready',
     bladeCharges: '{count} left',
+    cooldownRemaining: '{seconds}s of cooldown remaining',
     swift: 'Swift',
     rildinInfo:
       'Greatsword duelist · Weave up to four Chain Slashes between basic attacks. Counter blocks one hit and stuns nearby enemies. Unbound Sword extends reach and refreshes Chain Slash.',
