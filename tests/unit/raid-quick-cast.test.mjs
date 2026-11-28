@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { RaidMatch, RAID_HZ, raidRunnerHeight } from '../../src/game/raid/raid-match.ts';
+import {
+  RaidMatch,
+  RAID_HZ,
+  RAID_LEAP_TICKS,
+  raidRoadTravel,
+  raidRunnerHeight,
+} from '../../src/game/raid/raid-match.ts';
+import { RAID_FRONT_Z } from '../../src/game/raid/runner-motion.ts';
 import { createRaidFeature } from '../../src/game/raid/raid-feature.ts';
 import { RaidRound } from '../../src/game/raid/raid-round.ts';
 
@@ -66,6 +73,24 @@ test('ground quick cast reuses relative distance and direction after the runner 
   assert.ok(cast({ skill: 2, x: r.x, z: r.z }));
   r.cooldowns[0] = 0;
   assert.deepEqual(match.previewRepeat(0, 0).point, { x: r.x, z: r.z });
+});
+
+test('Hammer quick cast remembers the selected ground offset when his body stops at the wagon', () => {
+  const { match, cast, r } = battle('hammer');
+  Object.assign(r, { x: 0, z: 7 });
+  assert.ok(cast({ skill: 1, x: 6, z: 15 }));
+  for (let tick = 0; tick < RAID_LEAP_TICKS; tick++) match.step();
+  assert.equal(r.z, RAID_FRONT_Z);
+  Object.assign(r, { x: -4, z: 0 });
+  r.cooldowns[1] = 0;
+  assert.equal(cast({ skill: 1, x: -4, z: 14 }), false);
+  const preview = match.previewRepeat(0, 1);
+  assert.equal(preview.status, 'ready');
+  assert.deepEqual(preview.point, { x: 2, z: 8 });
+  assert.ok(cast({ skill: 1, repeat: true }));
+  for (let tick = 0; tick < RAID_LEAP_TICKS; tick++) match.step();
+  const landing = match.actions.findLast((cue) => cue.slot === 0 && cue.skill === 1);
+  assert.deepEqual(landing.to, { x: 2, z: 8 - raidRoadTravel(RAID_LEAP_TICKS) });
 });
 
 test('target quick cast remembers the selected unit before impact and validates current life, team and range', () => {

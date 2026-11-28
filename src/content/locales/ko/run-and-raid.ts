@@ -214,7 +214,7 @@ export const korean = {
   typeInstant: '즉발',
   ready: '시전 가능',
   needDirection: '발사 방향을 정하세요',
-  aimLeap: '떼면 도약 · 착지 시 주변 강타',
+  aimLeap: '떼면 도약 · 착지 시 지정 지점 강타',
   aimDirection: '조준한 방향으로 발사',
   needTarget: '표적을 조준하세요',
   outOfRange: '사거리 밖',
@@ -266,7 +266,7 @@ export const korean = {
   longshot: '롱샷',
   jade: '제이드',
   hammerInfo:
-    '분쇄로 주변 적을 감속시키고 도약 공격으로 착지점의 적을 띄웁니다. 소용돌이 중에는 이동할 수 있고, 천벌의 망치는 맞은 적을 기절시킵니다.',
+    '분쇄로 주변 적을 감속시킵니다. 도약 공격으로 착지하면 지정 지점 주변의 적을 띄웁니다. 소용돌이 중에는 이동할 수 있고, 천벌의 망치는 맞은 적을 기절시킵니다.',
   abyssInfo:
     '구체로 적을 침묵시키거나 끌어당깁니다. 어비스 주변 5m 안에서 맞은 적은 스킬 피해를 25% 더 받습니다. 심연 속으로를 쓰면 2초 동안 피해를 막습니다.',
   longshotInfo:

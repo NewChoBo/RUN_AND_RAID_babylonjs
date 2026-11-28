@@ -1,6 +1,6 @@
 import { raidRageGain } from '../../../content/raid/rage.ts';
 import type { HeroCombat, HeroEvents, Hit } from '../heroes/hero-definition.ts';
-import { RAID_HZ, RAID_RUN_LIMIT_X, raidRespawnTicks, WAGON_HP } from '../raid-rules.ts';
+import { RAID_HZ, raidRespawnTicks, WAGON_HP } from '../raid-rules.ts';
 import { wagonCenter } from '../wagon.ts';
 import { limitRaidPlacement, raidRunnerHeight } from '../runner-motion.ts';
 import type { RaidHealthChange, RaidRunner, RaidTarget, Runner } from '../raid-view.ts';
@@ -137,7 +137,7 @@ export class RaidHitResolution {
                 x: origin.x + (separation ? dx / separation : 0) * reach,
                 z: origin.z + (separation ? dz / separation : 1) * reach,
               });
-              victim.x = Math.min(RAID_RUN_LIMIT_X, Math.max(-RAID_RUN_LIMIT_X, to.x));
+              victim.x = to.x;
               victim.z = to.z;
             }
           }

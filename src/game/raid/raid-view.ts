@@ -48,6 +48,8 @@ export interface RaidAim {
   flight?: Pick<ProjectileProfile, 'angles' | 'guide' | 'contact'>;
   /** End of the directional dash in the wagon frame at arrival, once a direction is chosen. */
   dash?: { ticks: number; aerialVolley?: boolean; end: RaidPoint | null };
+  /** Runner's bounded landing position in cast-time road coordinates. The impact uses point. */
+  landing?: RaidPoint;
   status: 'needDirection' | 'ready' | 'needTarget' | 'outOfRange' | 'invalidGround' | 'unavailable';
   origin: Readonly<RaidPoint>;
   point: Readonly<RaidPoint> | null;

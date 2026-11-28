@@ -2,13 +2,8 @@ import { unitDirection, type RaidDirection } from '../raid-projectiles.ts';
 import { attackArea } from './attack-rule.ts';
 import { measureSkill } from './skill-range.ts';
 import { areaTargets } from './attack-area.ts';
-import { distance } from '../raid-rules.ts';
-import {
-  limitAerialVolley,
-  limitRaidDash,
-  limitRaidLeap,
-  raidGroundPointAfter,
-} from '../runner-motion.ts';
+import { distance, RAID_LEAP_TICKS } from '../raid-rules.ts';
+import { limitRaidDash, limitRaidPlacement, raidGroundPointAfter } from '../runner-motion.ts';
 import type { RaidAim, RaidPoint, RaidTarget, Skill } from '../raid-view.ts';
 import type { CombatRead } from '../heroes/hero-definition.ts';
 import type { ResolvedCast, SkillInfo } from './skill-rule.ts';
@@ -34,10 +29,8 @@ export function resolveSkill(
   const { range, radius } = measureSkill(rule, combat, skill);
   const target = kind === 'target' || kind === 'ward' ? id : undefined;
   const origin = rule.origin?.(combat) ?? combat.self;
-  const requested =
-    kind === 'pulse' ? origin : target === undefined ? ground : combat.targetPoint(target, origin);
   const point =
-    kind === 'leap' && requested ? limitRaidLeap(combat.self, requested, range) : requested;
+    kind === 'pulse' ? origin : target === undefined ? ground : combat.targetPoint(target, origin);
   const metres = point ? distance(origin, point) : null;
   let status: RaidAim['status'] = 'ready';
   const direction =
@@ -50,7 +43,7 @@ export function resolveSkill(
   if (!available) status = 'unavailable';
   else if (kind === 'direction') {
     if (!direction) status = 'needDirection';
-  } else if (requested && distance(origin, requested) > range + 1e-9) status = 'outOfRange';
+  } else if (metres !== null && metres > range + 1e-9) status = 'outOfRange';
   else if ((kind === 'field' || kind === 'leap') && (metres === null || !Number.isFinite(metres)))
     status = 'invalidGround';
   else if (
@@ -80,6 +73,7 @@ export function resolveSkill(
     x: combat.self.x + direction.dx * range,
     z: combat.self.z + direction.dz * range,
   };
+  const roadTicks = 'travelTicks' in rule && !rule.aerialVolley ? rule.travelTicks : 0;
   const preview: RaidAim = {
     kind,
     status,
@@ -89,20 +83,17 @@ export function resolveSkill(
     radius,
     distance: metres,
     target,
+    landing:
+      kind === 'leap' && point && status === 'ready'
+        ? limitRaidPlacement(point, RAID_LEAP_TICKS)
+        : undefined,
     flight: attack.kind === 'projectile' ? attack.flight : undefined,
     dash:
       'travelTicks' in rule
         ? {
             ticks: rule.travelTicks,
             aerialVolley: rule.aerialVolley,
-            end:
-              end &&
-              (rule.aerialVolley
-                ? limitAerialVolley(combat.self, end)
-                : raidGroundPointAfter(
-                    limitRaidDash(combat.self, end, rule.travelTicks),
-                    rule.travelTicks,
-                  )),
+            end: end && raidGroundPointAfter(limitRaidDash(combat.self, end, roadTicks), roadTicks),
           }
         : undefined,
     count: enemies?.length,

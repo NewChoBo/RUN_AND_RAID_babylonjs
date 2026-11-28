@@ -48,9 +48,9 @@ import {
 } from './raid-rules.ts';
 import {
   raidBrakeAfter,
-  limitAerialVolley,
   limitRaidDash,
   limitRaidPlacement,
+  raidGroundPointAfter,
   raidRunnerHeight,
   raidRunnerPositionAfter,
 } from './runner-motion.ts';
@@ -555,7 +555,7 @@ export class RaidMatch implements RaidView {
   #startDash(r: Runner, skill: Skill, desired: RaidPoint, ticks: number, target?: RaidTarget) {
     const rule = raidSkill(r.hero, skill);
     const aerialVolley = 'travelTicks' in rule && rule.aerialVolley;
-    const to = aerialVolley ? limitAerialVolley(r, desired) : limitRaidDash(r, desired, ticks);
+    const to = limitRaidDash(r, desired, aerialVolley ? 0 : ticks);
     const takeoffHeight = aerialVolley ? raidRunnerHeight(r) : undefined;
     if (aerialVolley) {
       r.jumping = 0;
@@ -609,14 +609,27 @@ export class RaidMatch implements RaidView {
     if (!finishingDash && !landing) r.cooldownDurations[skill] = r.cooldowns[skill] = cooldown;
     return true;
   }
-  #impact(r: Runner, skill: Skill, event: Exclude<AreaAttack['on'], 'cast'>, target?: RaidTarget) {
-    triggerAttack(this.#contexts[r.slot]!, skill, raidSkill(r.hero, skill).attack, event, target);
+  #impact(
+    r: Runner,
+    skill: Skill,
+    event: Exclude<AreaAttack['on'], 'cast'>,
+    center: RaidPoint = r,
+    target?: RaidTarget,
+  ) {
+    triggerAttack(
+      this.#contexts[r.slot]!,
+      skill,
+      raidSkill(r.hero, skill).attack,
+      event,
+      center,
+      target,
+    );
   }
   #finishDash(r: Runner) {
     const dash = r.dash!;
     r.dash = null;
     this.#heroes[r.slot]!.events.onDashEnd?.(this.#contexts[r.slot]!, dash.target);
-    this.#impact(r, dash.skill, 'dashEnd', dash.target);
+    this.#impact(r, dash.skill, 'dashEnd', r, dash.target);
   }
   #basicTarget(r: Runner, target: RaidTarget | null) {
     if (target === 'wagon') {
@@ -718,10 +731,11 @@ export class RaidMatch implements RaidView {
         }
         if (++dash.elapsed === dash.ticks) this.#finishDash(r);
       } else if (r.leap?.elapsed === RAID_LEAP_TICKS) {
-        const { skill } = r.leap;
+        const { skill, to, elapsed } = r.leap;
+        const impact = raidGroundPointAfter(to, elapsed);
         r.leap = null;
-        this.#record(r, skill, r, 'ground');
-        this.#impact(r, skill, 'land');
+        this.#record(r, skill, impact, 'ground');
+        this.#impact(r, skill, 'land', impact);
       } else if (
         !r.respawn &&
         !r.leap &&

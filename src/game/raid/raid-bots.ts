@@ -2,11 +2,7 @@ import { actionLocked } from './raid-control.ts';
 import { RAID_RUN_LIMIT_X } from './raid-rules.ts';
 import { wagonCenter, wagonContact } from './wagon.ts';
 import { RAID_COUNTERS, RAID_ELECTRIC_GRID, type RaidCounter } from './raid-boss.ts';
-import {
-  limitRaidPlacement,
-  raidGroundPointAfter,
-  raidRunnerPositionAfter,
-} from './runner-motion.ts';
+import { raidGroundPointAfter, raidRunnerPositionAfter } from './runner-motion.ts';
 import { canUseRaidSkill, raidSkill } from './heroes/hero-catalog.ts';
 import {
   HEROES,
@@ -24,6 +20,14 @@ import {
 import type { RaidOrder } from './raid-feature.ts';
 
 const soloSlot = new Set([0]);
+
+function aimWithinRange(from: RaidPoint, to: RaidPoint, range: number): RaidPoint {
+  const dx = to.x - from.x;
+  const dz = to.z - from.z;
+  const gap = Math.hypot(dx, dz);
+  if (gap <= range) return { x: to.x, z: to.z };
+  return { x: from.x + dx * (range / gap), z: from.z + dz * (range / gap) };
+}
 
 // Consider the whole impact window: the road can carry an already live tile under the runner.
 function approachingCell(counter: RaidCounter, r: RaidRunner, goalX: number) {
@@ -134,21 +138,19 @@ export function driveRaidBots(
     const distance = Math.hypot(point.x - r.x, point.z - r.z);
     // The marker is a road tile. Lead the moving formation by the road travel during the jump.
     const leapTarget = target ?? wagonContact(r, view.tick + RAID_LEAP_TICKS);
-    const leapAim = limitRaidPlacement(
+    const leap = raidSkill(r.hero, 1);
+    const leapRange = view.skillRange(r.slot, 1);
+    const leapAim = aimWithinRange(
+      r,
       {
         x: leapTarget.x,
         z: leapTarget.z + raidRoadTravel(RAID_LEAP_TICKS),
       },
-      RAID_LEAP_TICKS,
+      leapRange.range,
     );
     const landing = raidGroundPointAfter(leapAim, RAID_LEAP_TICKS);
     const landingGap = Math.hypot(leapTarget.x - landing.x, leapTarget.z - landing.z);
-    const leap = raidSkill(r.hero, 1);
-    const canLeap =
-      leap.kind === 'leap' &&
-      !r.jumping &&
-      (landingGap <= view.skillRange(r.slot, 1).radius || landingGap < distance) &&
-      Math.hypot(leapAim.x - r.x, leapAim.z - r.z) <= leap.range;
+    const canLeap = leap.kind === 'leap' && !r.jumping && landingGap <= leapRange.radius;
     const pulse = view.skillRange(r.slot, 0);
     const orb = r.lastWard === partner.slot && !partner.respawn ? partner : r;
     const orbTarget = target ?? wagonContact(orb, view.tick);
@@ -245,13 +247,7 @@ export function driveRaidBots(
         x: wagonCenter(view.tick + lead).x,
         z: carriage.z + (attack.kind === 'field' && attack.hit ? Math.min(ahead, radius) : ahead),
       };
-      const gap = Math.hypot(aim.x - r.x, aim.z - r.z);
-      const factor = gap > range ? range / gap : 1;
-      send(r.slot, 'cast', {
-        skill,
-        x: r.x + (aim.x - r.x) * factor,
-        z: r.z + (aim.z - r.z) * factor,
-      });
+      send(r.slot, 'cast', { skill, ...aimWithinRange(r, aim, range) });
     } else if (
       kind === 'direction' &&
       r.hero === 'longshot' &&

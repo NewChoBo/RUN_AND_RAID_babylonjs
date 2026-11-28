@@ -1,6 +1,5 @@
 import { Matrix, Ray, Vector3, Viewport, type Camera } from '@babylonjs/core';
 import type { RaidPoint } from '../../../game/raid/raid-match.ts';
-import { limitRaidLeap } from '../../../game/raid/runner-motion.ts';
 
 /** Map a CSS cursor to the cast disc on the road, regardless of render resolution. */
 export function pickRaidGroundAim(
@@ -9,7 +8,6 @@ export function pickRaidGroundAim(
   cursor: Pick<PointerEvent, 'clientX' | 'clientY'>,
   caster: RaidPoint,
   range: number,
-  kind: 'field' | 'leap',
 ) {
   const ray = Ray.CreateNew(
     cursor.clientX - bounds.left,
@@ -29,9 +27,8 @@ export function pickRaidGroundAim(
   const inside = down > 0 && length <= range * down;
   // Keep a sub-micrometre margin so rounding cannot put a rim cast outside the authority's range.
   const scale = inside ? 1 / down : (range - 1e-7) / length;
-  const picked = { x: caster.x + dx * scale, z: caster.z + dz * scale };
-  const point = kind === 'leap' ? limitRaidLeap(caster, picked, range) : picked;
-  if (inside && point === picked) return { point };
+  const point = { x: caster.x + dx * scale, z: caster.z + dz * scale };
+  if (inside) return { point };
   const screen = Vector3.Project(
     new Vector3(point.x, 0, point.z),
     Matrix.IdentityReadOnly,

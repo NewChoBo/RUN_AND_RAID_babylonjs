@@ -1,23 +1,23 @@
 import type { HeroCombat } from '../heroes/hero-definition.ts';
-import type { RaidTarget, Skill } from '../raid-view.ts';
+import type { RaidPoint, RaidTarget, Skill } from '../raid-view.ts';
 import { distance } from '../raid-rules.ts';
-import type { AreaHit, AreaAttack, SkillAttack } from './attack-rule.ts';
+import type { AreaAttack, SkillAttack } from './attack-rule.ts';
 import { areaTargets, areaRadius } from './attack-area.ts';
 import type { HeroSkill, ResolvedCast } from './skill-rule.ts';
 
-function strikeArea(combat: HeroCombat, attack: AreaHit, skill: Skill) {
-  for (const id of areaTargets(combat, attack.area, combat.self, areaRadius(attack.area, combat)))
-    combat.strike(id, attack.hit, skill);
-}
 // Motion and defense publish impact events for the slot that started them.
 export function triggerAttack(
   combat: HeroCombat,
   skill: Skill,
   attack: SkillAttack,
   event: Exclude<AreaAttack['on'], 'cast'>,
+  center: RaidPoint,
   target?: RaidTarget,
 ) {
-  if (attack.kind === 'area' && attack.on === event) strikeArea(combat, attack, skill);
+  if (attack.kind === 'area' && attack.on === event) {
+    for (const id of areaTargets(combat, attack.area, center, areaRadius(attack.area, combat)))
+      combat.strike(id, attack.hit, skill);
+  }
   if (
     attack.kind === 'direct' &&
     attack.on === 'dashEnd' &&

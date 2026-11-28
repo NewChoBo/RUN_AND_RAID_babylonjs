@@ -1,13 +1,5 @@
 import { Color3, MeshBuilder, StandardMaterial, Vector3, type Scene } from '@babylonjs/core';
 import { raidLeapHeight, type RaidAim } from '../../../game/raid/raid-match.ts';
-import { RAID_LEAP_TICKS } from '../../../game/raid/raid-rules.ts';
-import {
-  RAID_FRONT_Z,
-  RAID_REAR_Z,
-  raidRoadTravel,
-  raidGroundPointAfter,
-} from '../../../game/raid/runner-motion.ts';
-
 import { createRaidFlightGuide } from './raid-flight-guide.ts';
 
 export function createRaidAimGuide(scene: Scene) {
@@ -37,14 +29,7 @@ export function createRaidAimGuide(scene: Scene) {
     const angle = (2 * Math.PI * i) / 96;
     return new Vector3(Math.sin(angle), 0, Math.cos(angle));
   });
-  const rim = points.map((point) => point.clone());
-  let frontFraction = 1;
-  let rearFraction = -1;
-  const boundary = MeshBuilder.CreateLines(
-    'skill cast range',
-    { points: rim, updatable: true },
-    scene,
-  );
+  const boundary = MeshBuilder.CreateLines('skill cast range', { points }, scene);
   boundary.color = Color3.FromHexString('#b9dafa');
   const arc = MeshBuilder.CreateLines(
     'leap trajectory',
@@ -75,28 +60,7 @@ export function createRaidAimGuide(scene: Scene) {
     drawFlight(aim);
     boundary.setEnabled(kind !== 'pulse' && aim.flight?.guide !== 'sector');
     if (boundary.isEnabled()) {
-      const center =
-        aim.dash && !aim.dash.aerialVolley ? raidGroundPointAfter(origin, aim.dash.ticks) : origin;
-      const front =
-        (kind === 'leap' || aim.dash) && range > 0
-          ? Math.min(1, (RAID_FRONT_Z - center.z) / range)
-          : 1;
-      const rearEdge = RAID_REAR_Z + (kind === 'leap' ? raidRoadTravel(RAID_LEAP_TICKS) : 0);
-      const rear =
-        (kind === 'leap' || aim.dash) && range > 0
-          ? Math.max(-1, (rearEdge - center.z) / range)
-          : -1;
-      if (front !== frontFraction || rear !== rearFraction) {
-        const halfWidth = rear > 0 ? Math.sqrt(Math.max(0, 1 - rear * rear)) : 1;
-        for (let i = 0; i < rim.length; i++) {
-          rim[i]!.z = Math.max(rear, Math.min(points[i]!.z, front));
-          rim[i]!.x = Math.max(-halfWidth, Math.min(points[i]!.x, halfWidth));
-        }
-        MeshBuilder.CreateLines('skill cast range', { points: rim, instance: boundary }, scene);
-        frontFraction = front;
-        rearFraction = rear;
-      }
-      boundary.position.set(center.x, 0.09, center.z);
+      boundary.position.set(origin.x, 0.09, origin.z);
       boundary.scaling.set(range, 1, range);
     }
     footprint.setEnabled(
@@ -117,11 +81,14 @@ export function createRaidAimGuide(scene: Scene) {
       disc.position.set(point.x, 0.085, point.z);
       disc.scaling.set(radius, radius, 1);
     }
-    arc.setEnabled(kind === 'leap' && !!point && status === 'ready');
-    if (point && arc.isEnabled()) {
+    const landing = aim.landing;
+    arc.setEnabled(kind === 'leap' && !!landing && status === 'ready');
+    if (landing && arc.isEnabled()) {
       arc.position.set(origin.x, 0.12, origin.z);
-      arc.scaling.z = aim.distance ?? 0;
-      arc.rotation.y = Math.atan2(point.x - origin.x, point.z - origin.z);
+      const dx = landing.x - origin.x;
+      const dz = landing.z - origin.z;
+      arc.scaling.z = Math.hypot(dx, dz);
+      arc.rotation.y = Math.atan2(dx, dz);
       arc.color = ready;
     }
   };

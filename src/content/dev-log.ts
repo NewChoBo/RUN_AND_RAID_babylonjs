@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T18:57+09:00',
+    tag: 'controls',
+    title: '마차에 바짝 붙여 쓰는 도약공격',
+    body: '해머의 도약공격을 마차 차체 위나 길 가장자리 너머에도 조준할 수 있습니다. 원은 충격파가 터질 지면을, 포물선은 해머가 착지할 곳을 보여줍니다. 해머는 추격로 안에 착지하고, 지정한 지점 반경 5m에 피해를 줍니다.',
+  },
+  {
     updatedAt: '2026-11-28T18:47+09:00',
     tag: 'lobby',
     title: '원작 타이틀에서 로비로',

@@ -20,8 +20,8 @@ import { createRaidFeature } from '../../src/game/raid/raid-feature.ts';
 import { raidRageDamageToFull, raidRageGain } from '../../src/content/raid/rage.ts';
 import { driveRaidBots } from '../../src/game/raid/raid-bots.ts';
 import { RAID_COUNTERS, RAID_ELECTRIC_GRID } from '../../src/game/raid/raid-boss.ts';
-import { RAID_FRONT_Z } from '../../src/game/raid/runner-motion.ts';
-import { distance } from '../../src/game/raid/raid-rules.ts';
+import { RAID_FRONT_Z, RAID_REAR_Z } from '../../src/game/raid/runner-motion.ts';
+import { distance, RAID_RUN_LIMIT_X } from '../../src/game/raid/raid-rules.ts';
 import { wagonContact, wagonCenter, wagonSectorContact } from '../../src/game/raid/wagon.ts';
 import { RAID_BASIC_HALF_ANGLE } from '../../src/game/raid/raid-sight.ts';
 import { GameSession } from '../../src/game/session/game-session.ts';
@@ -211,6 +211,7 @@ test('Kaiken channels five ultimate pulses with other attacks locked and no rage
 test('Full Moon follows the facing of a sideways slash and sweeps once on natural arrival', () => {
   const { match, send } = battle('kaiken');
   const [r] = match.runners;
+  r.x = 0;
   assert.ok(send(0, 'cast', { skill: 0, dx: -1, dz: 0 }));
   const endpoint = { x: r.x - 5.5, z: r.z };
   assert.ok(send(0, 'cast', { skill: 2 }));
@@ -251,7 +252,8 @@ for (const [hero, reach, ticks] of [
         const { match, send } = battle(hero);
         const [r] = match.runners;
         for (const runner of match.runners) runner.basic = 90;
-        // Allow ten metres of uninterrupted road in both directions.
+        // Start each run with enough clear road for the entire intended trajectory.
+        r.x = (-dx * reach) / 2;
         r.z = -3;
         const origin = { x: r.x, z: r.z };
         assert.ok(send(0, 'move', { side: 1, brake }));
@@ -342,29 +344,125 @@ test('forward dashes and blinks respect the running limit even when the locked b
   }
 });
 
-test('a leap aimed over the wagon lands on the last legal road tile and applies only overlapping splash', () => {
+test('a diagonal dash stops its body where its chase-frame path first touches either edge', () => {
+  for (const side of [-1, 1]) {
+    for (const sideGap of [0.1, 0.45]) {
+      const { match } = battle('rildin');
+      const runner = match.runners[0];
+      const start = { x: side * (RAID_RUN_LIMIT_X - sideGap), z: RAID_FRONT_Z - 0.1 };
+      Object.assign(runner, start);
+      const direction = { dx: side * 0.6, dz: 0.8 };
+      const range = match.skillRange(0, 2).range;
+      const aim = { x: start.x + direction.dx * range, z: start.z + direction.dz * range };
+      const preview = match.previewSkill(0, 2, aim);
+      assert.equal(preview.status, 'ready');
+      assert.deepEqual(preview.point, aim);
+      const dx = direction.dx * range;
+      const dz = direction.dz * range - raidRoadTravel(preview.dash.ticks);
+      const fraction = Math.min(sideGap / Math.abs(dx), (RAID_FRONT_Z - start.z) / dz);
+      const end = { x: start.x + dx * fraction, z: start.z + dz * fraction };
+      assert.ok(distance(preview.dash.end, end) < 1e-8);
+      assert.ok(match.cast(0, 2, direction));
+      while (runner.dash) {
+        const mid = raidRunnerPositionAfter(runner, 0.5);
+        assert.ok(Math.abs(mid.x) <= RAID_RUN_LIMIT_X + 1e-8 && mid.z <= RAID_FRONT_Z + 1e-8);
+        match.step();
+      }
+      assert.ok(distance(runner, end) < 1e-8);
+    }
+  }
+});
+
+test('Hammer can aim beside the wagon and only damages it when the selected ground overlaps the hull', () => {
   for (const [x, hitsBoss] of [
     [0, true],
-    [3, true],
-    [6, false],
+    [6, true],
+    [7, false],
   ]) {
     const { match, send } = battle('hammer');
     const r = match.runners[0];
-    Object.assign(r, { x, z: RAID_FRONT_Z - 1 });
+    Object.assign(r, { x: 0, z: RAID_FRONT_Z - 1 });
     for (const runner of match.runners) runner.basic = 90;
-    const request = { x, z: WAGON.z + 2 };
+    const contact = wagonContact(r, match.tick);
+    const request = { x, z: contact.z + raidRoadTravel(RAID_LEAP_TICKS) };
     const preview = match.previewSkill(0, 1, request);
-    assert.deepEqual(preview.point, { x, z: RAID_FRONT_Z });
+    assert.deepEqual(preview.point, request);
     assert.equal(preview.status, 'ready');
     assert.ok(send(0, 'cast', { skill: 1, ...request }));
-    assert.deepEqual(r.leap.to, preview.point);
     for (let i = 0; i < RAID_LEAP_TICKS; i++) {
       assert.ok(raidRunnerPositionAfter(r, 0.5).z <= RAID_FRONT_Z);
       match.step();
       assert.ok(r.z <= RAID_FRONT_Z);
     }
-    assert.equal(r.z, RAID_FRONT_Z - raidRoadTravel(RAID_LEAP_TICKS));
+    assert.equal(r.z, RAID_FRONT_Z);
+    assert.deepEqual(match.actions.find((cue) => cue.slot === 0 && cue.skill === 1).to, {
+      x,
+      z: contact.z,
+    });
     assert.equal(match.damage[0], hitsBoss ? HEROES.hammer.power * 2 : 0);
+  }
+});
+
+test('Hammer hits the selected tile while a rival standing at his blocked landing escapes the slam', () => {
+  const { match, send } = battle('hammer');
+  const [hammer, , impactRival, bodyRival] = match.runners;
+  for (const runner of match.runners) runner.basic = 90;
+  Object.assign(hammer, { x: 0, z: RAID_FRONT_Z - 1 });
+  const request = { x: 0, z: hammer.z + 13 };
+  const impact = { x: request.x, z: request.z - raidRoadTravel(RAID_LEAP_TICKS) };
+  // Keep both collision probes fixed for the entire leap, including the one past the movement edge.
+  Object.assign(impactRival, impact, { stunned: RAID_LEAP_TICKS + 1 });
+  Object.assign(bodyRival, { x: 0, z: RAID_FRONT_Z, stunned: RAID_LEAP_TICKS + 1 });
+  const tooFar = { x: request.x, z: request.z + 0.01 };
+  assert.equal(match.previewSkill(0, 1, tooFar).status, 'outOfRange');
+  assert.equal(send(0, 'cast', { skill: 1, ...tooFar }), false);
+  assert.equal(hammer.cooldowns[1], 0);
+  assert.ok(Math.abs(match.previewSkill(0, 1, request).distance - 13) < 1e-8);
+  assert.ok(send(0, 'cast', { skill: 1, ...request }));
+  advance(match, RAID_LEAP_TICKS - 1);
+  assert.equal(impactRival.hp, HEROES[impactRival.hero].hp);
+  match.step();
+  assert.equal(hammer.z, RAID_FRONT_Z);
+  assert.equal(impactRival.hp, HEROES[impactRival.hero].hp - HEROES.hammer.power * 2);
+  assert.equal(impactRival.launchDuration, RAID_HZ);
+  assert.equal(bodyRival.hp, HEROES[bodyRival.hero].hp);
+  assert.equal(bodyRival.launchDuration, 0);
+});
+
+test('Hammer bots lead the wagon with a ground target beyond the running edge, up to their cast range', () => {
+  for (const [startZ, canHit] of [
+    [2, true],
+    [-3, true],
+    [-12, false],
+  ]) {
+    const { match, send } = battle('hammer');
+    for (const runner of match.runners) runner.basic = 999;
+    advance(match, 128);
+    const [bot] = match.runners;
+    Object.assign(bot, { x: -1.6, z: startZ });
+    const contact = wagonContact(bot, match.tick + RAID_LEAP_TICKS);
+    const lead = { x: contact.x, z: contact.z + raidRoadTravel(RAID_LEAP_TICKS) };
+    let cast;
+    driveRaidBots(
+      match,
+      (slot, action, payload) => {
+        if (action === 'cast') cast = payload;
+        return send(slot, action, payload);
+      },
+      new Set([1, 2, 3]),
+    );
+    if (!canHit) {
+      assert.equal(cast, undefined);
+      continue;
+    }
+    assert.equal(cast.skill, 1);
+    assert.ok(cast.z > RAID_FRONT_Z);
+    const range = match.skillRange(bot.slot, 1).range;
+    const fraction = Math.min(1, range / distance(bot, lead));
+    assert.ok(Math.abs(cast.x - (bot.x + (lead.x - bot.x) * fraction)) < 1e-8);
+    assert.ok(Math.abs(cast.z - (bot.z + (lead.z - bot.z) * fraction)) < 1e-8);
+    advance(match, RAID_LEAP_TICKS);
+    assert.equal(bot.wagonDamage, HEROES.hammer.power * 2);
   }
 });
 
@@ -740,17 +838,16 @@ test('a runner can hold a 56 m rear gap, then close with the wagon and attack it
   assert.ok(match.damage[0] > 0);
 });
 test('leaps and backward dashes stop at the rear edge as the wagon moves', () => {
-  const rear = WAGON.z - 56;
   for (const hero of ['hammer', 'rildin']) {
     const { match } = battle(hero);
     const r = match.runners[0];
-    r.z = rear;
+    r.z = RAID_REAR_Z;
     if (hero === 'hammer') {
-      // A lateral rim pick needs room for the wagon travel during the leap.
-      const requested = { x: r.x + 10, z: rear };
+      const requested = { x: r.x, z: RAID_REAR_Z - 10 };
       const preview = match.previewSkill(0, 1, requested);
       assert.equal(preview.status, 'ready');
-      assert.ok(match.cast(0, 1, preview.point));
+      assert.deepEqual(preview.point, requested);
+      assert.ok(match.cast(0, 1, requested));
     } else {
       r.z += 1;
       assert.ok(match.cast(0, 2, { dx: 0, dz: -1 }));
@@ -758,9 +855,13 @@ test('leaps and backward dashes stop at the rear edge as the wagon moves', () =>
     const ticks = r.dash?.ticks ?? RAID_LEAP_TICKS;
     for (let i = 0; i < ticks; i++) {
       match.step();
-      assert.ok(r.z >= rear - 1e-8);
+      assert.ok(r.z >= RAID_REAR_Z - 1e-8);
     }
-    assert.ok(Math.abs(r.z - rear) < 1e-8);
+    assert.ok(Math.abs(r.z - RAID_REAR_Z) < 1e-8);
+    if (hero === 'hammer') {
+      const cue = match.actions.find((action) => action.slot === r.slot && action.skill === 1);
+      assert.equal(cue.to.z, RAID_REAR_Z - 10 - raidRoadTravel(ticks));
+    }
   }
 });
 test('each runner opens fire as the wagon crosses the radius of their basic attack', () => {
@@ -1550,15 +1651,20 @@ test('Hammer leaps to the selected road tile, then damages and launches only riv
   assert.equal(match.actions.filter((c) => c.slot === 0 && c.skill === 1).length, 1);
   assert.ok(hammer.x < point.x);
 });
-test('an empty leap lands outside the running lanes and returns smoothly, while a knockout cancels touchdown', () => {
+test('an empty leap stops at the side of the lane, while a knockout cancels touchdown', () => {
   const { match, send } = battle();
   const [hammer] = match.runners;
   const end = { x: hammer.x - 10, z: hammer.z };
   assert.ok(send(0, 'cast', { skill: 1, ...end }));
-  advance(match, RAID_LEAP_TICKS);
-  assert.equal(hammer.x, end.x);
+  for (let tick = 0; tick < RAID_LEAP_TICKS; tick++) {
+    assert.ok(raidRunnerPositionAfter(hammer, 0.5).x >= -RAID_RUN_LIMIT_X);
+    match.step();
+    assert.ok(hammer.x >= -RAID_RUN_LIMIT_X);
+  }
+  assert.equal(hammer.x, -RAID_RUN_LIMIT_X);
+  assert.equal(match.actions.find((cue) => cue.slot === 0 && cue.skill === 1).to.x, end.x);
   match.step();
-  assert.ok(hammer.x > end.x && hammer.x - end.x <= 4.8 / RAID_HZ + 1e-9);
+  assert.equal(hammer.x, -RAID_RUN_LIMIT_X);
   const control = battle().match;
   advance(control, RAID_LEAP_TICKS + 1);
   assert.deepEqual(match.damage, control.damage);

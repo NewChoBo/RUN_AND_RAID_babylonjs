@@ -216,7 +216,7 @@ export const raidText = defineMessages(
     typeInstant: 'Instant',
     ready: 'Ready to cast',
     needDirection: 'Choose a direction',
-    aimLeap: 'Release to leap and slam on landing',
+    aimLeap: 'Release to leap and strike the marked area on landing',
     aimDirection: 'Fire in this direction',
     needTarget: 'Aim at a target',
     outOfRange: 'Out of range',
@@ -268,7 +268,7 @@ export const raidText = defineMessages(
     longshot: 'Longshot',
     jade: 'Jade',
     hammerInfo:
-      'Crush slows nearby enemies. Leaping attack launches enemies at the landing point. Whirlwind deals damage as you move. Hammer of Judgment stuns on impact.',
+      'Crush slows nearby enemies. Leaping Attack knocks enemies near the marked point into the air when Hammer lands. Whirlwind deals damage as you move. Hammer of Judgment stuns on impact.',
     abyssInfo:
       'Silence enemies or pull them in. Your skills deal 25% more damage to enemies hit within five metres of you. Into the Abyss prevents incoming damage for two seconds.',
     longshotInfo:

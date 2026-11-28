@@ -32,39 +32,26 @@ function forwardTravel(r: RaidRunner, ticks: number) {
 export const RAID_REAR_Z = WAGON.z - 56;
 export const RAID_FRONT_Z = WAGON.z - 1.6;
 
-/** A picked road tile or instantaneous placement, in the current wagon frame. */
+/** Bound a runner's body at arrival. Input and output use the same cast-time road frame. */
 export function limitRaidPlacement(point: RaidPoint, travelTicks = 0): RaidPoint {
-  const z = clamp(point.z, RAID_REAR_Z + raidRoadTravel(travelTicks), RAID_FRONT_Z);
-  return z === point.z ? point : { x: point.x, z };
+  const travel = raidRoadTravel(travelTicks);
+  const x = clamp(point.x, -RAID_RUN_LIMIT_X, RAID_RUN_LIMIT_X);
+  const z = clamp(point.z, RAID_REAR_Z + travel, RAID_FRONT_Z + travel);
+  return x === point.x && z === point.z ? point : { x, z };
 }
 
-/** Keep a clipped leap within its cast disc even when the rear edge moves past the caster. */
-export function limitRaidLeap(caster: RaidPoint, requested: RaidPoint, range: number): RaidPoint {
-  const point = limitRaidPlacement(requested, RAID_LEAP_TICKS);
-  if (point === requested || point.z <= caster.z || point.z <= requested.z) return point;
-  const halfWidth = Math.sqrt(Math.max(0, range * range - (point.z - caster.z) ** 2));
-  const x = clamp(point.x, caster.x - halfWidth, caster.x + halfWidth);
-  return { x, z: point.z };
-}
-
-/** Intersect the dash segment with either longitudinal limit. Return a road endpoint at cast time. */
+/** Stop a straight dash at the first edge it meets in the arrival frame. */
 export function limitRaidDash(from: RaidPoint, to: RaidPoint, ticks: number): RaidPoint {
+  const bounded = limitRaidPlacement(to, ticks);
+  if (bounded === to) return to;
   const travel = raidRoadTravel(ticks);
-  const arrivalZ = to.z - travel;
-  if (arrivalZ >= RAID_REAR_Z && arrivalZ <= RAID_FRONT_Z) return to;
-  const edge = clamp(arrivalZ, RAID_REAR_Z, RAID_FRONT_Z);
-  const fraction = (edge - from.z) / (arrivalZ - from.z);
-  return { x: from.x + (to.x - from.x) * fraction, z: edge + travel };
+  const dx = to.x - from.x;
+  const dz = to.z - travel - from.z;
+  const tx = bounded.x === to.x || dx === 0 ? 1 : (bounded.x - from.x) / dx;
+  const tz = bounded.z === to.z || dz === 0 ? 1 : (bounded.z - travel - from.z) / dz;
+  const fraction = Math.max(0, Math.min(tx, tz));
+  return { x: from.x + dx * fraction, z: from.z + dz * fraction + travel };
 }
-// The aerial volley is steered relative to the chase formation throughout the flip.
-export function limitAerialVolley(from: RaidPoint, to: RaidPoint) {
-  const end = limitRaidDash(from, to, 0);
-  const x = clamp(end.x, Math.min(from.x, -RAID_RUN_LIMIT_X), Math.max(from.x, RAID_RUN_LIMIT_X));
-  return x === end.x
-    ? end
-    : { x, z: from.z + ((end.z - from.z) * (x - from.x)) / (end.x - from.x) };
-}
-// Outside the running corridor after a leap, return at running speed without snapping to its edge.
 function runAxis(position: number, delta: number, low: number, high: number, recovery: number) {
   return clamp(
     position + delta,
@@ -107,8 +94,9 @@ export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint
       return { x: from.x + (to.x - from.x) * t, z: from.z + (to.z - from.z) * t };
     }
     const t = age / duration;
+    const end = dash ? to : limitRaidPlacement(to, duration);
     return raidGroundPointAfter(
-      { x: from.x + (to.x - from.x) * t, z: from.z + (to.z - from.z) * t },
+      { x: from.x + (end.x - from.x) * t, z: from.z + (end.z - from.z) * t },
       age,
     );
   }
