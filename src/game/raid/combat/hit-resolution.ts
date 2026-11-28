@@ -1,6 +1,7 @@
 import { raidRageGain } from '../../../content/raid/rage.ts';
 import type { HeroCombat, HeroEvents, Hit } from '../heroes/hero-definition.ts';
-import { RAID_HZ, RAID_RUN_LIMIT_X, raidRespawnTicks, WAGON, WAGON_HP } from '../raid-rules.ts';
+import { RAID_HZ, RAID_RUN_LIMIT_X, raidRespawnTicks, WAGON_HP } from '../raid-rules.ts';
+import { wagonCenter } from '../wagon.ts';
 import { limitRaidPlacement, raidRunnerHeight } from '../runner-motion.ts';
 import type { RaidHealthChange, RaidRunner, RaidTarget, Runner } from '../raid-view.ts';
 import { applyCrowdControl } from '../raid-control.ts';
@@ -44,7 +45,7 @@ export class RaidHitResolution {
   #record(tick: number, from: number | null, target: RaidTarget, amount: number) {
     if (!amount) return;
     const runner = target === 'wagon' ? undefined : this.contexts[target]!.self;
-    const { x, z } = runner ?? WAGON;
+    const { x, z } = runner ?? wagonCenter(tick);
     this.#changes.push({
       tick,
       from,

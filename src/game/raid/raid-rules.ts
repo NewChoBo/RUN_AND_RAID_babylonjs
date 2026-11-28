@@ -11,6 +11,7 @@ export const raidRespawnTicks = (deaths: number) =>
 export const SKILL_COOLDOWNS = [150, 105, 210, 30] as const;
 export const RAID_LEAP_TICKS = 15;
 export const RAID_SKILL_RANGE = { field: 15, shot: 16, ward: 8, leap: 10 } as const;
+// Fixed chase-frame reference for road rows and runner limits. The body moves around it.
 export const WAGON = { x: 0, z: 10 } as const;
 export const RAID_TARGETS = ['wagon', 0, 1, 2, 3] as const;
 export const distance = (a: { x: number; z: number }, b: { x: number; z: number }) =>

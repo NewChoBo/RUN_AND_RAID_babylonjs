@@ -1,6 +1,6 @@
 import { actionLocked } from './raid-control.ts';
-import { RAID_BASIC_HALF_ANGLE } from './raid-sight.ts';
 import { RAID_RUN_LIMIT_X } from './raid-rules.ts';
+import { wagonCenter, wagonContact } from './wagon.ts';
 import { RAID_COUNTERS, RAID_ELECTRIC_GRID, type RaidCounter } from './raid-boss.ts';
 import {
   limitRaidPlacement,
@@ -15,7 +15,6 @@ import {
   raidBossBonusPercent,
   raidAimKind,
   raidRoadTravel,
-  WAGON,
   WAGON_HP,
   type Skill,
   type RaidPoint,
@@ -82,10 +81,10 @@ export function driveRaidBots(
           ? nearest
           : undefined;
     const partner = view.runners.find((other) => other.team === r.team && other.slot !== r.slot)!;
-    // At the front limit the outer lane used to put the wagon outside the 45-degree basic arc.
-    const formationX = rank ? 1.8 : 0.65;
-    const insideArc = (WAGON.z - r.z) * Math.tan(RAID_BASIC_HALF_ANGLE) - 0.5;
-    let goalX = target?.x ?? (r.team === 0 ? -1 : 1) * Math.min(formationX, insideArc);
+    // Keep the team's preferred lane while it faces the hull. Follow the near wheel when it passes.
+    const formationX = (r.team === 0 ? -1 : 1) * (rank ? 1.8 : 0.65);
+    const carriage = wagonCenter(view.tick);
+    let goalX = target?.x ?? wagonContact({ x: formationX, z: r.z }, view.tick).x;
     const counter = view.hazard;
     const threat = counter && approachingCell(counter, r, goalX);
     const danger = threat?.cell;
@@ -119,7 +118,7 @@ export function driveRaidBots(
     // Space casts just over a second apart. Steering and hazard reactions still run every eight ticks.
     if (actionLocked(r) || r.silenced || view.tick < RAID_HZ || (view.tick + rank * 20) % 32 !== 0)
       continue;
-    const point = target ?? WAGON;
+    const point = target ?? wagonContact(r, view.tick);
     const openingSkill = raidSkill(r.hero, 0);
     const opener = openingSkill.kind;
     const needsHealing =
@@ -128,15 +127,16 @@ export function driveRaidBots(
         (partner.hp <= HEROES[partner.hero].hp - 15 && view.canShield(r.slot, partner.slot)));
     const distance = Math.hypot(point.x - r.x, point.z - r.z);
     // The marker is a road tile. Lead the moving formation by the road travel during the jump.
+    const leapTarget = target ?? wagonContact(r, view.tick + RAID_LEAP_TICKS);
     const leapAim = limitRaidPlacement(
       {
-        x: point.x,
-        z: point.z + raidRoadTravel(RAID_LEAP_TICKS),
+        x: leapTarget.x,
+        z: leapTarget.z + raidRoadTravel(RAID_LEAP_TICKS),
       },
       RAID_LEAP_TICKS,
     );
     const landing = raidGroundPointAfter(leapAim, RAID_LEAP_TICKS);
-    const landingGap = Math.hypot(point.x - landing.x, point.z - landing.z);
+    const landingGap = Math.hypot(leapTarget.x - landing.x, leapTarget.z - landing.z);
     const leap = raidSkill(r.hero, 1);
     const canLeap =
       leap.kind === 'leap' &&
@@ -145,8 +145,10 @@ export function driveRaidBots(
       Math.hypot(leapAim.x - r.x, leapAim.z - r.z) <= leap.range;
     const pulse = view.skillRange(r.slot, 0);
     const orb = r.lastWard === partner.slot && !partner.respawn ? partner : r;
-    const orbGap = Math.hypot(point.x - orb.x, point.z - orb.z);
-    const partnerGap = Math.hypot(point.x - partner.x, point.z - partner.z);
+    const orbTarget = target ?? wagonContact(orb, view.tick);
+    const partnerTarget = target ?? wagonContact(partner, view.tick);
+    const orbGap = Math.hypot(orbTarget.x - orb.x, orbTarget.z - orb.z);
+    const partnerGap = Math.hypot(partnerTarget.x - partner.x, partnerTarget.z - partner.z);
     const passOrb =
       r.hero === 'jade' && view.canShield(r.slot, partner.slot) && partnerGap + 2 < distance;
     const repositionOrb =
@@ -188,9 +190,10 @@ export function driveRaidBots(
     const turretInRange =
       !r.heroView.turrets ||
       r.heroView.turrets.some((t) =>
-        [WAGON, ...view.runners.filter((enemy) => enemy.team !== r.team && !enemy.respawn)].some(
-          (enemy) => Math.hypot(enemy.x - t.x, enemy.z - t.z) <= 6,
-        ),
+        [
+          wagonContact(t, view.tick),
+          ...view.runners.filter((enemy) => enemy.team !== r.team && !enemy.respawn),
+        ].some((enemy) => Math.hypot(enemy.x - t.x, enemy.z - t.z) <= 6),
       );
     if (
       turretInRange &&
@@ -224,12 +227,24 @@ export function driveRaidBots(
     const kind = raidAimKind(r.hero, skill);
     if (kind === 'leap') send(r.slot, 'cast', { skill, ...leapAim });
     else if (kind === 'field') {
-      const range = view.skillRange(r.slot, skill).range;
-      const factor = distance > range ? range / distance : 1;
+      const { range, radius } = view.skillRange(r.slot, skill);
+      const attack = raidSkill(r.hero, skill).attack;
+      // Put a damaging field on the road the wagon will occupy at its first pulse.
+      const lead =
+        attack.kind === 'field' && attack.pulse?.effect.kind === 'damageEnemies'
+          ? attack.pulse.intervalTicks
+          : 0;
+      const ahead = raidRoadTravel(lead);
+      const aim = target ?? {
+        x: wagonCenter(view.tick + lead).x,
+        z: carriage.z + (attack.kind === 'field' && attack.hit ? Math.min(ahead, radius) : ahead),
+      };
+      const gap = Math.hypot(aim.x - r.x, aim.z - r.z);
+      const factor = gap > range ? range / gap : 1;
       send(r.slot, 'cast', {
         skill,
-        x: r.x + (point.x - r.x) * factor,
-        z: r.z + (point.z - r.z) * factor,
+        x: r.x + (aim.x - r.x) * factor,
+        z: r.z + (aim.z - r.z) * factor,
       });
     } else if (
       kind === 'direction' &&
@@ -246,15 +261,13 @@ export function driveRaidBots(
     else if (kind === 'direction') {
       const attack = raidSkill(r.hero, skill).attack;
       let origin: RaidPoint = r,
-        aim: RaidPoint = point;
+        aim: RaidPoint = target ?? carriage;
       if (attack.kind === 'projectile' && attack.windupTicks) {
         origin = raidRunnerPositionAfter(r, attack.windupTicks);
         // The bot stops steering once it reaches its chosen lane during the draw.
         origin.x = Math.max(Math.min(goalX, r.x), Math.min(origin.x, Math.max(goalX, r.x)));
-        if (target) {
-          const flightTicks = (distance / attack.flight.speed) * RAID_HZ;
-          aim = raidRunnerPositionAfter(target, attack.windupTicks + flightTicks);
-        }
+        const lead = attack.windupTicks + (distance / attack.flight.speed) * RAID_HZ;
+        aim = target ? raidRunnerPositionAfter(target, lead) : wagonCenter(view.tick + lead);
       }
       send(r.slot, 'cast', { skill, dx: aim.x - origin.x, dz: aim.z - origin.z });
     } else if (kind === 'ward') {

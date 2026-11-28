@@ -17,6 +17,7 @@ import {
 import { RaidRound } from '../../src/game/raid/raid-round.ts';
 import { driveRaidBots } from '../../src/game/raid/raid-bots.ts';
 import { RAID_FRONT_Z } from '../../src/game/raid/runner-motion.ts';
+import { wagonCenter } from '../../src/game/raid/wagon.ts';
 
 test('low electricity warns each road cell before striking, reaches rear runners later and only hits grounded runners once', () => {
   const boss = new RaidBoss();
@@ -172,7 +173,8 @@ test('a bot jumps the low tile, holds the open flank through the pillars, then r
   }
   assert.ok(jumpedOverTile && dodgedPillars);
   assert.equal(bot.hp, hp);
-  assert.ok(bot.x < 0 && Math.abs(bot.x) < RAID_ELECTRIC_GRID.width / 2);
+  const flank = bot.x - wagonCenter(match.tick).x;
+  assert.ok(flank < 0 && Math.abs(flank) < RAID_ELECTRIC_GRID.width / 2);
 });
 
 test('late discharges progress row by row and reverse horizontally at both edges', () => {

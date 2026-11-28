@@ -7,7 +7,8 @@ import {
   Texture,
   type Scene,
 } from '@babylonjs/core';
-import { RAID_HZ, WAGON } from '../../../game/raid/raid-rules.ts';
+import { RAID_HZ } from '../../../game/raid/raid-rules.ts';
+import { wagonContact } from '../../../game/raid/wagon.ts';
 import { raidRunnerHeight, raidRunnerPositionAfter } from '../../../game/raid/runner-motion.ts';
 import type { RaidView } from '../../../game/raid/raid-view.ts';
 
@@ -69,7 +70,9 @@ export function createIgnitionFx(scene: Scene, material: StandardMaterial) {
       for (const burn of caster.heroView.burns ?? []) {
         const target = burn.target === 'wagon' ? undefined : view.runners[burn.target];
         if (target?.respawn) continue;
-        const center = target ? raidRunnerPositionAfter(target, subtick) : WAGON;
+        const center = target
+          ? raidRunnerPositionAfter(target, subtick)
+          : wagonContact(caster, view.tick + subtick);
         const floor = target ? raidRunnerHeight(target) : 1.4;
         const age = view.tick + subtick - (burn.next - RAID_HZ);
         const pulse = Math.exp(-Math.max(0, age) / 5);

@@ -57,7 +57,7 @@ class Swift implements HeroEvents {
   onBeforeHits(c: HeroCombat) {
     const dagger = this.view.trackingDagger;
     if (!dagger) return;
-    const point = c.position(dagger.target);
+    const point = c.position(dagger.target, dagger);
     if (!point || (c.tick() <= dagger.releaseTick && actionLocked(c.self))) {
       this.view.trackingDagger = null;
       return;

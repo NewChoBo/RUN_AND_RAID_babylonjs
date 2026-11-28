@@ -52,7 +52,8 @@ export interface CombatRead {
   readonly self: RaidRunner;
   tick(): number;
   readonly stats: HeroStats;
-  position(target: RaidTarget): RaidRunner | RaidPoint | undefined;
+  /** Enemy runner or the closest point of the wagon body to the given origin (default: self). */
+  position(target: RaidTarget, from?: RaidPoint): RaidRunner | RaidPoint | undefined;
   ally(slot: number): RaidRunner | undefined;
   enemies(center: RaidPoint, radius: number): RaidTarget[];
   height(runner: RaidRunner): number;

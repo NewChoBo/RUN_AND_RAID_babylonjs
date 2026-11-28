@@ -30,6 +30,7 @@ import { createRaidCauseway } from './raid-causeway.ts';
 import { createRaidHorizon } from './raid-horizon.ts';
 import { loadInkApparition } from '../chapter/chapter-creatures.ts';
 import { RAID_COUNTERS } from '../../../game/raid/raid-boss.ts';
+import { WAGON_BODY, wagonCenter } from '../../../game/raid/wagon.ts';
 import {
   RAID_BASIC_HALF_ANGLE,
   RAID_CAMERA,
@@ -39,7 +40,6 @@ import {
 import {
   type RaidHero,
   raidBasicReach,
-  WAGON,
   raidRoadTravel,
   raidRunnerHeight,
   raidRunnerPositionAfter,
@@ -123,7 +123,6 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   const { ground, update: drawCauseway } = createRaidCauseway(scene);
   const horizon = createRaidHorizon(scene);
   const wagon = new TransformNode('siege wagon', scene);
-  wagon.position.z = WAGON.z + 1;
   box('wagon bed', wagon, 0, 1.05, 0, 3.4, 0.4, 3.55, iron);
   box('wagon keep', wagon, 0, 1.95, 0, 2.88, 1.6, 3.25, oak);
   box('armored crown', wagon, 0, 2.85, 0, 3.28, 0.32, 3.6, iron);
@@ -152,7 +151,21 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
       for (const ang of [0, Math.PI / 3, (Math.PI * 2) / 3])
         box('wheel spokes', pivot, 0, 0, 0, 0.18, 1.34, 0.12, brass).rotation.x = ang;
     }
-  const wagonBody: RaidTargetBody = { target: 'wagon', meshes: wagon.getChildMeshes() };
+  const carriageMeshes = wagon.getChildMeshes();
+  for (const mesh of carriageMeshes) mesh.overlayColor.set(1, 1, 1);
+  const hull = box(
+    'wagon hit volume',
+    wagon,
+    0,
+    1.7,
+    0,
+    2 * WAGON_BODY.halfWidth,
+    3.4,
+    2 * WAGON_BODY.halfDepth,
+    iron,
+  );
+  hull.visibility = 0;
+  const wagonBody: RaidTargetBody = { target: 'wagon', meshes: [hull] };
   const bossMount = new TransformNode('wagon commander', scene);
   bossMount.parent = wagon;
   bossMount.position.set(0, 3.02, -0.35);
@@ -277,6 +290,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     return actor;
   }
   let pullback = 0;
+  let wagonFlash = 0;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   function render(
     view: RaidView,
@@ -288,10 +302,27 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
   ) {
     const player = view.runners[slot]!;
     const localTeam = player.team;
-    const scroll = raidRoadTravel(view.tick + subtick);
+    const frameTick = view.tick + subtick;
+    const scroll = raidRoadTravel(frameTick);
+    const carriage = wagonCenter(frameTick);
+    wagon.position.set(carriage.x, 0, carriage.z);
+    const lastHit = view.healthChanges.reduce(
+      (tick, change) =>
+        change.target === 'wagon' && change.amount < 0 ? Math.max(tick, change.tick) : tick,
+      -Infinity,
+    );
+    const flash =
+      Math.max(0, 1 - (frameTick - lastHit) / 3) * (reducedMotion.matches ? 0.22 : 0.65);
+    if (wagonFlash !== flash) {
+      wagonFlash = flash;
+      for (const mesh of carriageMeshes) {
+        mesh.renderOverlay = flash > 0;
+        mesh.overlayAlpha = flash;
+      }
+    }
     const positions = view.runners.map((r) => raidRunnerPositionAfter(r, subtick));
     const runnerPosition = positions[player.slot]!;
-    drawCauseway(runnerPosition.z, view.tick + subtick);
+    drawCauseway(runnerPosition.z, frameTick);
     horizon.position.z = runnerPosition.z;
     for (const wheel of wheels) wheel.rotation.x = scroll / 0.77;
     selfMark.setEnabled(!player.respawn && !view.result);
@@ -335,18 +366,24 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     }
     drawQuarryMarks(view, positions, subtick, barHeight);
     const target =
-      player.target === null ? null : player.target === 'wagon' ? WAGON : positions[player.target];
+      player.target === null
+        ? null
+        : player.target === 'wagon'
+          ? carriage
+          : positions[player.target];
     lock.setEnabled(!!target && (!aimKind || aimKind === 'field' || aimKind === 'pulse'));
     if (target) {
       lock.position.set(target.x, 0.085, target.z);
-      lock.scaling.setAll(player.target === 'wagon' ? 1 : RAID_RUNNER_SCALE);
+      if (player.target === 'wagon')
+        lock.scaling.set((WAGON_BODY.halfWidth + 0.3) / 0.8, 1, (WAGON_BODY.halfDepth + 0.3) / 0.8);
+      else lock.scaling.setAll(RAID_RUNNER_SCALE);
     }
     const call = view.calls[localTeam];
     const mark = call && 'target' in call ? call : null;
     callMarker.setEnabled(!!mark && !view.result);
     if (mark) {
       const onWagon = mark.target === 'wagon';
-      const point = onWagon ? WAGON : positions[mark.target]!;
+      const point = onWagon ? carriage : positions[mark.target]!;
       const height = onWagon
         ? boss
           ? 5.85
@@ -385,7 +422,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
         : goal + (pullback - goal) * Math.exp(-dt / 0.1);
     const pose = raidCameraPose(runnerPosition, pullback);
     // Keep the wagon readable when the runner brakes far behind it.
-    const fogOffset = pullback + Math.max(0, WAGON.z - runnerPosition.z - 36);
+    const fogOffset = pullback + Math.max(0, carriage.z - runnerPosition.z - 36);
     scene.fogStart = 31 + fogOffset;
     scene.fogEnd = 115 + fogOffset;
     camera.position.copyFromFloats(pose.eye.x, pose.eye.y, pose.eye.z);

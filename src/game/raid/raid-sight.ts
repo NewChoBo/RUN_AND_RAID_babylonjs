@@ -59,6 +59,28 @@ export function inRaidSight(
     depth >= RAID_CAMERA.near &&
     depth <= RAID_CAMERA.far &&
     Math.abs(up) <= depth * halfSlope &&
-    Math.abs(right) <= depth * halfSlope * aspect
+    Math.abs(right) <= depth * halfSlope * aspect + 1e-10
   );
+}
+
+/** Clip the wagon's near-to-far side at its aim height. The chase camera looks straight along +Z. */
+export function visibleWagonSide(
+  runner: RaidPoint,
+  near: RaidPoint,
+  farZ: number,
+  aspect: number,
+  pullback = 0,
+) {
+  const height = 2;
+  if (inRaidSight(runner, near, height, aspect, pullback)) return near;
+  const far = { x: near.x, z: farZ };
+  if (!inRaidSight(runner, far, height, aspect, pullback)) return;
+  // Both endpoints stand in front of the chase camera. At this height only the side plane
+  // can cut the edge of the carriage. Solve |right| = depth * tan(fov/2) * aspect.
+  const { eye, look } = raidCameraPose(runner, pullback);
+  const dy = look.y - eye.y,
+    dz = look.z - eye.z;
+  const depth = Math.abs(near.x - eye.x) / (halfSlope * aspect);
+  const z = eye.z + (depth * Math.hypot(dy, dz) - (height - eye.y) * dy) / dz;
+  return { x: near.x, z: Math.max(near.z, Math.min(farZ, z)) };
 }

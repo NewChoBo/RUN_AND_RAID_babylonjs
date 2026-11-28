@@ -16,7 +16,14 @@ import { RaidFields } from './combat/active-fields.ts';
 import { RaidHitResolution } from './combat/hit-resolution.ts';
 export { raidBossBonusPercent } from './combat/hit-resolution.ts';
 import { RaidBoss } from './raid-boss.ts';
-import { inBasicAttackArc, inRaidSight, raidAimPullback } from './raid-sight.ts';
+import {
+  inBasicAttackArc,
+  inRaidSight,
+  raidAimPullback,
+  RAID_BASIC_HALF_ANGLE,
+  visibleWagonSide,
+} from './raid-sight.ts';
+import { WAGON_BODY, wagonCenter, wagonContact, wagonSectorContact } from './wagon.ts';
 import { raidActiveAction, raidFacing } from './raid-facing.ts';
 import {
   HEROES,
@@ -36,7 +43,6 @@ import {
   RAID_SKILL_RANGE,
   RAID_TARGETS,
   ROUND_TICKS,
-  WAGON,
   WAGON_HP,
   distance,
 } from './raid-rules.ts';
@@ -278,8 +284,8 @@ export class RaidMatch implements RaidView {
     }
     return startRaidJump(r, held === true);
   }
-  #position(r: Runner, target: RaidTarget) {
-    if (target === 'wagon') return WAGON;
+  #position(r: Runner, target: RaidTarget, from: RaidPoint = r): RaidPoint | Runner | undefined {
+    if (target === 'wagon') return wagonContact(from, this.tick);
     const other = this.#runners[target];
     return other && other.team !== r.team && !other.respawn ? other : undefined;
   }
@@ -287,9 +293,20 @@ export class RaidMatch implements RaidView {
     if (target === null) return;
     const point = this.#position(r, target);
     if (!point) return;
+    if (target === 'wagon') return this.#visibleWagonSide(r, point, pullback);
     if ('heroView' in point && (point.heroView.concealedUntil ?? 0) > this.tick) return;
     const height = 'jumping' in point ? 1 + raidRunnerHeight(point) : 2;
     if (this.#inSight(r, point, height, pullback)) return point;
+  }
+  #visibleWagonSide(r: Runner, near: RaidPoint, pullback = 0) {
+    const farZ = wagonCenter(this.tick).z + WAGON_BODY.halfDepth;
+    return visibleWagonSide(
+      r,
+      near,
+      farZ,
+      r.slot === 0 ? this.#playerAspect() : standardAspect,
+      pullback,
+    );
   }
   #inSight(r: Runner, point: RaidPoint, height: number, pullback: number) {
     // Bots see their own chase view, independently of the local player's device.
@@ -339,7 +356,7 @@ export class RaidMatch implements RaidView {
   }
   #areaTargets(r: Runner, center: RaidPoint, radius: number) {
     return RAID_TARGETS.filter((id) => {
-      const point = this.#position(r, id);
+      const point = this.#position(r, id, center);
       return point && distance(center, point) <= radius;
     });
   }
@@ -351,7 +368,7 @@ export class RaidMatch implements RaidView {
       self: r,
       stats: HEROES[r.hero],
       tick: () => this.tick,
-      position: (id) => this.#position(r, id),
+      position: (id, from) => this.#position(r, id, from),
       ally: (id) => {
         const ally = this.#runners[id];
         return ally?.team === r.team && !ally.respawn ? ally : undefined;
@@ -364,7 +381,11 @@ export class RaidMatch implements RaidView {
       controlImmune: () =>
         r.controlGuardUntil > this.tick || !!this.#heroes[r.slot]!.events.resistsControl?.(r),
       height: raidRunnerHeight,
-      targetPoint: (id) => (id === 'wagon' ? WAGON : (this.#runners[id] ?? null)),
+      targetPoint: (id, from = r) => {
+        if (id !== 'wagon') return this.#runners[id] ?? null;
+        const nearest = wagonContact(from, this.tick);
+        return this.#visibleWagonSide(r, nearest, raidAimPullback('target')) ?? nearest;
+      },
       canTarget: (id) =>
         !!this.#active(r.slot) && !!this.#visibleTarget(r, id, raidAimPullback('target')),
       canShield: (id, range) => this.#wardInRange(r.slot, id, range),
@@ -485,7 +506,6 @@ export class RaidMatch implements RaidView {
     const point = this.#position(r, target);
     if (!point) return;
     this.#hits.enqueue({ from: r.slot, target, amount, skill, designated, rule });
-    return point;
   }
   #record(
     r: Runner,
@@ -596,6 +616,10 @@ export class RaidMatch implements RaidView {
     this.#impact(r, dash.skill, 'dashEnd', dash.target);
   }
   #basicTarget(r: Runner, target: RaidTarget | null) {
+    if (target === 'wagon') {
+      const point = wagonSectorContact(r, this.tick, RAID_BASIC_HALF_ANGLE);
+      return point ? this.#visibleWagonSide(r, point) : undefined;
+    }
     const point = this.#visibleTarget(r, target);
     return point && inBasicAttackArc(r, point) ? point : undefined;
   }
@@ -604,32 +628,31 @@ export class RaidMatch implements RaidView {
     const reach = raidBasicReach(r, this.tick);
     // Prefer the lock in reach, then the nearest legal target. A distant lock cannot suppress melee.
     let target = r.taunt?.from ?? r.target;
-    const point = this.#basicTarget(r, target);
+    let point = this.#basicTarget(r, target);
     if (target === null || !point || distance(r, point) > reach) {
       if (r.taunt) return;
       let nearest: number = reach;
-      let found: RaidTarget | undefined;
+      point = undefined;
       for (const candidate of RAID_TARGETS) {
         const p = this.#basicTarget(r, candidate);
         if (p && distance(r, p) <= nearest) {
           nearest = distance(r, p);
-          found = candidate;
+          target = candidate;
+          point = p;
         }
       }
-      if (found === undefined) return;
-      target = found;
     }
+    if (target === null || !point) return;
     const attack = this.#heroes[r.slot]!.events.onBasicAttack?.(this.#contexts[r.slot]!);
-    const hitPoint = this.#strike(r, target, attack?.amount ?? stats.basicAttack);
+    this.#strike(r, target, attack?.amount ?? stats.basicAttack);
     r.basic = attack?.cooldown ?? stats.cooldown;
-    if (hitPoint)
-      this.#record(
-        r,
-        'basic',
-        hitPoint,
-        undefined,
-        r.basic === stats.cooldown ? undefined : { basicSpeed: stats.cooldown / r.basic },
-      );
+    this.#record(
+      r,
+      'basic',
+      point,
+      undefined,
+      r.basic === stats.cooldown ? undefined : { basicSpeed: stats.cooldown / r.basic },
+    );
   }
   step() {
     if (this.#result) return;
@@ -724,7 +747,7 @@ export class RaidMatch implements RaidView {
       this.#projectiles.step(
         this.runners,
         previous,
-        WAGON,
+        this.tick,
         raidRunnerHeight,
         (slot, target, skill, hit) => {
           const c = this.#contexts[slot]!;

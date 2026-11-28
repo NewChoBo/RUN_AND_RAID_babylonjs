@@ -1,5 +1,5 @@
 import { Color3, Mesh, MeshBuilder, StandardMaterial, Texture, type Scene } from '@babylonjs/core';
-import { WAGON } from '../../../game/raid/raid-rules.ts';
+import { wagonCenter } from '../../../game/raid/wagon.ts';
 import type { RaidPoint, RaidView } from '../../../game/raid/raid-view.ts';
 import { raidRunnerHeight } from '../../../game/raid/runner-motion.ts';
 
@@ -45,7 +45,7 @@ export function createQuarryMarks(scene: Scene) {
         continue;
       }
       const mark = (marks[caster.slot] ??= makeMark());
-      const point = target === 'wagon' ? WAGON : positions[target]!;
+      const point = target === 'wagon' ? wagonCenter(view.tick + subtick) : positions[target]!;
       const height =
         target === 'wagon'
           ? 4.3

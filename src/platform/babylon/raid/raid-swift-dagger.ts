@@ -1,7 +1,8 @@
 import { MeshBuilder, Quaternion, TransformNode, Vector3, type Scene } from '@babylonjs/core';
 import { daggerSpeed } from '../../../content/raid/heroes/swift.ts';
 import type { TrackingDagger } from '../../../game/raid/heroes/swift.ts';
-import { RAID_HZ, WAGON } from '../../../game/raid/raid-rules.ts';
+import { RAID_HZ } from '../../../game/raid/raid-rules.ts';
+import { wagonContact } from '../../../game/raid/wagon.ts';
 import { raidRunnerHeight, raidRunnerPositionAfter } from '../../../game/raid/runner-motion.ts';
 import type { RaidView } from '../../../game/raid/raid-view.ts';
 import { raidMaterial } from './raid-material.ts';
@@ -49,7 +50,9 @@ export function createSwiftDaggerFx(scene: Scene) {
       if (!shot || view.tick < shot.releaseTick || runner.respawn) continue;
       const target = shot.target === 'wagon' ? undefined : view.runners[shot.target];
       if (target?.respawn) continue;
-      const end = target ? raidRunnerPositionAfter(target, subtick) : WAGON;
+      const end = target
+        ? raidRunnerPositionAfter(target, subtick)
+        : wagonContact(shot, view.tick + subtick);
       const to = new Vector3(end.x, target ? raidRunnerHeight(target, subtick) + 1 : 1.8, end.z);
       const root = (daggers[count] ??= createDagger());
       count++;

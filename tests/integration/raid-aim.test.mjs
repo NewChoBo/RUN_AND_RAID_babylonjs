@@ -96,7 +96,10 @@ test('the ground guide starts at the caster, stops at reach and shows a field at
   const targeted = duelist.previewSkill(0, 1, WAGON, 'wagon');
   draw(targeted);
   assert.ok(!arrow.isEnabled() && footprint.isEnabled());
-  assert.deepEqual([footprint.position.x, footprint.position.z], [WAGON.x, WAGON.z]);
+  assert.deepEqual(
+    [footprint.position.x, footprint.position.z],
+    [targeted.point.x, targeted.point.z],
+  );
   const archer = new RaidMatch('longshot');
   for (const point of [WAGON, { x: 40, z: 2 }]) {
     const shot = archer.previewSkill(0, 0, point);

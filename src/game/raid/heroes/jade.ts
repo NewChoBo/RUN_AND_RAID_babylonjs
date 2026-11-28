@@ -4,6 +4,7 @@ import { defineHero, type CombatRead } from './hero-definition.ts';
 import { distance, RAID_HZ } from '../raid-rules.ts';
 import { noAttack } from '../skills/attack-rule.ts';
 import type { RaidPoint, RaidTarget } from '../raid-view.ts';
+import { wagonSegmentContact } from '../wagon.ts';
 
 const carrier = (c: CombatRead) => c.ally(c.self.lastWard ?? c.self.slot) ?? c.self;
 const point = ({ x, z }: RaidPoint) => ({ x, z });
@@ -49,7 +50,7 @@ export const jade = defineHero(stats, () => ({}), [
       const lines = [];
       for (let hop = 0; hop < 4; hop++) {
         const candidates = [
-          ...c.enemies(from, 7).map((id) => ({ id, enemy: true, pos: c.position(id)! })),
+          ...c.enemies(from, 7).map((id) => ({ id, enemy: true, pos: c.position(id, from)! })),
           ...c.allies(from, 7).map((id) => ({ id, enemy: false, pos: c.ally(id)! })),
         ].filter((candidate) => candidate.id !== current);
         candidates.sort(
@@ -83,18 +84,18 @@ export const jade = defineHero(stats, () => ({}), [
         const angle = heading + (i * 2 * Math.PI) / 5;
         const dx = Math.sin(angle),
           dz = Math.cos(angle);
-        lines.push({
-          from: point(origin),
-          to: { x: origin.x + dx * length, z: origin.z + dz * length },
-        });
+        const to = { x: origin.x + dx * length, z: origin.z + dz * length };
+        lines.push({ from: point(origin), to });
         for (const id of c.enemies(origin, length + 0.6)) {
-          const target = c.position(id)!;
-          const x = target.x - origin.x,
-            z = target.z - origin.z;
-          const along = dx * x + dz * z;
-          // The wagon has a body. A ray can cross its hull while missing its centre.
-          const width = id === 'wagon' ? 1.8 : 0.6;
-          if (along < 0 || along > length || Math.abs(x * dz - z * dx) > width) continue;
+          if (id === 'wagon') {
+            if (wagonSegmentContact(origin, to, c.tick()) === null) continue;
+          } else {
+            const target = c.position(id)!;
+            const x = target.x - origin.x,
+              z = target.z - origin.z;
+            const along = dx * x + dz * z;
+            if (along < 0 || along > length || Math.abs(x * dz - z * dx) > 0.6) continue;
+          }
           c.strike(id, { powerScale: hitTargets.has(id) ? 2.1 : 6 }, cast.skill);
           hitTargets.add(id);
         }

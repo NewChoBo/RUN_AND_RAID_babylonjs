@@ -21,6 +21,9 @@ import { raidRageDamageToFull, raidRageGain } from '../../src/content/raid/rage.
 import { driveRaidBots } from '../../src/game/raid/raid-bots.ts';
 import { RAID_COUNTERS, RAID_ELECTRIC_GRID } from '../../src/game/raid/raid-boss.ts';
 import { RAID_FRONT_Z } from '../../src/game/raid/runner-motion.ts';
+import { distance } from '../../src/game/raid/raid-rules.ts';
+import { wagonContact, wagonCenter, wagonSectorContact } from '../../src/game/raid/wagon.ts';
+import { RAID_BASIC_HALF_ANGLE } from '../../src/game/raid/raid-sight.ts';
 import { GameSession } from '../../src/game/session/game-session.ts';
 
 function advance(match, ticks) {
@@ -320,7 +323,14 @@ test('forward dashes and blinks respect the running limit even when the locked b
       match.step();
       assert.ok(r.z <= RAID_FRONT_Z + 1e-8, hero);
     }
-    assert.ok(r.z <= RAID_FRONT_Z && r.z >= RAID_FRONT_Z - 0.5, hero);
+    if (input === 'wagon') {
+      assert.ok(
+        r.z <= RAID_FRONT_Z && distance(r, wagonContact(r, match.tick)) <= HEROES[hero].reach,
+        hero,
+      );
+    } else {
+      assert.ok(r.z <= RAID_FRONT_Z && r.z >= RAID_FRONT_Z - 0.5, hero);
+    }
     if (aim) {
       assert.ok(Math.hypot(r.x - aim.dash.end.x, r.z - aim.dash.end.z) < 1e-8);
       assert.ok(r.x > WAGON.x);
@@ -335,7 +345,8 @@ test('forward dashes and blinks respect the running limit even when the locked b
 test('a leap aimed over the wagon lands on the last legal road tile and applies only overlapping splash', () => {
   for (const [x, hitsBoss] of [
     [0, true],
-    [3, false],
+    [3, true],
+    [6, false],
   ]) {
     const { match, send } = battle('hammer');
     const r = match.runners[0];
@@ -439,7 +450,7 @@ test('aim feedback distinguishes an empty cast, a hit and an unreachable point b
   const runner = match.runners[0];
   const rival = match.runners[2];
   assert.equal(match.previewSkill(0, 1, rival).status, 'needTarget');
-  const field = match.previewSkill(0, 2, { x: -5.7, z: 9 });
+  const field = match.previewSkill(0, 2, { x: -8, z: 9 });
   assert.equal(field.status, 'ready');
   assert.equal(field.count, 0);
   for (const point of [{ x: 8, z: 8 }, { x: runner.x, z: -15 }, { x: 0, z: WAGON.z + 4 }, WAGON]) {
@@ -469,7 +480,7 @@ test('aim feedback distinguishes an empty cast, a hit and an unreachable point b
   assert.equal(runner.cooldowns[1], 0);
   assert.ok(send(0, 'move', { side: 0, brake: 0 }));
   // Run until the actual muzzle-to-wagon distance is back inside the 16 m targeting range.
-  while (Math.hypot(runner.x - WAGON.x, runner.z - WAGON.z) > shot.range && match.tick < 150)
+  while (distance(runner, wagonContact(runner, match.tick)) > shot.range && match.tick < 150)
     match.step();
   assert.equal(match.previewSkill(0, 1, null, 'wagon').status, 'ready');
   assert.ok(send(0, 'cast', { skill: 1, target: 'wagon' }));
@@ -763,15 +774,18 @@ test('each runner opens fire as the wagon crosses the radius of their basic atta
     const player = match.runners[0];
     for (const r of match.runners) assert.ok(send(r.slot, 'move', { side: 0, brake: 1 }));
     advance(match, 75);
-    const distance = () => Math.hypot(WAGON.x - player.x, WAGON.z - player.z);
-    assert.ok(distance() > metres && player.basic === 0);
+    const gap = () => {
+      const contact = wagonSectorContact(player, match.tick, RAID_BASIC_HALF_ANGLE);
+      return contact ? distance(player, contact) : Infinity;
+    };
+    assert.ok(gap() > metres && player.basic === 0);
     assert.ok(send(0, 'move', { side: 0, brake: 0 }));
     const before = match.damage[0];
     for (let ticks = 0; ticks < 8 * RAID_HZ && !player.basic; ticks++) {
-      assert.ok(distance() > metres, hero);
+      assert.ok(gap() > metres, hero);
       match.step();
     }
-    assert.ok(player.basic > 0 && distance() <= metres, hero);
+    assert.ok(player.basic > 0 && gap() <= metres, hero);
     assert.equal(match.damage[0] - before, HEROES[hero].basicAttack, hero);
   }
 });
@@ -1251,9 +1265,11 @@ test('a bot-assisted round can destroy the wagon early and the result freezes th
   const { match, send } = battle(['rend', 'rime', 'bastion', 'jade']);
   for (let i = 0; i < ROUND_TICKS && !match.result; i++) {
     driveRaidBots(match, send);
+    const wagon = wagonCenter(match.tick);
+    send(0, 'move', { side: Math.max(-1, Math.min(1, wagon.x - match.runners[0].x)), brake: 0 });
     send(0, 'cast', { skill: 3, target: 'wagon' });
     send(0, 'cast', { skill: 1, target: 'wagon' });
-    send(0, 'cast', { skill: 2, ...WAGON });
+    send(0, 'cast', { skill: 2, ...wagon });
     match.step();
   }
   assert.equal(match.result.reason, 'destruction');
@@ -1346,18 +1362,20 @@ test('each loadout contests wagon damage per active team member with one objecti
         const r = match.runners[0];
         const priority = [3];
         const towers = r.heroView.turrets;
-        if (towers && !towers.some((t) => Math.hypot(t.x - WAGON.x, t.z - WAGON.z) <= 6))
+        const wagon = wagonCenter(match.tick);
+        const contact = wagonContact(r, match.tick);
+        if (towers && !towers.some((t) => distance(t, wagonContact(t, match.tick)) <= 6))
           priority.length = 0;
         if (hero === 'rildin') {
           // Advance closes on the road while the wagon keeps moving. Weave basics once in reach.
-          const distance = Math.hypot(WAGON.x - r.x, WAGON.z - r.z);
-          if (distance > raidBasicReach(r, match.tick)) priority.push(2);
-          if (distance <= match.skillRange(0, 0).range) priority.push(0);
+          const gap = distance(r, contact);
+          if (gap > raidBasicReach(r, match.tick)) priority.push(2);
+          if (gap <= match.skillRange(0, 0).range) priority.push(0);
         } else if (hero === 'longshot') {
           priority.push(1, 0);
         } else if (hero === 'jade') {
           const carrier = match.runners[r.lastWard ?? r.slot];
-          const gap = Math.hypot(WAGON.x - carrier.x, WAGON.z - carrier.z);
+          const gap = distance(carrier, wagonContact(carrier, match.tick));
           if (gap > 8) priority.length = 0;
           if (gap <= 6) priority.push(1);
           if (gap <= 7) priority.push(2);
@@ -1365,16 +1383,21 @@ test('each loadout contests wagon damage per active team member with one objecti
         } else priority.push(1, 2, 0);
         for (const skill of priority) {
           const kind = raidAimKind(hero, skill);
-          const gap = Math.hypot(WAGON.x - r.x, WAGON.z - r.z);
+          const gap = distance(r, contact);
           const placement =
             towers && gap > 5.99
-              ? { x: r.x + ((WAGON.x - r.x) * 5.99) / gap, z: r.z + ((WAGON.z - r.z) * 5.99) / gap }
-              : WAGON;
+              ? {
+                  x: r.x + ((contact.x - r.x) * 5.99) / gap,
+                  z: r.z + ((contact.z - r.z) * 5.99) / gap,
+                }
+              : towers
+                ? contact
+                : wagon;
           const payload =
             kind === 'field' || kind === 'leap'
               ? { skill, ...placement }
               : kind === 'direction'
-                ? { skill, dx: WAGON.x - r.x, dz: WAGON.z - r.z }
+                ? { skill, dx: wagon.x - r.x, dz: wagon.z - r.z }
                 : kind === 'target'
                   ? { skill, target: 'wagon' }
                   : kind === 'ward'

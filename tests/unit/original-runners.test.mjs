@@ -5,6 +5,7 @@ import { originalCooldownSeconds } from '../../src/content/raid/skill-cooldowns.
 import { RaidMatch, HEROES, ROUND_TICKS, RAID_HZ } from '../../src/game/raid/raid-match.ts';
 import { practiceRoster, applyPick } from '../../src/game/raid/raid-draft.ts';
 import { RaidSimulation } from '../../src/game/raid/raid-simulation.ts';
+import { wagonContact } from '../../src/game/raid/wagon.ts';
 import { driveRaidBots } from '../../src/game/raid/raid-bots.ts';
 import { HERO_IDS, ORIGINAL_HERO_IDS, borrowedKits } from '../../src/game/raid/heroes/hero-id.ts';
 
@@ -336,7 +337,7 @@ test('Jade casts from the orb carrier, chains through an ally and reduces repeat
   assert.deepEqual(chain[1].to, { x: 0, z: 4 });
   match.step();
   assert.equal(carrier.hp, allyHp);
-  assert.deepEqual(chain[2].to, { x: 0, z: 10 });
+  assert.deepEqual(chain[2].to, wagonContact(chain[1].to, match.actions.at(-1).tick));
   assert.deepEqual(chain[3].to, { x: 0, z: 4 });
   assert.equal(hp - rival.hp, 60);
   // A single enemy and the caster can relay four jumps; the second hit deals half damage.

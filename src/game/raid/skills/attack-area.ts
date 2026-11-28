@@ -1,5 +1,7 @@
 import type { CombatRead } from '../heroes/hero-definition.ts';
 import type { RaidPoint } from '../raid-view.ts';
+import { wagonSectorContact } from '../wagon.ts';
+import { distance } from '../raid-rules.ts';
 
 /** Horizontal metres in the wagon frame. Sectors face forward (+Z), with angles in radians. */
 interface AreaRange {
@@ -26,6 +28,10 @@ export function areaTargets(read: CombatRead, area: AttackArea, center: RaidPoin
   const enemies = read.enemies(center, radius);
   if (area.kind === 'circle' && area.belowHeight === undefined) return enemies;
   return enemies.filter((id) => {
+    if (id === 'wagon' && area.kind === 'sector') {
+      const contact = wagonSectorContact(center, read.tick(), area.halfAngle);
+      return contact !== null && distance(center, contact) <= radius;
+    }
     const point = read.position(id)!;
     if (
       area.belowHeight !== undefined &&

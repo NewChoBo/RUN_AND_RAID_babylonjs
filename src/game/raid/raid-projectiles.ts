@@ -1,6 +1,9 @@
 import type { ProjectileAttack, HitRule } from './skills/attack-rule.ts';
 import type { RaidHero } from './heroes/hero-id.ts';
 import type { RaidPoint, RaidRunner, RaidTarget, Skill } from './raid-view.ts';
+import { standardContact } from '../../content/raid/projectile-contact.ts';
+import { wagonContact, wagonProjectileContact } from './wagon.ts';
+import { distance } from './raid-rules.ts';
 
 export interface RaidDirection {
   dx: number;
@@ -84,7 +87,7 @@ export class RaidProjectiles {
   step(
     runners: readonly RaidRunner[],
     previous: readonly (RaidPoint & { height: number })[],
-    wagon: RaidPoint,
+    tick: number,
     height: (runner: RaidRunner) => number,
     strike: (caster: number, target: RaidTarget, skill: Skill, hit: HitRule) => void,
   ) {
@@ -93,9 +96,16 @@ export class RaidProjectiles {
       const dx = p.dx * step,
         dz = p.dz * step;
       const contacts: { t: number; target: RaidTarget }[] = [];
-      // The carriage body extends from the rear standard to the front crown.
-      const wagonTime = contact(p.x - wagon.x, p.z - wagon.z - 1, dx, dz, 1.8, 1.9);
-      if (Number.isFinite(wagonTime)) contacts.push({ t: wagonTime, target: 'wagon' });
+      // Runner profiles already include the runner body. Only the extra blade width sweeps the hull.
+      const wagonTime = wagonProjectileContact(
+        p,
+        { x: p.x + dx, z: p.z + dz },
+        tick,
+        p.dx,
+        p.dz,
+        Math.max(0, p.attack.flight.contact.halfWidth - standardContact.halfWidth),
+      );
+      if (wagonTime !== null) contacts.push({ t: wagonTime, target: 'wagon' });
       for (const r of runners) {
         if (r.respawn || r.team === runners[p.caster]!.team) continue;
         const old = previous[r.slot]!;
@@ -146,7 +156,11 @@ export class RaidProjectiles {
               if (Math.hypot(ox - x, oz - z) <= p.attack.splashRadius)
                 strike(p.caster, other.slot, p.skill, p.attack.hit);
             }
-            if (target !== 'wagon' && Math.hypot(wagon.x - x, wagon.z - z) <= p.attack.splashRadius)
+            const impact = { x, z };
+            if (
+              target !== 'wagon' &&
+              distance(impact, wagonContact(impact, tick - 1 + t)) <= p.attack.splashRadius
+            )
               strike(p.caster, 'wagon', p.skill, p.attack.hit);
           }
         }

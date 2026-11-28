@@ -46,7 +46,7 @@ class Workshop {
     for (const t of this.view.turrets) {
       const pos = t;
       if (t.target !== undefined) {
-        const tracked = c.position(t.target);
+        const tracked = c.position(t.target, pos);
         if (!tracked || distance(pos, tracked) > ranges[t.slot]) {
           t.target = undefined;
           t.pulses = 0;
@@ -56,7 +56,7 @@ class Workshop {
       // Acquire from the installation, even when its owner has moved past the target.
       const targets = c.enemies(pos, ranges[t.slot]);
       const target = targets.sort(
-        (a, b) => distance(pos, c.position(a)!) - distance(pos, c.position(b)!),
+        (a, b) => distance(pos, c.position(a, pos)!) - distance(pos, c.position(b, pos)!),
       )[0];
       if (target === undefined) {
         t.target = undefined;
@@ -66,7 +66,7 @@ class Workshop {
       t.pulses = t.target === target ? t.pulses + 1 : 1;
       t.target = target;
       t.next = tick + periods[t.slot];
-      const to = c.position(target)!;
+      const to = c.position(target, pos)!;
       t.shot = { x: to.x, z: to.z, tick };
       c.strike(target, hits[t.slot], t.slot);
       if (

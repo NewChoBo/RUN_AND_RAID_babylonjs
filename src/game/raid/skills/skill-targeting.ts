@@ -14,7 +14,7 @@ import type { CombatRead } from '../heroes/hero-definition.ts';
 import type { ResolvedCast, SkillInfo } from './skill-rule.ts';
 
 export interface TargetRead extends CombatRead {
-  targetPoint(id: RaidTarget): RaidPoint | null;
+  targetPoint(id: RaidTarget, from?: RaidPoint): RaidPoint | null;
   canTarget(id: RaidTarget): boolean;
   canShield(id: number, range: number): boolean;
   alliesInArea(center: RaidPoint, radius: number): number;
@@ -35,7 +35,7 @@ export function resolveSkill(
   const target = kind === 'target' || kind === 'ward' ? id : undefined;
   const origin = rule.origin?.(combat) ?? combat.self;
   const requested =
-    kind === 'pulse' ? origin : target === undefined ? ground : combat.targetPoint(target);
+    kind === 'pulse' ? origin : target === undefined ? ground : combat.targetPoint(target, origin);
   const point =
     kind === 'leap' && requested ? limitRaidLeap(combat.self, requested, range) : requested;
   const metres = point ? distance(origin, point) : null;
