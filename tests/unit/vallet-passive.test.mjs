@@ -18,9 +18,9 @@ test('each successful cast accelerates actual basic shots and their animation cu
   const base = HEROES.vallet.cooldown;
   for (const [stacks, interval] of [
     [0, base],
-    [1, 19],
-    [2, 15],
-    [3, 13],
+    [1, 27],
+    [2, 22],
+    [3, 18],
   ]) {
     const { match, shooter, advance, shots } = practice();
     if (stacks >= 1) assert.ok(match.cast(0, 0, 'wagon'));
@@ -46,7 +46,7 @@ test('a real cast speeds up the remaining recovery; invalid input, cooldown and 
   const { match, shooter, advance, shots } = practice();
   advance(11);
   const remaining = shooter.basic;
-  assert.equal(remaining, 14);
+  assert.equal(remaining, 24);
   assert.equal(match.cast(0, 0, 1), false);
   assert.equal(match.cast(0, 3, { dx: 1, dz: 0 }), false);
   assert.equal(shooter.basic, remaining);
@@ -54,9 +54,9 @@ test('a real cast speeds up the remaining recovery; invalid input, cooldown and 
   assert.ok(match.cast(0, 0, 'wagon'));
   assert.equal(match.cast(0, 0, 'wagon'), false);
   assert.equal(shooter.heroView.firingStacks, 1);
-  assert.equal(shooter.basic, 12);
-  advance(12);
-  assert.equal(shots().at(-1).tick, 23);
+  assert.equal(shooter.basic, 20);
+  advance(20);
+  assert.equal(shots().at(-1).tick, 31);
   assert.equal(shooter.heroView.firingStacks, 1);
 });
 
@@ -76,7 +76,7 @@ test('casting at the cap refreshes three seconds; automatic landing does not ref
   assert.ok(remaining > 1);
   advance(1);
   assert.equal(shooter.heroView.firingStacks, 0);
-  assert.equal(shooter.basic, Math.ceil((remaining * HEROES.vallet.cooldown) / 13) - 1);
+  assert.equal(shooter.basic, Math.ceil((remaining * HEROES.vallet.cooldown) / 18) - 1);
 });
 
 test('knockout clears the firing bonus and escape state before respawn', () => {

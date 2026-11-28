@@ -82,14 +82,14 @@ test('Piercing Shot deals half the previous damage after each target', () => {
 
 test('chart grades control starting health, unmodified basic damage and ticks between hits', () => {
   for (const [hero, hp, basic, interval] of [
-    ['flare', 105, 10, 26],
-    ['kali', 115, 10, 22],
-    ['kaiken', 115, 12, 22],
-    ['hammer', 140, 12, 24],
-    ['swift', 140, 12, 24],
-    ['magnus', 155, 14, 26],
-    ['silurian', 140, 12, 24],
-    ['bird', 96, 10, 22],
+    ['flare', 105, 12, 36],
+    ['kali', 115, 12, 32],
+    ['kaiken', 115, 15, 32],
+    ['hammer', 140, 15, 34],
+    ['swift', 140, 15, 34],
+    ['magnus', 155, 18, 36],
+    ['silurian', 140, 15, 34],
+    ['bird', 96, 12, 32],
   ]) {
     const match = new RaidMatch([hero, 'rend', 'bastion', 'rime']);
     const runner = match.runners[0];
@@ -203,6 +203,25 @@ test('Alice bot prioritizes a wounded partner', () => {
   assert.equal(m.runners[1].hp, 60);
 });
 
+test('only a successful Ice Blink delays Froze’s next basic and preserves longer recovery', () => {
+  for (const remaining of [0, 3, 14]) {
+    const match = arena('froze', 'alice');
+    const [caster, , enemy] = match.runners;
+    caster.basic = remaining;
+    assert.equal(match.cast(0, 1, -1), false);
+    assert.equal(caster.basic, remaining);
+    assert.ok(match.cast(0, 1, enemy.slot));
+    const recovery = Math.max(remaining, 6);
+    assert.equal(caster.basic, recovery);
+    assert.ok(match.cast(0, 2), 'Ice Shield is available during basic recovery');
+    const hp = enemy.hp;
+    advance(match, recovery - 1);
+    assert.equal(enemy.hp, hp);
+    match.step();
+    assert.equal(enemy.hp, hp - HEROES.froze.basicAttack);
+  }
+});
+
 test('Froze spends ice crystals, flashes only chilled targets and absorbs one hostile skill', () => {
   const m = arena('froze', 'alice'),
     [r, , enemy] = m.runners;
@@ -214,9 +233,10 @@ test('Froze spends ice crystals, flashes only chilled targets and absorbs one ho
   assert.ok(m.cast(0, 0, enemy.slot));
   advance(m, 25);
   assert.equal(r.heroView.iceCrystals, 2);
+  const chilledHp = enemy.hp;
   assert.ok(m.cast(0, 1, enemy.slot));
   m.step();
-  assert.ok(enemy.hp < hp - 30);
+  assert.equal(enemy.hp, chilledHp - HEROES.froze.power * 4 * 1.25);
   assert.equal(r.heroView.iceCrystals, 0);
   assert.equal(m.cast(0, 2), false);
   enemy.x = 3; // Leave the first boss lane so the rival survives to test the shield.

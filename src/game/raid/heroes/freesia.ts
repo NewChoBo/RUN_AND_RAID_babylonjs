@@ -27,7 +27,7 @@ class Freesia implements HeroEvents {
   }
 }
 export const freesia = defineHero(
-  { hp: 96, basicAttack: 10, power: 10, reach: 8, cooldown: 22, radius: 4 },
+  { hp: 96, basicAttack: 12, power: 10, reach: 8, cooldown: 32, radius: 4 },
   () => new Freesia(),
   [
     {

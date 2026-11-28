@@ -74,12 +74,22 @@ test('a take survives action-history expiry and a new cast can interrupt recover
   assert.equal(player.update([cast], 0, 0, resolve).cue.id, 1);
 });
 
-test('rapid basic attacks finish their source take and queue only the latest follow-up', () => {
+test('basic attacks leave the end of their take free for locomotion during attack recovery', () => {
+  const player = new RaidActionPlayback();
+  const resolve = (cue) => ({ clip: 'basic', duration: 1, start: cue.tick });
+  const first = { id: 1, slot: 0, tick: 0, skill: 'basic' };
+  const next = { ...first, id: 2, tick: 34 };
+  assert.equal(player.update([first, next], 0, 29, resolve).cue, first);
+  assert.equal(player.update([first, next], 0, 30, resolve), undefined);
+  assert.equal(player.update([first, next], 0, 33.9, resolve), undefined);
+  assert.equal(player.update([first, next], 0, 34, resolve).start, 34);
+});
+
+test('an early follow-up starts on the actual strike and is never replayed after the last take', () => {
   const player = new RaidActionPlayback();
   const resolve = (cue) => ({ clip: 'basic', duration: 1, start: cue.tick });
   const basics = [0, 8, 16].map((tick, id) => ({ id: id + 1, slot: 0, tick, skill: 'basic' }));
-  assert.equal(player.update(basics, 0, 29, resolve).start, 0);
-  assert.equal(player.update([], 0, 30, resolve).cue.id, 3);
-  assert.equal(player.update([], 0, 45, resolve).start, 30);
-  assert.equal(player.update([], 0, 60, resolve), undefined);
+  assert.equal(player.update(basics, 0, 20, resolve).start, 16);
+  assert.equal(player.update([], 0, 30, resolve).start, 16);
+  assert.equal(player.update([], 0, 46, resolve), undefined);
 });

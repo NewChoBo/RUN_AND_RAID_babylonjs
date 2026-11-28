@@ -2,8 +2,9 @@ import type { ORIGINAL_HERO_IDS } from '../../game/raid/heroes/hero-id.ts';
 
 // The cafe chart (3424) publishes bars, not absolute values. These scales are in game units.
 const health = { 2: 105, 3: 115, 4: 140, 5: 155 };
-const basicDamage = { 3: 10, 4: 12, 5: 14 };
-const attackIntervalTicks = { 3: 26, 4: 24, 5: 22 };
+const basicDamage = { 3: 12, 4: 15, 5: 18 };
+// Start-to-start at 30 Hz. The longest default basic take is 30 ticks.
+const attackIntervalTicks = { 3: 36, 4: 34, 5: 32 };
 
 // The distances are calibrated in chase metres; the source publishes only four relative grades.
 const basicReach = { 1: 3.5, 2: 4.5, 4: 9, 5: 11 };

@@ -5,6 +5,9 @@ import { RAID_HZ } from '../raid-rules.ts';
 import { slow, stun } from '../raid-control.ts';
 import { bolt, sweep } from '../skills/skill-effects.ts';
 
+// The May 25 patch adds a short delay to basic attacks after Ice Blink. The exact duration is unknown.
+const blinkBasicRecoveryTicks = 6;
+
 class Frostbite implements HeroEvents {
   private recharge = 3 * RAID_HZ;
   readonly view = { iceCrystals: 5, guardUntil: 0 };
@@ -59,6 +62,7 @@ export const froze = defineHero(
           x: cast.point.x - 0.85 * Math.sin(facing),
           z: cast.point.z - 0.85 * Math.cos(facing),
         });
+        c.self.basic = Math.max(c.self.basic, blinkBasicRecoveryTicks);
         if ((state.chilledUntil.get(cast.target) ?? 0) > c.tick())
           c.strike(cast.target, { powerScale: 4, control: [slow(RAID_HZ, 15)] }, cast.skill, true);
       },

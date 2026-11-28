@@ -3,8 +3,9 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import outfits from '../../src/content/raid/published-outfits.json' with { type: 'json' };
-import { battleOutfits } from '../../src/content/raid/battle-outfits.ts';
+import { battleOutfit, battleOutfits } from '../../src/content/raid/battle-outfits.ts';
 import { ORIGINAL_HERO_IDS, PRACTICE_HERO_IDS } from '../../src/game/raid/heroes/hero-id.ts';
+import { HEROES, RAID_HZ } from '../../src/game/raid/raid-match.ts';
 
 test('every original champion battle outfit and each practice runner includes a waiting motion', () => {
   for (const outfit of battleOutfits.filter((o) => ORIGINAL_HERO_IDS.includes(o.group))) {
@@ -69,6 +70,9 @@ test('each published Player outfit embeds the advertised clips and renders its b
       outfit.model,
     );
     if (outfit.clips.includes('run')) {
+      const playableOriginal =
+        ORIGINAL_HERO_IDS.includes(outfit.group) &&
+        battleOutfit(outfit.group, outfit.group + '/' + outfit.skin);
       for (const clip of doc.animations) {
         const { seconds, takes } = clip.extras.sourceTiming;
         const duration = takes.reduce(
@@ -80,6 +84,10 @@ test('each published Player outfit embeds the advertised clips and renders its b
           Math.max(...inputs.map((a) => a.max[0])) - Math.min(...inputs.map((a) => a.min[0]));
         assert.ok(duration > 0 && Math.abs(seconds - duration) < 1e-6, path);
         assert.ok(Math.abs(actual - duration) < 1e-4, path + '/' + clip.name);
+        if (playableOriginal && (clip.name === 'basic' || clip.name === 'shieldBasic')) {
+          const recoveryTicks = HEROES[outfit.group].cooldown - actual * RAID_HZ;
+          assert.ok(recoveryTicks >= 1 - 1e-4, path + '/' + clip.name + ' has no recovery tick');
+        }
       }
     }
     for (const material of doc.materials ?? []) {
