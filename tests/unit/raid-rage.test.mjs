@@ -29,6 +29,7 @@ test('each original runner charges at its own configured rate from the same hit'
       assert.equal(victim.rage, 0);
     } else {
       assert.ok(victim.rage > 0, hero);
+      assert.ok(raidRageDamageToFull(hero) > HEROES[hero].hp, hero + ' fills in a single life');
       rates.add(victim.rage);
     }
   }
@@ -58,17 +59,30 @@ test('barriers, mitigation and overkill charge only HP lost while kill and assis
   assert.deepEqual([attacker.assists, finisher.kills, attacker.rage, finisher.rage], [1, 1, 0, 0]);
 });
 
-test('single-HP hits fill the gauge at the same threshold as one large hit', () => {
+test('single-HP hits and larger hits fill at the same cumulative HP loss across heals', () => {
   const hero = 'froze';
   const threshold = raidRageDamageToFull(hero);
   const { runners, hits } = combat([hero, hero]);
+  let batch = 0;
   for (let tick = 1; tick < threshold; tick++) {
     hits.enqueue({ from: null, target: 0, amount: 1 });
+    batch++;
+    if (batch === HEROES[hero].hp - 1 || tick === threshold - 1) {
+      hits.enqueue({ from: null, target: 1, amount: batch });
+      batch = 0;
+    }
     hits.resolve(tick);
+    if (batch === 0) {
+      for (const runner of runners) {
+        const charge = runner.rage;
+        hits.heal(tick, runner, runner.slot, HEROES[hero].hp);
+        assert.equal(runner.rage, charge);
+      }
+    }
   }
-  assert.ok(runners[0].rage > 0 && runners[0].rage < 100);
+  for (const runner of runners) assert.ok(runner.rage > 0 && runner.rage < 100);
   hits.enqueue({ from: null, target: 0, amount: 1 });
-  hits.enqueue({ from: null, target: 1, amount: threshold });
+  hits.enqueue({ from: null, target: 1, amount: 1 });
   hits.resolve(threshold);
   assert.deepEqual(
     runners.map((r) => r.rage),

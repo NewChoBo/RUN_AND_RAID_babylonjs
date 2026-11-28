@@ -274,7 +274,7 @@ test('Magnus changes modes without rage and forces nearby rivals to focus him', 
   assert.equal(r.heroView.shieldMode, false);
 });
 
-test('all playable profiles enter practice with their own identity and every bot uses its whole kit', () => {
+test('all profiles enter practice and every bot uses its full kit across two team compositions', () => {
   assert.equal(ORIGINAL_HERO_IDS.length, 17);
   assert.equal(Object.keys(borrowedKits).length, 13);
   for (const hero of HERO_IDS) {
@@ -282,17 +282,22 @@ test('all playable profiles enter practice with their own identity and every bot
     assert.ok(applyPick(seats, 1, hero));
     const roster = practiceRoster(seats[0].hero);
     assert.equal(new Set(roster).size, 4);
-    const match = new RaidMatch(roster),
-      sim = new RaidSimulation(match, new Set());
-    assert.equal(match.runners[0].hero, hero);
     const used = new Set();
-    while (!match.result && match.tick < ROUND_TICKS) {
-      sim.step();
-      for (const a of match.actions) if (a.slot === 0) used.add(a.skill);
+    // An early wagon win can end a match before this runner has taken enough damage to use R.
+    for (const team of [roster, [roster[0], roster[2], roster[1], roster[3]]]) {
+      const match = new RaidMatch(team);
+      const sim = new RaidSimulation(match, new Set());
+      assert.equal(match.runners[0].hero, hero);
+      while (!match.result && match.tick < ROUND_TICKS) {
+        sim.step();
+        for (const a of match.actions) if (a.slot === 0) used.add(a.skill);
+      }
+      assert.ok(match.result);
+      assert.ok(match.runners[0].wagonDamage > 0);
+      if (team === roster)
+        for (const skill of [0, 1, 2, 'basic']) assert.ok(used.has(skill), hero + ' ' + skill);
     }
-    assert.ok(match.result);
     assert.deepEqual([...used].sort(), [0, 1, 2, 3, 'basic'].sort(), hero);
-    assert.ok(match.runners[0].wagonDamage > 0);
   }
 });
 

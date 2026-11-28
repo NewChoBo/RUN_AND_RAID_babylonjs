@@ -17,7 +17,7 @@ import {
   WAGON_HP,
 } from '../../src/game/raid/raid-match.ts';
 import { createRaidFeature } from '../../src/game/raid/raid-feature.ts';
-import { raidRageGain } from '../../src/content/raid/rage.ts';
+import { raidRageDamageToFull, raidRageGain } from '../../src/content/raid/rage.ts';
 import { driveRaidBots } from '../../src/game/raid/raid-bots.ts';
 import { RAID_FRONT_Z } from '../../src/game/raid/runner-motion.ts';
 import { GameSession } from '../../src/game/session/game-session.ts';
@@ -993,7 +993,8 @@ test('PvP earns rage and a knockout, then the defeated runner rejoins behind the
   match.step();
   assert.equal(match.result, null);
   assert.equal(victim.hp, 0);
-  assert.ok(victim.rage > 0);
+  const chargeAtKnockout = victim.rage;
+  assert.ok(chargeAtKnockout > 0 && chargeAtKnockout < 100);
   assert.deepEqual(match.damage, wagonDamage);
   assert.equal(match.runners[0].kills + match.runners[1].kills, 1);
   assert.equal(victim.deaths, 1);
@@ -1004,11 +1005,13 @@ test('PvP earns rage and a knockout, then the defeated runner rejoins behind the
   advance(match, raidRespawnTicks(victim.deaths) - 1);
   assert.equal(victim.respawn, 1);
   assert.equal(victim.hp, 0);
+  assert.equal(victim.rage, chargeAtKnockout);
   assert.equal(send(2, 'cast', { skill: 1, target: 'wagon' }), false);
   assert.equal(victim.wagonDamage, beforeRespawn);
   match.step();
   assert.equal(victim.respawn, 0);
   assert.equal(victim.hp, HEROES[victim.hero].hp);
+  assert.equal(victim.rage, chargeAtKnockout);
   assert.ok(victim.z < 0);
 });
 test('each rival awaiting respawn boosts only wagon hits until that rival returns', () => {
@@ -1069,23 +1072,35 @@ test('each runner starts at ten seconds, adds five per knockout and caps at thir
   assert.equal(first.deaths, 7);
   assert.equal(second.deaths, 1);
 });
+// Use actual hostile bolts and an ally heal to build a nearly full meter without assigning rage.
+function takeBoltsUntilOneHitFromFull(match, send) {
+  const [player, healer, attacker] = match.runners;
+  const damage = HEROES[attacker.hero].power * 3;
+  const hits = Math.ceil(raidRageDamageToFull(player.hero) / damage) - 1;
+  for (let i = 0; i < hits; i++) {
+    attacker.cooldowns[1] = 0;
+    assert.ok(send(attacker.slot, 'cast', { skill: 1, target: player.slot }));
+    match.step();
+    healer.cooldowns[1] = 0;
+    const before = player.hp;
+    const charge = player.rage;
+    assert.ok(send(healer.slot, 'cast', { skill: 1, target: player.slot }));
+    assert.ok(player.hp > before);
+    assert.equal(player.rage, charge);
+  }
+  assert.ok(player.rage > 0 && player.rage < 100);
+}
+
 test('opposing hits unlock one ultimate and attacking the wagon spends the charge', () => {
-  const { match, send } = battle(['hammer', 'abyss', 'rend', 'rime']);
-  const player = match.runners[0];
+  const { match, send } = battle(['hammer', 'alice', 'bastion', 'rime']);
+  const [player] = match.runners;
+  for (const r of match.runners) r.basic = 100;
   assert.equal(player.rage, 0);
   assert.equal(send(0, 'cast', { skill: 3, target: 'wagon' }), false);
-  for (const rival of [2, 3]) send(rival, 'move', { side: 0, walk: true });
-  advance(match, 20);
-  for (const rival of [2, 3]) {
-    send(rival, 'lock', 0);
-    assert.ok(send(rival, 'cast', { skill: 1, target: player.slot }));
-    send(rival, 'cast', { skill: 2, x: player.x, z: player.z });
-    advance(match, rival === 3 ? 21 : 1);
-    if (rival === 2) {
-      assert.ok(player.rage > 0 && player.rage < 100);
-      assert.equal(send(0, 'cast', { skill: 3, target: 'wagon' }), false);
-    }
-  }
+  takeBoltsUntilOneHitFromFull(match, send);
+  assert.equal(send(0, 'cast', { skill: 3, target: 'wagon' }), false);
+  assert.ok(send(3, 'cast', { skill: 1, target: player.slot }));
+  match.step();
   assert.equal(player.rage, 100);
   assert.ok(player.hp > 0);
   assert.equal(send(0, 'cast', { skill: 3, target: 1 }), false);
@@ -1114,18 +1129,17 @@ test('a wagon hit gives no charge while its hazard charges from health lost', ()
   assert.equal(player.rage, Math.min(100, rage + raidRageGain(player.hero, 26)));
 });
 test('taking a ground strike can ready Fury for a visible rear rival', () => {
-  const { match, send } = battle(['rend', 'abyss', 'bastion', 'rime']);
+  const { match, send } = battle(['rend', 'alice', 'bastion', 'rime']);
   const [player, , flank, rear] = match.runners;
   for (const r of match.runners) r.basic = 100;
   rear.x = player.x;
-  assert.ok(send(2, 'cast', { skill: 1, target: player.slot }));
+  takeBoltsUntilOneHitFromFull(match, send);
+  const before = player.hp;
   assert.ok(send(2, 'cast', { skill: 2, x: player.x, z: player.z }));
-  assert.ok(send(3, 'cast', { skill: 0 }));
-  assert.ok(send(3, 'cast', { skill: 1, target: player.slot }));
   assert.ok(send(0, 'cast', { skill: 1, target: flank.slot }));
-  assert.ok(send(0, 'cast', { skill: 2, x: (flank.x + rear.x) / 2, z: -1 }));
+  assert.ok(send(0, 'cast', { skill: 2, x: (flank.x + rear.x) / 2, z: (flank.z + rear.z) / 2 }));
   match.step();
-  assert.equal(player.hp, HEROES.rend.hp - 6 * HEROES.bastion.power - 5 * HEROES.rime.power);
+  assert.equal(player.hp, before - HEROES.bastion.power * 3);
   assert.equal(player.rage, 100);
   assert.equal(rear.hp, HEROES.rime.hp - 33);
   assert.equal(rear.rage, raidRageGain(rear.hero, 33));
