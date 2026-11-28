@@ -114,15 +114,17 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
         glyph.textContent = instant ? '✴' : '◎';
         type.textContent = typeLabel;
       }
-      let label = t(`${heroKit(runner.hero)}${skillNames[slot]}`);
+      const skillName = t(`${heroKit(runner.hero)}${skillNames[slot]}`);
+      let label = skillName;
       if (status.land) label = t('valletLand');
-      else if (status.finishDash) label = t('moonFinish');
+      else if (status.cancelActive) label = t('cancelSkill');
       else if (runner.heroView.shieldMode)
         label = t((['magnusCharge', 'magnusTaunt', 'magnusCry', 'magnusBattle'] as const)[slot]);
       if (name.textContent !== label) name.textContent = label;
       if (b.disabled !== !status.ready) b.disabled = !status.ready;
       if (b.disabled && gesture?.slot === slot) endGesture();
       if (b.disabled && aimPad.skill === slot) aimPad.close();
+      b.toggleAttribute('data-cancel-active', status.cancelActive);
       b.toggleAttribute('data-cooling', status.ticks > 0);
       const angle = status.degrees + 'deg';
       if (b.style.getPropertyValue('--cooldown') !== angle)
@@ -136,7 +138,7 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
         );
       }
       if (charge.textContent !== status.value) charge.textContent = status.value;
-      const title = label + ' · ' + typeLabel;
+      const title = status.cancelActive ? skillName + ' · ' + label : label + ' · ' + typeLabel;
       if (b.title !== title) b.title = title;
       const detail = status.ticks
         ? t('cooldownRemaining', { seconds: status.value })

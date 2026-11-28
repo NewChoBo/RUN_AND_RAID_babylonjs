@@ -66,7 +66,7 @@ export interface HeroCombat extends CombatRead {
     point: RaidPoint,
     phase?: RaidAction['phase'],
     detail?: Pick<RaidAction, 'lines' | 'comboStep'>,
-  ): void;
+  ): RaidAction;
   haste(slot: number, ticks: number): void;
   strike(target: RaidTarget, hit: HitRule, skill: Skill, designated?: boolean): void;
   placeField(skill: Skill, center: RaidPoint, radius: number, pulse: FieldPulse): void;

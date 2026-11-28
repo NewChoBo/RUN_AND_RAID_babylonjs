@@ -67,16 +67,12 @@ export function raidProjectileProfile(hero: RaidHero, skill: Skill) {
 export const raidRunnerAimKind = (runner: RaidRunner, skill: Skill) =>
   raidAimKind(runner.hero, skill);
 export const isRaidLeap = (hero: RaidHero, skill: Skill) => raidAimKind(hero, skill) === 'leap';
+export const isRaidSpinCancel = (runner: RaidRunner, skill: Skill) =>
+  runner.spin?.skill === skill && !!runner.spin.cancelCue;
 export function canUseRaidSkill(runner: RaidRunner, skill: Skill) {
-  if (
-    runner.respawn ||
-    runner.silenced ||
-    runner.taunt ||
-    actionLocked(runner) ||
-    runner.leap ||
-    runner.spinTicks
-  )
+  if (runner.respawn || runner.silenced || runner.taunt || actionLocked(runner) || runner.leap)
     return false;
+  if (runner.spin) return isRaidSpinCancel(runner, skill);
   const rule = raidSkill(runner.hero, skill);
   if (runner.dash)
     return runner.dash.skill === skill && rule.kind === 'pulse' && !!rule.recastDuringDash;

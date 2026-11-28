@@ -89,6 +89,7 @@ export interface Runner extends RaidPoint, RaidControl {
     duration: number;
     interval: number;
     radius: number;
+    cancelCue?: RaidAction & { cancelledAt?: number };
   } | null;
   dash: RaidDash | null;
   readonly heroView: HeroView;

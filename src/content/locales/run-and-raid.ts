@@ -127,7 +127,7 @@ export const raidText = defineMessages(
     swiftField: 'Tracking Mark',
     swiftFury: 'Dancing Blade',
     aimDash: 'Dash in this direction',
-    moonFinish: 'Slash now',
+    cancelSkill: 'Cancel',
     touchDash: '{skill} · Touch the right side, drag to aim, then release to dash',
     rend: 'Rend',
     bastion: 'Bastion',

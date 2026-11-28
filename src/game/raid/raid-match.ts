@@ -395,9 +395,7 @@ export class RaidMatch implements RaidView {
         target === 'wagon'
           ? 0
           : raidFacing(this.#runners[target]!, raidActiveAction(this.#actions, target, this.tick)),
-      record: (skill, p, phase, detail) => {
-        this.#record(r, skill, p, phase, detail);
-      },
+      record: (skill, p, phase, detail) => this.#record(r, skill, p, phase, detail),
       haste: (id, ticks) => {
         this.#runners[id]!.hasteTicks = ticks;
       },
@@ -583,6 +581,11 @@ export class RaidMatch implements RaidView {
     const rule = raidSkill(r.hero, skill);
     const input = castInput(rule, r, aim);
     if (!input) return false;
+    if (r.spin?.cancelCue) {
+      r.spin.cancelCue.cancelledAt = this.tick;
+      r.spin = null;
+      return true;
+    }
     const c = this.#contexts[slot]!;
     const { resolved } = resolveSkill(
       c,

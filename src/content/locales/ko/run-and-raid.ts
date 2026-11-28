@@ -124,7 +124,7 @@ export const korean = {
   swiftFury: '춤추는 칼날',
   aimDash: '조준한 방향으로 돌진',
   needDashDirection: '돌진 방향을 정하세요',
-  moonFinish: '지금 베기',
+  cancelSkill: '취소',
   touchDash: '{skill} · 오른쪽을 누르고 끌어 방향을 잡은 뒤 떼면 돌진',
   rend: '렌드',
   bastion: '바스티온',

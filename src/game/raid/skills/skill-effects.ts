@@ -59,20 +59,25 @@ export function projectile(
 ): Extract<HeroSkill<unknown, 'direction'>, { attack: ProjectileAttack }> {
   return { kind: 'direction', attack: { kind: 'projectile', flight, hit, windupTicks } };
 }
-export function spin(ticks: number, attack: AreaAttack<'spinPulse'>): HeroSkill<unknown, 'pulse'> {
+export function spin(
+  ticks: number,
+  attack: AreaAttack<'spinPulse'>,
+  options?: { cancelOnRetap: true },
+): HeroSkill<unknown, 'pulse'> {
   return {
     kind: 'pulse',
     attack,
     apply(combat, cast) {
+      const cue = combat.record(cast.skill, combat.self);
       combat.self.spin = {
         skill: cast.skill,
         remaining: ticks,
         duration: ticks,
         interval: 15,
         radius: cast.radius,
+        cancelCue: options?.cancelOnRetap ? cue : undefined,
       };
       if (combat.controlImmune()) combat.self.slows.length = 0;
-      combat.record(cast.skill, combat.self);
     },
   };
 }

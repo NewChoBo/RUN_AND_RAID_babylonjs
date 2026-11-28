@@ -37,7 +37,7 @@ export const hammer = defineHero(stats, () => hammerEvents, [
       };
     },
   },
-  spin(60, whirlwind),
+  spin(60, whirlwind, { cancelOnRetap: true }),
   bolt(
     { powerScale: 7, control: [stun(45)] },
     { range: 10, splash: { area: { kind: 'circle', radius: 6 }, hit: { powerScale: 3.5 } } },

@@ -434,7 +434,9 @@ body.raid-mode .title-copy h1 {
   z-index: -2;
   pointer-events: none;
 }
-.raid-skills button:has(> .raid-skill-art:not([hidden])) :is(.raid-skill-name, .raid-skill-meta) {
+.raid-skills
+  button:not([data-cancel-active]):has(> .raid-skill-art:not([hidden]))
+  :is(.raid-skill-name, .raid-skill-meta) {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -447,8 +449,19 @@ body.raid-mode .title-copy h1 {
   background: #080d15b8;
   border-radius: 3px;
 }
-.raid-skills button:has(> .raid-skill-art:not([hidden])) .raid-skill-name {
+.raid-skills button:not([data-cancel-active]):has(> .raid-skill-art:not([hidden])) .raid-skill-name,
+.raid-skills button[data-cancel-active] .raid-skill-meta {
   display: none;
+}
+.raid-skills button[data-cancel-active] .raid-skill-name {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: #080d154d;
+  font: 800 clamp(11px, calc(var(--disc) * 0.27), 22px)/1 var(--font-ui);
+  text-shadow: 0 1px 3px black;
 }
 .raid-skills button:has(> .raid-skill-art:not([hidden])) .raid-skill-meta {
   bottom: 6%;

@@ -116,7 +116,13 @@ export function driveRaidBots(
     else if (r.air?.thrust) send(r.slot, 'jump', false);
     send(r.slot, 'lock', target?.slot ?? 'wagon');
     // Space casts just over a second apart. Steering and hazard reactions still run every eight ticks.
-    if (actionLocked(r) || r.silenced || view.tick < RAID_HZ || (view.tick + rank * 20) % 32 !== 0)
+    if (
+      actionLocked(r) ||
+      r.silenced ||
+      r.spin ||
+      view.tick < RAID_HZ ||
+      (view.tick + rank * 20) % 32 !== 0
+    )
       continue;
     const point = target ?? wagonContact(r, view.tick);
     const openingSkill = raidSkill(r.hero, 0);

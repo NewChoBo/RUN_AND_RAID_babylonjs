@@ -1448,6 +1448,57 @@ test('Hammer slams at his feet and each whirlwind pulse can reach a new opponent
   assert.equal(second.hp, HEROES[second.hero].hp - 72);
 });
 
+test('Hammer can end his whirlwind on E without another cast, damage pulse or cooldown change', () => {
+  for (const cancelTick of [0, 14, 15, 46]) {
+    const { match, send } = battle('hammer');
+    const [hammer, , rival] = match.runners;
+    for (const r of match.runners) {
+      r.x = r.z = 0;
+      r.basic = 300;
+      r.brake = 0.4;
+    }
+    assert.ok(send(0, 'cast', { skill: 2 }));
+    const cue = match.actions.at(-1);
+    const fullCooldown = hammer.cooldowns[2];
+    const startingHp = rival.hp;
+    advance(match, cancelTick);
+    assert.equal(match.previewSkill(0, 2).status, 'ready');
+    assert.equal(send(0, 'cast', { skill: 0 }), false);
+    const damage = Math.floor(cancelTick / 15) * HEROES.hammer.power * 1.5;
+    assert.equal(rival.hp, startingHp - damage);
+
+    const actions = [...match.actions];
+    assert.ok(send(0, 'cast', { skill: 2 }));
+    assert.deepEqual(match.actions, actions);
+    assert.equal(cue.cancelledAt, cancelTick);
+    assert.equal(hammer.spinTicks, 0);
+    assert.equal(hammer.cooldowns[2], fullCooldown - cancelTick);
+    assert.equal(hammer.cooldownDurations[2], fullCooldown);
+    assert.equal(match.previewSkill(0, 2).status, 'unavailable');
+    assert.equal(send(0, 'cast', { skill: 2 }), false);
+    advance(match, 60 - cancelTick);
+    assert.equal(rival.hp, startingHp - damage);
+    assert.equal(hammer.cooldowns[2], fullCooldown - 60);
+  }
+});
+
+test('bots keep Hammer spinning and Kaiken cannot cancel his ultimate with another press', () => {
+  const { match, send } = battle(['hammer', 'kaiken', 'longshot', 'jade']);
+  const [hammer, kaiken] = match.runners;
+  advance(match, 32);
+  Object.assign(hammer, wagonCenter(match.tick));
+  assert.ok(send(0, 'cast', { skill: 2 }));
+  const orders = [];
+  driveRaidBots(match, (_slot, action) => orders.push(action), new Set([1, 2, 3]));
+  assert.ok(orders.includes('move'));
+  assert.ok(!orders.includes('cast'));
+  assert.equal(hammer.spinTicks, 60);
+  kaiken.rage = 100;
+  assert.ok(send(1, 'cast', { skill: 3 }));
+  assert.equal(send(1, 'cast', { skill: 3 }), false);
+  assert.equal(kaiken.spinTicks, 75);
+});
+
 test('Hammer leaps to the selected road tile, then damages and launches only rivals in the landing area', () => {
   const { match, send } = battle();
   const [hammer, ally, rival, evader] = match.runners;
