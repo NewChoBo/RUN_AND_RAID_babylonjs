@@ -19,14 +19,26 @@ export function createView(canvas: HTMLCanvasElement, visible: () => boolean) {
   const camera = new ArcRotateCamera('orbit', 1.1, 1.3, 4, Vector3.Zero(), scene);
   camera.attachControl(canvas, true);
   new HemisphericLight('light', new Vector3(0.3, 1, 0.5), scene).intensity = 1.2;
-  const resize = new ResizeObserver(() => engine.resize());
+  const render = () => scene.render();
+  function syncPreview() {
+    if (document.hidden || !visible() || !canvas.clientWidth || !canvas.clientHeight) {
+      engine.stopRenderLoop(render);
+      return;
+    }
+    engine.resize();
+    engine.runRenderLoop(render);
+  }
+  // A hidden canvas or ancestor reports zero size, including on hash-route changes.
+  const resize = new ResizeObserver(syncPreview);
   resize.observe(canvas);
-  engine.runRenderLoop(() => {
-    if (visible()) scene.render();
-  });
+  document.addEventListener('visibilitychange', syncPreview);
+  window.addEventListener('pageshow', syncPreview);
   window.addEventListener('pagehide', (e) => {
+    engine.stopRenderLoop(render);
     if (!e.persisted) {
       resize.disconnect();
+      document.removeEventListener('visibilitychange', syncPreview);
+      window.removeEventListener('pageshow', syncPreview);
       engine.dispose();
     }
   });
