@@ -1,5 +1,31 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {
+  createPreferences,
+  sanitizePreferences,
+  STORAGE_KEY,
+} from '../../src/platform/browser/preferences.ts';
+
+test('old controls keep their skill size and save the HUD inset across sessions', () => {
+  const values = new Map([[STORAGE_KEY, JSON.stringify({ version: 11, raidSkillSize: 125 })]]);
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  const controls = createPreferences(storage);
+  assert.equal(controls.get().raidHudPadding, 0);
+  controls.set({ ...controls.get(), raidHudPadding: 19 });
+  const reloaded = createPreferences(storage);
+  assert.equal(reloaded.get().raidHudPadding, 20);
+  assert.equal(reloaded.get().raidSkillSize, 125);
+  for (const [given, expected] of [
+    [-10, 0],
+    [30, 24],
+    [Infinity, 0],
+    ['12', 0],
+  ])
+    assert.equal(sanitizePreferences({ raidHudPadding: given }).raidHudPadding, expected);
+});
 
 test('a legacy mute, last audible volume and graphics quality survive a reload', async (t) => {
   const values = new Map([

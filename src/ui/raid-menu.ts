@@ -1,23 +1,22 @@
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { uiText as ui } from '../content/locales/ui.ts';
+import {
+  RAID_HUD_PADDING,
+  RAID_SKILL_SIZE,
+  type RaidHudSettings,
+} from '../platform/browser/preferences.ts';
 import { button, element } from './elements.ts';
 import { createBattleSettings } from './battle-settings.ts';
 import { openSettings } from './settings.ts';
 import './styles/raid-menu.css';
 
-export interface SkillSize {
-  min: number;
-  max: number;
-  step: number;
-  value: number;
-}
 interface MenuActions {
   resume(): void;
   leave(): void;
-  setSkillSize(percent: number): void;
+  setHudPreference(key: keyof RaidHudSettings, value: number): void;
 }
 
-export function createRaidMenu(root: HTMLElement, actions: MenuActions, skillSize: SkillSize) {
+export function createRaidMenu(root: HTMLElement, actions: MenuActions, saved: RaidHudSettings) {
   const panel = element('dialog', document.body);
   panel.className = 'raid-panel';
   panel.hidden = true;
@@ -52,27 +51,42 @@ export function createRaidMenu(root: HTMLElement, actions: MenuActions, skillSiz
   reason.className = 'raid-menu-reason';
   const card = element('div', body);
   const options = createBattleSettings(card, 'match');
-  const sizeSetting = element('label', card);
-  sizeSetting.className = 'raid-skill-size';
-  element('span', sizeSetting, t('skillSize'));
-  const sizeInput = element('input', sizeSetting);
-  sizeInput.type = 'range';
-  sizeInput.min = String(skillSize.min);
-  sizeInput.max = String(skillSize.max);
-  sizeInput.step = String(skillSize.step);
-  sizeInput.value = String(skillSize.value);
-  const sizeValue = element('span', sizeSetting);
-  sizeValue.setAttribute('aria-hidden', 'true');
-  const applySize = () => {
-    const percent = sizeInput.valueAsNumber;
-    sizeValue.textContent = percent + '%';
-    sizeInput.setAttribute('aria-valuetext', sizeValue.textContent);
+  function addHudSlider(
+    key: keyof RaidHudSettings,
+    label: string,
+    limits: { min: number; max: number; step: number },
+    unit: string,
+    apply: (value: number) => void,
+  ) {
+    const row = element('label', card);
+    row.className = 'raid-hud-range';
+    element('span', row, label);
+    const slider = element('input', row);
+    slider.type = 'range';
+    slider.min = String(limits.min);
+    slider.max = String(limits.max);
+    slider.step = String(limits.step);
+    slider.value = String(saved[key]);
+    const readout = element('span', row);
+    readout.setAttribute('aria-hidden', 'true');
+    const paint = () => {
+      const value = slider.valueAsNumber;
+      readout.textContent = value + unit;
+      slider.setAttribute('aria-valuetext', readout.textContent);
+      apply(value);
+    };
+    paint();
+    slider.oninput = paint;
+    slider.onchange = () => actions.setHudPreference(key, slider.valueAsNumber);
+    return row;
+  }
+  addHudSlider('raidSkillSize', t('skillSize'), RAID_SKILL_SIZE, '%', (percent) => {
     root.style.setProperty('--skill-scale', String(percent / 100));
     root.classList.toggle('large-skills', percent > 100);
-  };
-  applySize();
-  sizeInput.oninput = applySize;
-  sizeInput.onchange = () => actions.setSkillSize(sizeInput.valueAsNumber);
+  }).classList.add('raid-skill-size');
+  addHudSlider('raidHudPadding', t('hudPadding'), RAID_HUD_PADDING, 'px', (pixels) => {
+    root.style.setProperty('--hud-padding', pixels + 'px');
+  });
 
   const footer = element('footer', panel);
   const surrender = button(footer, ui('surrender'));

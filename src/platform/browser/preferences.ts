@@ -25,6 +25,7 @@ export interface InputSettings {
   version: number;
   sensitivity: number;
   raidSkillSize: number;
+  raidHudPadding: number;
   dominantHand: 'left' | 'right';
   cameraShoulder: 'left' | 'center' | 'right';
   pointerLock: boolean;
@@ -34,10 +35,13 @@ export interface InputSettings {
   bindings: Record<InputAction, string>;
 }
 export const RAID_SKILL_SIZE = { min: 80, max: 140, step: 5 } as const;
+export const RAID_HUD_PADDING = { min: 0, max: 24, step: 2 } as const;
+export type RaidHudSettings = Pick<InputSettings, 'raidSkillSize' | 'raidHudPadding'>;
 export const DEFAULTS: InputSettings = {
   version: 11,
   sensitivity: 1,
   raidSkillSize: 100,
+  raidHudPadding: 0,
   dominantHand: 'right',
   cameraShoulder: 'left',
   pointerLock: true,
@@ -92,6 +96,14 @@ export const isAction = (id: unknown): id is InputAction =>
   ACTIONS.some(([action]) => action === id);
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object';
+function sliderValue(
+  value: unknown,
+  fallback: number,
+  { min, max, step }: { min: number; max: number; step: number },
+) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.max(min, Math.min(max, min + Math.round((value - min) / step) * step));
+}
 export function sanitizePreferences(raw: unknown): InputSettings {
   const value = isRecord(raw) ? raw : {};
   const stored = isRecord(value.bindings) ? value.bindings : null;
@@ -121,16 +133,8 @@ export function sanitizePreferences(raw: unknown): InputSettings {
     ACTIONS.every(([id]) => id === 'inventory' || bindings[id] !== 'Tab');
   return {
     version: DEFAULTS.version,
-    raidSkillSize:
-      typeof value.raidSkillSize === 'number' && Number.isFinite(value.raidSkillSize)
-        ? Math.min(
-            RAID_SKILL_SIZE.max,
-            Math.max(
-              RAID_SKILL_SIZE.min,
-              Math.round(value.raidSkillSize / RAID_SKILL_SIZE.step) * RAID_SKILL_SIZE.step,
-            ),
-          )
-        : DEFAULTS.raidSkillSize,
+    raidSkillSize: sliderValue(value.raidSkillSize, DEFAULTS.raidSkillSize, RAID_SKILL_SIZE),
+    raidHudPadding: sliderValue(value.raidHudPadding, DEFAULTS.raidHudPadding, RAID_HUD_PADDING),
     dominantHand: value?.dominantHand === 'left' ? 'left' : 'right',
     cameraShoulder:
       value.cameraShoulder === 'left' ||

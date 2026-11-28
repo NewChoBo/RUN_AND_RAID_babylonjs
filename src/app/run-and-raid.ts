@@ -19,7 +19,7 @@ import type { RaidRageLoadout } from '../content/raid/rage.ts';
 import type { RaidCommandName } from '../game/raid/raid-feature.ts';
 import { RaidSimulation } from '../game/raid/raid-simulation.ts';
 import type { openRaidCourse } from '../platform/babylon/raid/raid-course.ts';
-import { createPreferences, RAID_SKILL_SIZE } from '../platform/browser/preferences.ts';
+import { createPreferences } from '../platform/browser/preferences.ts';
 import { createRaidAudio } from '../platform/browser/raid-audio.ts';
 import { createRaidHud } from '../ui/raid-hud.ts';
 import {
@@ -364,10 +364,10 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       leave: () => {
         location.hash = '/home';
       },
-      setSkillSize: (size) => device.set({ ...device.get(), raidSkillSize: size }),
+      setHudPreference: (key, value) => device.set({ ...device.get(), [key]: value }),
     },
     canvas,
-    { ...RAID_SKILL_SIZE, value: preferences.raidSkillSize },
+    preferences,
   );
   function drawOffline() {
     lobby.room(

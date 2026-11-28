@@ -1,13 +1,13 @@
 .raid-score {
   --bar-height: clamp(14px, 4.2dvh, 24px);
   position: absolute;
-  top: max(2px, env(safe-area-inset-top));
+  top: var(--hud-top);
   left: 50%;
   transform: translateX(-50%);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: start;
-  width: min(76vw, 1020px);
+  width: min(76vw, 760px, calc(100% - 2 * max(var(--hud-left), var(--gutter)) - 88px));
   padding-bottom: clamp(23px, 6dvh, 37px);
   font-variant-numeric: tabular-nums;
   text-shadow:
@@ -95,8 +95,7 @@
   right: auto;
   left: 0.12em;
 }
-.raid-personal-score,
-.raid-boss-bonus {
+.raid-personal-score {
   position: absolute;
   top: calc(100% + 2px);
   left: 0;
@@ -107,13 +106,21 @@
   color: #fff8dd;
 }
 .raid-team .raid-boss-bonus {
-  left: auto;
-  right: 2.25em;
-  color: #ffe39b;
+  grid-area: 1 / 2;
+  z-index: 1;
+  justify-self: end;
+  margin: 0 3px;
+  padding: 0 2px;
+  color: #fff2b9;
+  background: #262119d9;
+  border-radius: 2px;
+  font-size: clamp(9px, 2.3dvh, 12px);
+  line-height: 1.1;
+  white-space: nowrap;
 }
-.red .raid-boss-bonus {
-  right: auto;
-  left: 2.25em;
+.raid-team.red .raid-boss-bonus {
+  grid-column: 1;
+  justify-self: start;
 }
 .raid-score :is(.raid-counter, .raid-callout) {
   left: 50%;

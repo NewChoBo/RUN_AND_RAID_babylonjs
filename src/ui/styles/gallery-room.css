@@ -71,6 +71,11 @@
   margin-inline: auto;
   --toolbar-height: clamp(44px, 14dvh, 76px);
 }
+.lobby[data-screen='ready'] .play:lang(en) {
+  font-size: clamp(14px, calc(3.1 * var(--unit)), 26px);
+  line-height: 1.08;
+  text-align: center;
+}
 #overlay:has(.drafting) .title-copy,
 #overlay:has(.drafting) .room-heading {
   display: none;
@@ -502,6 +507,10 @@
   display: none;
 }
 @media (max-height: 345px) {
+  #overlay .runner-picker {
+    width: min(96vw, 205dvh);
+    height: calc(100dvh - 8px);
+  }
   #overlay .runner-picker .raid-pick-grid {
     grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
   }

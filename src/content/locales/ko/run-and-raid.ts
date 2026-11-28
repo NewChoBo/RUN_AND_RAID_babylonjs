@@ -204,6 +204,7 @@ export const korean = {
   repeatMissing: '먼저 대상이나 방향, 지점을 정해 시전하세요',
   repeatUnavailable: '이전 조준으로 지금 시전할 수 없습니다',
   skillSize: '스킬 버튼 크기',
+  hudPadding: 'HUD 가장자리 여백',
   touchAim: '{skill} · 밀어서 조준 · 떼면 시전',
   touchStick: '{skill} · 오른쪽을 누르고 끌어 방향을 잡은 뒤 떼면 발사',
   typeDirection: '방향',

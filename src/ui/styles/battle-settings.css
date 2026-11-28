@@ -10,7 +10,7 @@
   align-items: center;
 }
 .battle-volume > span,
-.raid-skill-size > span:last-child {
+.raid-hud-range > span:last-child {
   color: #ded8c8;
   font-size: 0.85em;
   font-variant-numeric: tabular-nums;
@@ -62,7 +62,7 @@
   color: #ffad92;
 }
 .battle-volume input[type='range'],
-.raid-skill-size input {
+.raid-hud-range input {
   flex: 1;
   width: 100%;
   min-width: 0;
@@ -72,14 +72,14 @@
   appearance: none;
   cursor: pointer;
 }
-:is(.battle-volume, .raid-skill-size) input[type='range']::-webkit-slider-runnable-track {
+:is(.battle-volume, .raid-hud-range) input[type='range']::-webkit-slider-runnable-track {
   height: 8px;
   border: 1px solid #887e71;
   border-radius: 2px;
   background: #302e2a;
   box-shadow: inset 0 2px 2px #171612;
 }
-:is(.battle-volume, .raid-skill-size) input[type='range']::-webkit-slider-thumb {
+:is(.battle-volume, .raid-hud-range) input[type='range']::-webkit-slider-thumb {
   appearance: none;
   width: 19px;
   height: 19px;
@@ -91,12 +91,12 @@
     inset 0 0 0 1px #d7d1c8,
     0 1px 2px #15120f;
 }
-:is(.battle-volume, .raid-skill-size) input[type='range']::-moz-range-track {
+:is(.battle-volume, .raid-hud-range) input[type='range']::-moz-range-track {
   height: 7px;
   background: #302e2a;
   border: 1px solid #887e71;
 }
-:is(.battle-volume, .raid-skill-size) input[type='range']::-moz-range-thumb {
+:is(.battle-volume, .raid-hud-range) input[type='range']::-moz-range-thumb {
   height: 18px;
   width: 18px;
   border-radius: 50%;

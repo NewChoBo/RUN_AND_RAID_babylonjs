@@ -207,6 +207,7 @@ export const raidText = defineMessages(
     repeatMissing: 'Aim and cast a skill first',
     repeatUnavailable: 'Previous aim unavailable',
     skillSize: 'Skill button size',
+    hudPadding: 'HUD edge spacing',
     touchAim: '{skill} · Slide to aim · Release to cast',
     touchStick: '{skill} · Touch the right side, drag to aim, then release to fire',
     typeDirection: 'Dir',

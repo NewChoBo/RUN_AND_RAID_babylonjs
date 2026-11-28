@@ -1,15 +1,17 @@
 dialog.raid-panel[open] {
-  --menu-edge: max(6px, min(10.5dvh, 62px), env(safe-area-inset-top));
+  --menu-top: max(4px, env(safe-area-inset-top));
+  --menu-bottom: max(4px, env(safe-area-inset-bottom));
   position: fixed;
-  inset: var(--menu-edge) 0 auto;
+  inset: var(--menu-top) max(4px, env(safe-area-inset-right)) var(--menu-bottom)
+    max(4px, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   width: clamp(248px, 31vw, 340px);
   max-width: 95vw;
-  max-height: calc(100dvh - var(--menu-edge) - max(5px, env(safe-area-inset-bottom)));
+  max-height: calc(100dvh - var(--menu-top) - var(--menu-bottom));
   padding: 0;
-  margin: 0 auto;
+  margin: auto;
   overflow: hidden;
   border: 2px solid #57534a;
   border-radius: 4px;
@@ -42,8 +44,8 @@ dialog.raid-panel::backdrop {
   font: 800 1.23em/1.2 var(--font-ui);
 }
 .raid-panel header button {
-  height: 30px;
-  min-width: 32px;
+  height: 44px;
+  min-width: 44px;
   padding: 0;
   border: 1px solid #686155;
   border-radius: 3px;
@@ -68,17 +70,22 @@ dialog.raid-panel::backdrop {
   color: #f8e7b5;
   font-size: 0.9em;
 }
-.raid-skill-size {
+.raid-hud-range {
   display: grid;
-  grid-template-columns: auto minmax(32px, 1fr) 4ch;
+  grid-template-columns: 9em minmax(32px, 1fr) 4ch;
   align-items: center;
   gap: 6px;
   border-top: 1px solid #938c795e;
-  font-size: 0.86em;
-  margin-top: 3px;
-  padding-top: 3px;
 }
-.raid-skill-size > span:last-child {
+.raid-menu-body .raid-hud-range input,
+.raid-menu-body .battle-volume input[type='range'] {
+  height: 44px;
+}
+.raid-menu-body :is(.battle-speaker, .battle-quality button) {
+  width: 44px;
+  height: 44px;
+}
+.raid-hud-range > span:last-child {
   text-align: right;
 }
 .raid-panel footer {
@@ -91,7 +98,7 @@ dialog.raid-panel::backdrop {
   flex: 1;
   display: grid;
   place-content: center;
-  min-height: 38px;
+  min-height: 44px;
   padding: 2px 4px;
   border: 1px solid #342b22;
   border-radius: 3px;
@@ -120,20 +127,21 @@ dialog.raid-panel::backdrop {
   outline: 2px solid #ffe79f;
   outline-offset: -2px;
 }
-@media (max-height: 310px) {
+@media (max-height: 360px) and (min-width: 420px) {
   dialog.raid-panel[open] {
-    --menu-edge: max(4px, env(safe-area-inset-top));
-  }
-}
-@media (max-height: 270px) {
-  dialog.raid-panel[data-screen='settings'] {
-    width: min(95vw, 320px);
+    width: clamp(360px, 66vw, 420px);
   }
   .raid-menu-body .battle-settings {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 14px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 12px;
   }
-  .raid-menu-body .battle-quality {
-    grid-column: 1 / -1;
+}
+@media (max-height: 300px) {
+  .raid-menu-body {
+    padding-block: 3px 0;
+  }
+  .raid-panel footer {
+    padding-block: 3px;
   }
 }

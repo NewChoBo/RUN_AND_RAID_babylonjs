@@ -1,6 +1,7 @@
 import { button, element } from './elements.ts';
 import { createRaidScoreboard } from './raid-scoreboard.ts';
-import { createRaidMenu, type SkillSize } from './raid-menu.ts';
+import { createRaidMenu } from './raid-menu.ts';
+import type { RaidHudSettings } from '../platform/browser/preferences.ts';
 import { createRaidResult } from './raid-result.ts';
 import { createSkillRack } from './raid-skill-rack.ts';
 import { healthMeter, healthMeterPainter } from './raid-health-meter.ts';
@@ -35,19 +36,39 @@ interface RaidActions extends RaidAimActions {
   jump(held?: boolean): void;
   steer(side: number, brake: number): void;
   beginPadAim(): void;
-  setSkillSize(percent: number): void;
+  setHudPreference(key: keyof RaidHudSettings, value: number): void;
+}
+
+// A second thumb or a preceding aim drag can suppress the browser's compatibility click.
+function hudButton(parent: HTMLElement, label: string, action: () => void) {
+  const control = button(parent, label);
+  control.onpointerdown = (event) => {
+    if (event.button === 0) control.setPointerCapture(event.pointerId);
+  };
+  control.onpointerup = (event) => {
+    if (
+      event.button === 0 &&
+      control.hasPointerCapture(event.pointerId) &&
+      control.contains(document.elementFromPoint(event.clientX, event.clientY))
+    )
+      action();
+  };
+  control.onclick = (event) => {
+    if (event.detail === 0) action();
+  };
+  return control;
 }
 export function createRaidHud(
   actions: RaidActions,
   course: HTMLCanvasElement,
-  skillSize: SkillSize,
+  settings: RaidHudSettings,
 ) {
   const root = element('section', document.body);
   root.className = 'raid-hud';
   root.hidden = true;
   const drawCombatNumbers = createRaidCombatNumbers(root);
   const updateScore = createRaidScoreboard(root);
-  const pauseButton = button(root, '⚙︎', actions.pause);
+  const pauseButton = hudButton(root, '⚙︎', actions.pause);
   pauseButton.className = 'raid-pause';
   pauseButton.setAttribute('aria-label', t('pause'));
   pauseButton.setAttribute('aria-haspopup', 'dialog');
@@ -94,7 +115,7 @@ export function createRaidHud(
   condition.hidden = true;
   const orders = element('div', vitals);
   orders.className = 'raid-orders';
-  const lock = button(orders, '', actions.target);
+  const lock = hudButton(orders, '', actions.target);
   const ping = createRaidPing(deck, actions.ping);
   const jump = button(deck, '');
   const jumpLabel = element('span', jump, t('jump'));
@@ -134,7 +155,7 @@ export function createRaidHud(
   jump.className = 'raid-jump';
   const aimPad = new RaidAimPad(root, actions);
   const skills = createSkillRack(deck, aimPad, actions);
-  const menu = createRaidMenu(root, actions, skillSize);
+  const menu = createRaidMenu(root, actions, settings);
   const result = createRaidResult(actions);
   function update(view: RaidView, aiming: Skill | null, slot = 0) {
     // A keyboard-armed skill can point to either half of the screen.
