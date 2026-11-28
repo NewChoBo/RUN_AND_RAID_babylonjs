@@ -45,7 +45,7 @@ class Ignition implements HeroEvents {
 const fireball = shot({ powerScale: 3, control: [slow(45, 15)] }, [0], false, 20);
 const burst = sweep({ powerScale: 3 }, { kind: 'circle', radius: 6 });
 export const flare = defineHero(
-  { ...chartStats.flare, power: 10, reach: 9, radius: 4 },
+  { ...chartStats.flare, power: 10, radius: 4 },
   () => new Ignition(),
   [
     { ...fireball, attack: { ...fireball.attack, splashRadius: 3 } },

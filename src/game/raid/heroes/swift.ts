@@ -1,4 +1,4 @@
-import { stats, crossSlash } from '../../../content/raid/heroes/swift.ts';
+import { stats, crossSlash, lungeTicks } from '../../../content/raid/heroes/swift.ts';
 import { defineHero } from './hero-definition.ts';
 
 import { bolt, projectile } from '../skills/skill-effects.ts';
@@ -68,7 +68,7 @@ export const swift = defineHero(stats, () => new Swift(), [
       combat.dash(
         1,
         { x: point.x - (d?.dx ?? 0) * gap, z: point.z - (d?.dz ?? 1) * gap },
-        6,
+        lungeTicks,
         cast.target,
       );
     },

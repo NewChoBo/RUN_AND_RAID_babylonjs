@@ -103,23 +103,19 @@ function turret(slot: TurretSlot) {
   return {
     kind: 'field' as const,
     range: 6,
-    attack: noAttack,
+    attack: { kind: 'none', area: { kind: 'circle', radius: ranges[slot] } } as const,
     apply: (c: HeroCombat, cast: { point: RaidPoint }, state: Workshop) =>
       state.place(c, slot, cast.point),
   };
 }
-export const hof = defineHero(
-  { ...chartStats.hof, power: 10, reach: 8, radius: 4.2 },
-  () => new Workshop(),
-  [
-    turret(0),
-    turret(1),
-    turret(2),
-    {
-      kind: 'pulse',
-      attack: noAttack,
-      available: (r) => !!r.heroView.turrets?.length,
-      apply: (c, _cast, state) => state.detonate(c),
-    },
-  ],
-);
+export const hof = defineHero({ ...chartStats.hof, power: 10, radius: 4.2 }, () => new Workshop(), [
+  turret(0),
+  turret(1),
+  turret(2),
+  {
+    kind: 'pulse',
+    attack: noAttack,
+    available: (r) => !!r.heroView.turrets?.length,
+    apply: (c, _cast, state) => state.detonate(c),
+  },
+]);

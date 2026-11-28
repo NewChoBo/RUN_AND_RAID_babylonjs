@@ -1,7 +1,9 @@
 import { actionLocked } from '../../../game/raid/raid-control.ts';
+import { lungeTicks } from '../../../content/raid/heroes/swift.ts';
 import { heroKit, KIT_IDS } from '../../../game/raid/heroes/hero-id.ts';
 import { appearance } from './hero-appearance.ts';
 import { raidProjectileProfile, raidSkill } from '../../../game/raid/heroes/hero-catalog.ts';
+import { createFlyingBlade, createBladeWave } from './raid-blade-wave.ts';
 import { createHofTurrets } from './raid-hof-turrets.ts';
 import { createAirArrows } from './raid-air-arrows.ts';
 import { createRaidArrowRain } from './raid-arrow-rain.ts';
@@ -22,6 +24,7 @@ import {
   raidAimKind,
   raidGroundPointAfter,
   raidRunnerPositionAfter,
+  raidRunnerHeight,
   type RaidAction,
   type RaidHero,
   type RaidView,
@@ -87,11 +90,13 @@ export function createRaidEffects(scene: Scene) {
     let rain: ReturnType<typeof createRaidArrowRain> | undefined;
     let blades: ReturnType<typeof createShadowBlades> | undefined;
     let lightning: LinesMesh | undefined;
+    let swordCut: Mesh | undefined;
     const parts = [stamp, flare, ring, ...shards];
     function hide() {
       for (const part of parts) part.setEnabled(false);
       sector?.setEnabled(false);
       for (const pillar of pillars ?? []) pillar.setEnabled(false);
+      swordCut?.setEnabled(false);
       rain?.hide();
       blades?.hide();
       lightning?.dispose();
@@ -128,6 +133,20 @@ export function createRaidEffects(scene: Scene) {
             age,
           );
         return;
+      }
+      const lunge = hero === 'swift' && skill === 1 && cue.phase === 'dash';
+      if ((hero === 'rildin' && skill === 0) || (hero === 'kali' && skill === 0) || lunge) {
+        swordCut ??= createBladeWave(scene, 'melee sword trail', new Color3(1, 0.81, 0.48));
+        const runner = view.runners[cue.slot]!;
+        const point = raidRunnerPositionAfter(runner, subtick);
+        const phase = (age - (lunge ? lungeTicks : 0)) / 12;
+        const facing = Math.atan2(cue.to.x - cue.from.x, cue.to.z - cue.from.z);
+        const direction = (cue.comboStep ?? 0) % 2 ? -1 : 1;
+        swordCut.setEnabled(!runner.respawn && !actionLocked(runner) && phase >= 0 && phase < 1);
+        swordCut.rotation.set(0.16, facing + direction * (phase - 0.5) * 2.8, direction * 0.28);
+        swordCut.position.set(point.x, 0.85 + raidRunnerHeight(runner, subtick), point.z);
+        swordCut.scaling.set(1.6, 1, 2.5);
+        swordCut.visibility = Math.max(0, 1 - phase * phase);
       }
       const kind = skill === 'basic' ? null : raidAimKind(hero, skill);
       const roadMotion = cue.phase === 'dash' || cue.phase === 'spin';
@@ -245,7 +264,7 @@ export function createRaidEffects(scene: Scene) {
   const active = new Map<number, ReturnType<typeof allocate>>();
   const pool: ReturnType<typeof allocate>[] = [];
   const bolts: Mesh[] = [];
-  const crossBlades: Mesh[] = [];
+  const swordWaves: ReturnType<typeof createFlyingBlade>[] = [];
   let arrowSource: Mesh | undefined;
   const arrows: Mesh[] = [];
   let match: RaidView | undefined;
@@ -254,12 +273,16 @@ export function createRaidEffects(scene: Scene) {
     drawAirArrows(view, subtick);
     drawIgnition(view, subtick);
     const now = view.tick + subtick;
-    for (let i = 0; i < Math.max(arrows.length, bolts.length, view.projectiles.length); i++) {
+    for (
+      let i = 0;
+      i < Math.max(arrows.length, bolts.length, swordWaves.length, view.projectiles.length);
+      i++
+    ) {
       const p = view.projectiles[i];
       if (!p) {
         bolts[i]?.setEnabled(false);
         arrows[i]?.setEnabled(false);
-        crossBlades[i]?.setEnabled(false);
+        swordWaves[i]?.hide();
         continue;
       }
       const form = appearance[heroKit(p.hero)].projectile?.[p.skill];
@@ -273,10 +296,25 @@ export function createRaidEffects(scene: Scene) {
         arrow.rotation.set(-Math.PI / 2, Math.atan2(p.dx, p.dz), 0);
         arrow.scaling.setAll(p.skill === 3 ? 1.6 : 1);
         bolts[i]?.setEnabled(false);
-        crossBlades[i]?.setEnabled(false);
+        swordWaves[i]?.hide();
         continue;
       }
       arrows[i]?.setEnabled(false);
+      const x = p.x + p.dx * advance,
+        z = p.z + p.dz * advance;
+      if (form === 'horizontal' || form === 'upright' || form === 'cross') {
+        const wave = (swordWaves[i] ??= createFlyingBlade(scene));
+        wave.draw(
+          form,
+          x,
+          z,
+          Math.atan2(p.dx, p.dz),
+          raidProjectileProfile(p.hero, p.skill)!.contact.halfWidth,
+        );
+        bolts[i]?.setEnabled(false);
+        continue;
+      }
+      swordWaves[i]?.hide();
       const bolt = (bolts[i] ??= MeshBuilder.CreateSphere(
         'raid projectile',
         { diameter: 1, segments: 8 },
@@ -284,27 +322,11 @@ export function createRaidEffects(scene: Scene) {
       ));
       bolt.isPickable = false;
       bolt.setEnabled(true);
-      const crescent = form === 'horizontal';
-      bolt.position.set(p.x + p.dx * advance, crescent ? 0.36 : 1, p.z + p.dz * advance);
+      bolt.position.set(x, 1, z);
       bolt.rotation.y = Math.atan2(p.dx, p.dz);
       bolt.scaling.set(0.14, 0.14, p.skill === 3 ? 1.25 : 0.78);
       if (heroKit(p.hero) === 'flare' && p.skill === 0) bolt.scaling.set(0.65, 0.65, 0.85);
-      if (crescent || form === 'cross') bolt.scaling.set(2.35, 0.1, 0.38);
-      if (form === 'upright') bolt.scaling.set(0.16, 1.85, 0.46);
       bolt.material = materials.get(heroKit(p.hero))!.light;
-      if (form === 'cross') {
-        const upright = (crossBlades[i] ??= MeshBuilder.CreateSphere(
-          'cross slash upright',
-          { diameter: 1, segments: 8 },
-          scene,
-        ));
-        upright.isPickable = false;
-        upright.setEnabled(true);
-        upright.position.copyFrom(bolt.position);
-        upright.rotation.y = bolt.rotation.y;
-        upright.scaling.set(0.11, 1.95, 0.38);
-        upright.material = bolt.material;
-      } else crossBlades[i]?.setEnabled(false);
     }
     const visible = view.actions.filter(
       (cue) =>

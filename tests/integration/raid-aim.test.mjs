@@ -31,7 +31,7 @@ test('ground aim keeps legal tiles and projects distant or sky input onto a cast
   const bounds = { left: 20, top: 30, width: 800, height: 400 };
   const viewport = new Viewport(bounds.left, bounds.top, bounds.width, bounds.height);
   for (const [skill, range] of [
-    [1, 10],
+    [1, 13],
     [2, 15],
   ]) {
     for (const offset of [[-3, -2], [-7, 2], [0, 6], [20, 24], [-24, -2], null]) {

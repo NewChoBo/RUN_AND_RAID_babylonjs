@@ -4,17 +4,16 @@ import { defineHero } from './hero-definition.ts';
 import { projectile, spin } from '../skills/skill-effects.ts';
 import type { HeroCombat, HeroEvents, Hit } from './hero-definition.ts';
 import type { AreaAttack } from '../skills/attack-rule.ts';
-import { casterCircle } from '../skills/attack-area.ts';
 const fullMoon = {
   kind: 'area',
   on: 'dashEnd',
-  area: casterCircle,
+  area: { kind: 'circle', radius: 5 },
   hit: { powerScale: 2 },
 } as const satisfies AreaAttack;
 const moonDance = {
   kind: 'area',
   on: 'spinPulse',
-  area: casterCircle,
+  area: { kind: 'circle', radius: 8 },
   hit: { powerScale: 2 },
 } as const satisfies AreaAttack;
 const dashRange = 5.5;
@@ -44,7 +43,7 @@ class Kaiken implements HeroEvents {
 }
 export const kaiken = defineHero(stats, () => new Kaiken(), [
   projectile(crescent, { powerScale: 2 }),
-  projectile(risingMoon, { powerScale: 3 }),
+  projectile(risingMoon, { powerScale: 2 }),
   {
     kind: 'pulse',
     range: dashRange,

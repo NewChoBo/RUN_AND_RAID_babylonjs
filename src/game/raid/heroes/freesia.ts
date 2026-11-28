@@ -1,5 +1,4 @@
 import { defineHero, type HeroCombat, type HeroEvents } from './hero-definition.ts';
-import { noAttack } from '../skills/attack-rule.ts';
 import { RAID_HZ } from '../raid-rules.ts';
 import type { SkillCast } from '../skills/skill-rule.ts';
 import { RAID_REAR_Z, raidGroundPointAfter } from '../runner-motion.ts';
@@ -60,7 +59,7 @@ export const freesia = defineHero(
     },
     {
       kind: 'pulse',
-      attack: noAttack,
+      attack: { kind: 'none', area: { kind: 'circle', radius: 3 } },
       apply(c, cast, state) {
         state.decoy = { x: c.self.x, z: c.self.z, tick: c.tick() };
         state.view.concealedUntil = c.tick() + 2 * RAID_HZ;

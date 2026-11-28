@@ -8,7 +8,6 @@ import {
 import { raidGroundPointAfter } from '../runner-motion.ts';
 import { defineHero, type AirArrow, type Hit, type HeroCombat } from './hero-definition.ts';
 import { field, projectile } from '../skills/skill-effects.ts';
-import { noAttack } from '../skills/attack-rule.ts';
 import { slow } from '../raid-control.ts';
 import { RAID_HZ } from '../raid-rules.ts';
 
@@ -35,11 +34,24 @@ class RollingShot {
 }
 export const longshot = defineHero(stats, () => new RollingShot(), [
   projectile(scatter, { powerScale: 2.5 }),
-  field(arrowRainHit, {
-    intervalTicks: 15,
-    count: 3,
-    effect: { kind: 'damageEnemies', hit: arrowRainHit },
-  }),
-  { kind: 'direction', range: 5, travelTicks: 45, aerialVolley: true, attack: noAttack },
+  {
+    ...field(
+      arrowRainHit,
+      {
+        intervalTicks: 15,
+        count: 3,
+        effect: { kind: 'damageEnemies', hit: arrowRainHit },
+      },
+      { kind: 'circle', radius: 6 },
+    ),
+    range: 13,
+  },
+  {
+    kind: 'direction',
+    range: 5,
+    travelTicks: 45,
+    aerialVolley: true,
+    attack: { kind: 'none', area: { kind: 'circle', radius: 3 } },
+  },
   projectile(piercing, { powerScale: 7, piercesShield: true }, RAID_HZ),
 ]);

@@ -102,7 +102,6 @@ export interface HeroEvents {
   onOutgoingHit?(combat: HeroCombat, hit: Hit, victim?: Runner): number;
   onDamageDealt?(combat: HeroCombat, hit: Hit, victim: Runner, damage: number): void;
   resistsControl?(runner: RaidRunner): boolean;
-  blocksJump?(): boolean;
   /** Handle life-state reset in place when private cooldowns must survive a knockout. */
   onKnockout?(combat: HeroCombat): void;
   onRespawn?(combat: HeroCombat): void;

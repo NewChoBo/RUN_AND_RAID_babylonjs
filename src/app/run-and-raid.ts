@@ -1,4 +1,5 @@
 import { actionLocked } from '../game/raid/raid-control.ts';
+import { canPressJump } from '../game/raid/air-movement.ts';
 import { RaidRound } from '../game/raid/raid-round.ts';
 import { raidSkill } from '../game/raid/heroes/hero-catalog.ts';
 import type { RaidEntry, RaidRoom, RoomError } from '../platform/photon/raid-room.ts';
@@ -130,15 +131,22 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     if (preview?.status === 'ready') order('cast', { skill, repeat: true });
     else hud.showFeedback(raidText(preview ? 'repeatUnavailable' : 'repeatMissing'));
   }
-  function evade() {
+  const jetInputs = new Set<'key' | 'pad'>();
+  function evade(down?: boolean, source: 'key' | 'pad' = 'pad') {
+    if (down === false) {
+      if (jetInputs.delete(source) && !jetInputs.size && state === 'playing') order('jump', false);
+      return;
+    }
     if (state !== 'playing') return;
     const r = match.runners[slot]!;
-    if (r.respawn || r.leap || actionLocked(r) || r.jumping) return;
+    if (!canPressJump(r)) return;
+    const jet = down === true && r.jetFuel !== undefined;
+    if (jet) jetInputs.add(source);
     aimPointer = null;
     aiming = null;
     hud.aimPad.close();
     course.showAim(null);
-    order('jump');
+    order('jump', jet ? true : undefined);
     hud.update(match, null, slot);
   }
   function enterCourse() {
@@ -158,6 +166,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   }
   function pause() {
     if (state !== 'playing' && state !== 'countdown') return;
+    if (jetInputs.size) order('jump', false);
+    jetInputs.clear();
     pressed.clear();
     padSide = 0;
     padBrake = 0;
@@ -373,6 +383,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     leave: () => resetLobby(),
   });
   function resetLobby(reason?: RoomError, exiting = false) {
+    jetInputs.clear();
     audio.suspend();
     attempt++;
     if (state === 'loading') closeLoadingScreen();
@@ -574,13 +585,14 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
         course.showAim(null);
         hud.update(match, null, slot);
       } else pause();
-    } else if (e.code === jump) evade();
+    } else if (e.code === jump) evade(true, 'key');
     else if (e.code === 'Tab') cycle();
     else if (e.code === 'KeyG') callTarget();
     else if (e.shiftKey) repeatCast(keys.indexOf(e.code) as Skill);
     else cast(keys.indexOf(e.code) as Skill);
   });
   window.addEventListener('keyup', (e) => {
+    if (e.code === jump) evade(false, 'key');
     if (pressed.has(e.code)) held('', false, e.code);
   });
   window.addEventListener('blur', pause);

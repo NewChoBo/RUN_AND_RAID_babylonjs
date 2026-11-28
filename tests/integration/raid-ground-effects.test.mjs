@@ -6,6 +6,45 @@ import { createRaidCounterVisual } from '../../src/platform/babylon/raid/raid-co
 import { RAID_COUNTERS } from '../../src/game/raid/raid-boss.ts';
 import { createRaidEffects } from '../../src/platform/babylon/raid/raid-effects.ts';
 
+test('blade waves reuse meshes, keep their contact width and switch between horizontal, upright and cross', (t) => {
+  const engine = new NullEngine();
+  t.after(() => engine.dispose());
+  const scene = new Scene(engine),
+    draw = createRaidEffects(scene);
+  for (const [hero, skill, form, count, width] of [
+    ['kaiken', 0, 'horizontal', 1, 3],
+    ['kaiken', 1, 'upright', 3, 1],
+    ['swift', 0, 'cross', 1, 3],
+  ]) {
+    const match = new RaidMatch(hero);
+    assert.ok(match.cast(0, skill, { dx: 1, dz: 0 }));
+    draw(match, 0);
+    const blades = scene.meshes.filter((m) => m.name === 'sword wave' && m.isEnabled());
+    assert.equal(blades.length, count);
+    assert.ok(
+      blades.every(
+        (m) => m.scaling.x === width && m.rotation.z === (form === 'upright' ? Math.PI / 2 : 0),
+      ),
+    );
+    assert.ok(Math.abs(blades[Math.floor(count / 2)].parent.rotation.y - Math.PI / 2) < 1e-8);
+    assert.equal(
+      scene.meshes.filter((m) => m.name === 'crossing sword wave' && m.isEnabled()).length,
+      form === 'cross' ? 1 : 0,
+    );
+  }
+  const match = new RaidMatch('swift');
+  assert.ok(match.cast(0, 1, 2));
+  draw(match, 0);
+  const cut = scene.getMeshByName('melee sword trail');
+  assert.ok(cut && !cut.isEnabled());
+  for (let i = 0; i < 6; i++) match.step();
+  draw(match, 0);
+  assert.ok(cut.isEnabled());
+  draw(new RaidMatch(), 0);
+  assert.ok(!cut.isEnabled());
+  assert.equal(scene.meshes.filter((m) => m.name === 'sword wave').length, 3);
+});
+
 test('Longshot renders seven arrowheads along their shots and rains arrows across the damaging road circle', (t) => {
   const engine = new NullEngine();
   t.after(() => engine.dispose());

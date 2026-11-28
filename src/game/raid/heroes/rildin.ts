@@ -26,7 +26,7 @@ const chainAttack: AreaAttack<'cast'> = {
 const counter: AreaAttack<'counter'> = {
   kind: 'area',
   on: 'counter',
-  area: { kind: 'circle', radius: 5 },
+  area: { kind: 'circle', radius: (c) => 5 + swordReachBonus(c.self, c.tick()) },
   hit: { powerScale: 1, control: [stun(30)] },
 };
 class Rildin implements HeroEvents {

@@ -1,7 +1,7 @@
 import { stats } from '../../../content/raid/heroes/abyss.ts';
 import { defineHero, type HeroCombat, type HeroEvents } from './hero-definition.ts';
 import { shot } from './archive-skills.ts';
-import { noAttack, type HitRule } from '../skills/attack-rule.ts';
+import { type HitRule } from '../skills/attack-rule.ts';
 import type { HeroSkill } from '../skills/skill-rule.ts';
 import { slow, silence } from '../raid-control.ts';
 import { RAID_HZ } from '../raid-rules.ts';
@@ -47,7 +47,7 @@ export const abyss = defineHero(stats, () => new Abyss(), [
   vortex(15, 6, 1, { powerScale: 3, control: [slow(2 * RAID_HZ, 20)] }),
   {
     kind: 'pulse',
-    attack: noAttack,
+    attack: { kind: 'none', area: { kind: 'circle', radius: 4 } },
     apply(c, cast, state) {
       state.hiddenUntil = c.tick() + 2 * RAID_HZ;
       c.record(cast.skill, c.self, 'ground');

@@ -7,7 +7,7 @@ import {
   raidGroundPointAfter,
   raidRunnerPositionAfter,
 } from './runner-motion.ts';
-import { canUseRaidSkill, raidProjectileProfile, raidSkill } from './heroes/hero-catalog.ts';
+import { canUseRaidSkill, raidSkill } from './heroes/hero-catalog.ts';
 import {
   HEROES,
   RAID_HZ,
@@ -81,26 +81,31 @@ export function driveRaidBots(
       goalX =
         left < -RAID_RUN_LIMIT_X || (right <= RAID_RUN_LIMIT_X && r.x > counter.x) ? right : left;
     }
+    // Ranged runners need their duel target in front of them to land a basic attack.
+    const keepDistance =
+      target && HEROES[r.hero].reach >= 8 && target.z - r.z <= Math.abs(target.x - r.x);
     send(r.slot, 'move', {
       side: Math.abs(goalX - r.x) < 0.5 ? 0 : Math.sign(goalX - r.x),
-      walk:
+      brake:
         call && 'movement' in call
-          ? call.movement === 'retreat'
-          : !target && partner.respawn > 0 && r.hp < 40 && r.z > 0,
+          ? Number(call.movement === 'retreat')
+          : keepDistance
+            ? 0.4
+            : Number(!target && partner.respawn > 0 && r.hp < 40 && r.z > 0),
     });
-    if (
-      counter?.kind === 'lane' &&
-      counter.phase === 'warning' &&
-      counter.ticks <= 16 &&
-      inRaidCounter(counter, r)
-    )
-      send(r.slot, 'jump');
-    if (counter?.kind === 'wave') {
-      const arrival =
-        (counter.phase === 'warning' ? counter.ticks : 0) +
-        (counter.z - r.z) / RAID_COUNTERS.wave.metresPerTick;
-      if (arrival >= 0 && arrival <= 16) send(r.slot, 'jump');
-    }
+    const waveArrival =
+      counter?.kind === 'wave'
+        ? (counter.phase === 'warning' ? counter.ticks : 0) +
+          (counter.z - r.z) / RAID_COUNTERS.wave.metresPerTick
+        : Infinity;
+    const evade =
+      (counter?.kind === 'lane' &&
+        counter.phase === 'warning' &&
+        counter.ticks <= 16 &&
+        inRaidCounter(counter, r)) ||
+      (waveArrival >= 0 && waveArrival <= 16);
+    if (evade) send(r.slot, 'jump', r.jetFuel !== undefined ? true : undefined);
+    else if (r.air?.thrust) send(r.slot, 'jump', false);
     send(r.slot, 'lock', target?.slot ?? 'wagon');
     // Space casts just over a second apart. Steering and hazard reactions still run every eight ticks.
     if (actionLocked(r) || r.silenced || view.tick < RAID_HZ || (view.tick + rank * 20) % 32 !== 0)
@@ -129,7 +134,7 @@ export function driveRaidBots(
       !r.jumping &&
       (landingGap <= view.skillRange(r.slot, 1).radius || landingGap < distance) &&
       Math.hypot(leapAim.x - r.x, leapAim.z - r.z) <= leap.range;
-    const pulseRange = raidProjectileProfile(r.hero, 0)?.reach ?? HEROES[r.hero].radius;
+    const pulse = view.skillRange(r.slot, 0);
     const orb = r.lastWard === partner.slot && !partner.respawn ? partner : r;
     const orbGap = Math.hypot(point.x - orb.x, point.z - orb.z);
     const partnerGap = Math.hypot(point.x - partner.x, point.z - partner.z);
@@ -138,10 +143,10 @@ export function driveRaidBots(
     const repositionOrb =
       r.hero === 'jade' && orbGap > 6 && (distance <= 6 || (passOrb && partnerGap <= 6));
     const usePulse = r.heroView.turrets
-      ? distance <= 26
+      ? distance <= pulse.range + pulse.radius
       : opener === 'ward'
         ? needsHealing || repositionOrb
-        : distance <= pulseRange;
+        : distance <= pulse.range;
     const needsEvasion =
       !!nearest &&
       nearestDistance < 4 &&
@@ -213,7 +218,8 @@ export function driveRaidBots(
     const kind = raidAimKind(r.hero, skill);
     if (kind === 'leap') send(r.slot, 'cast', { skill, ...leapAim });
     else if (kind === 'field') {
-      const factor = r.heroView.turrets && distance > 5.99 ? 5.99 / distance : 1;
+      const range = view.skillRange(r.slot, skill).range;
+      const factor = distance > range ? range / distance : 1;
       send(r.slot, 'cast', {
         skill,
         x: r.x + (point.x - r.x) * factor,

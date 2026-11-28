@@ -1,4 +1,6 @@
 import { healthMeter, healthMeterPainter } from '../../../ui/raid-health-meter.ts';
+import { isJetFiring } from '../../../game/raid/air-movement.ts';
+import { createBladeWave } from './raid-blade-wave.ts';
 import { heroKit } from '../../../game/raid/heroes/hero-id.ts';
 import {
   appearance,
@@ -11,6 +13,7 @@ import { placeSourceModel } from './source-model-size.ts';
 import { equipRaidGear } from './raid-equipment.ts';
 import {
   Color3,
+  FresnelParameters,
   DynamicTexture,
   Mesh,
   LoadAssetContainerAsync,
@@ -30,7 +33,6 @@ import {
 import { RAID_JUMP_TICKS } from '../../../game/raid/runner-motion.ts';
 import { RaidActionPlayback } from './raid-action-playback.ts';
 import {
-  HEROES,
   RAID_HZ,
   raidRespawnTicks,
   RAID_LEAP_TICKS,
@@ -183,7 +185,7 @@ export function createRaidActor(
   const spinTrail = art.spinClip
     ? MeshBuilder.CreateTorus(
         hero + ' moving sweep',
-        { diameter: HEROES[hero].radius * 2, thickness: 0.055, tessellation: 48 },
+        { diameter: 2, thickness: 0.025, tessellation: 64 },
         scene,
       )
     : null;
@@ -231,9 +233,44 @@ export function createRaidActor(
   ward.parent = body;
   ward.position.y = 0.99;
   ward.scaling.y = 1.39;
-  const shield = raidMaterial(scene, hero + ' ward glow', raidColors.jade, 0.8);
-  shield.alpha = 0.19;
+  const shield = raidMaterial(scene, hero + ' ward glow', '#78a7ff', 0.8);
   ward.material = shield;
+  ward.isPickable = false;
+  shield.opacityFresnelParameters = new FresnelParameters({
+    leftColor: Color3.Black(),
+    rightColor: Color3.FromHexString('#afafaf'),
+    power: 2,
+  });
+  shield.alpha = 0.13;
+  const spinTrails =
+    hero === 'kaiken' || hero === 'hammer'
+      ? [-1, 1].map((side) => {
+          const trail = createBladeWave(
+            scene,
+            hero + ' spinning weapon trail',
+            hero === 'hammer' ? new Color3(1, 0.73, 0.32) : new Color3(0.65, 0.91, 1),
+          );
+          trail.parent = root;
+          trail.isPickable = false;
+          trail.setEnabled(false);
+          return { trail, side };
+        })
+      : [];
+  const exhaust =
+    hero === 'hof'
+      ? MeshBuilder.CreateCylinder(
+          'Hof jet exhaust',
+          { height: 0.85, diameterTop: 0.24, diameterBottom: 0, tessellation: 12 },
+          scene,
+        )
+      : undefined;
+  if (exhaust) {
+    exhaust.parent = body;
+    exhaust.position.set(0, 0.47, -0.24);
+    exhaust.isPickable = false;
+    exhaust.material = raidMaterial(scene, 'jet flame', '#7bdcff', 1);
+    exhaust.setEnabled(false);
+  }
   const orb =
     hero === 'alice'
       ? MeshBuilder.CreateSphere('Holy Orb', { diameter: 0.36, segments: 12 }, scene)
@@ -273,6 +310,7 @@ export function createRaidActor(
       );
     }
     spinTrail?.setEnabled(r.spinTicks > 0 && !r.respawn);
+    if (spinTrail && r.spin) spinTrail.scaling.set(r.spin.radius, 1, r.spin.radius);
     const fallAge = raidRespawnTicks(r.deaths) - r.respawn;
     const concealed = r.team !== localTeam && (r.heroView.concealedUntil ?? 0) > tick;
     root.setEnabled(
@@ -286,6 +324,21 @@ export function createRaidActor(
     bar.setEnabled(!r.respawn);
     const vitals = healthMeter(r, tick);
     ward.setEnabled(vitals.reducedDamage || vitals.barrier > 0 || vitals.guarding);
+    if (exhaust) {
+      exhaust.setEnabled(isJetFiring(r) && !r.respawn);
+      exhaust.scaling.y = 0.95 + 0.18 * Math.sin((tick + subtick) * 1.7);
+    }
+    for (const { trail, side } of spinTrails) {
+      trail.setEnabled(!!r.spin && !r.respawn);
+      if (r.spin) {
+        const phase =
+          ((r.spin.duration - r.spin.remaining + subtick) * Math.PI * 2) / r.spin.interval +
+          (side < 0 ? Math.PI : 0);
+        trail.rotation.set(0.08, phase, side * 0.16);
+        trail.position.set(1.2 * Math.sin(phase), 0.82 + side * 0.1, 1.2 * Math.cos(phase));
+        trail.scaling.set(1.65, 1, 0.9);
+      }
+    }
     const { x, z } = position;
     const elevation = raidRunnerHeight(r, subtick);
     root.position.set(x, elevation, z);
@@ -352,15 +405,35 @@ export function createRaidActor(
         (r.spin.duration - r.spin.remaining + subtick) / RAID_HZ,
         dt,
       );
+    } else if (
+      r.air &&
+      (!pose || pose.cue.skill === 'basic') &&
+      r.air.second &&
+      motion?.has('airJump')
+    ) {
+      motion.once('airJump', (r.air.elapsed + subtick) / RAID_HZ, dt);
+    } else if (
+      r.air &&
+      (!pose || pose.cue.skill === 'basic') &&
+      r.jetFuel !== undefined &&
+      motion?.has('jetRise')
+    ) {
+      motion.loop(
+        r.air.speed >= 0 ? 'jetRise' : 'jetFall',
+        (r.air.elapsed + subtick) / RAID_HZ,
+        dt,
+      );
     } else if (pose && !(hero === 'longshot' && pose.cue.skill === 2)) {
       motion?.once(pose.clip, ((now - pose.start) / RAID_HZ) * (pose.cue.basicSpeed ?? 1), dt);
     } else if (r.jumping)
       motion?.once(
         modeClip('shieldJump', 'jump'),
-        ((r.launchDuration || (r.heroView.escapeTicks ? 2 * RAID_HZ : RAID_JUMP_TICKS)) -
-          r.jumping +
-          subtick) /
-          RAID_HZ,
+        r.air
+          ? Math.min(r.air.elapsed + subtick, RAID_JUMP_TICKS - 1) / RAID_HZ
+          : ((r.launchDuration || (r.heroView.escapeTicks ? 2 * RAID_HZ : RAID_JUMP_TICKS)) -
+              r.jumping +
+              subtick) /
+              RAID_HZ,
         dt,
       );
     else if (r.heroView.orbTicks && motion?.has('orbLoop')) {

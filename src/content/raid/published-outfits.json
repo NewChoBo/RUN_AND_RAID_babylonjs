@@ -417,19 +417,58 @@
     "group": "hof",
     "skin": "astronaut",
     "model": "./assets/fighters/hof-astronaut.glb",
-    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "jetRise",
+      "jetFall"
+    ]
   },
   {
     "group": "hof",
     "skin": "default",
     "model": "./assets/fighters/hof-default.glb",
-    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "jetRise",
+      "jetFall"
+    ]
   },
   {
     "group": "hof",
     "skin": "western",
     "model": "./assets/fighters/hof-western.glb",
-    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "jetRise",
+      "jetFall"
+    ]
   },
   {
     "group": "jade",
@@ -555,7 +594,19 @@
     "group": "longshot",
     "skin": "default",
     "model": "./assets/fighters/longshot-default.glb",
-    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "airJump"
+    ]
   },
   {
     "group": "longshot",
@@ -567,7 +618,19 @@
     "group": "longshot",
     "skin": "hitman",
     "model": "./assets/fighters/longshot-hitman.glb",
-    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "airJump"
+    ]
   },
   {
     "group": "longshot",
@@ -579,7 +642,19 @@
     "group": "longshot",
     "skin": "royalguard",
     "model": "./assets/fighters/longshot-royalguard.glb",
-    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "airJump"
+    ]
   },
   {
     "group": "longshot",
@@ -591,7 +666,19 @@
     "group": "longshot",
     "skin": "thiefguild",
     "model": "./assets/fighters/longshot-thiefguild.glb",
-    "clips": ["idle", "run", "walk", "jump", "fall", "basic", "pulse", "bolt", "field", "fury"]
+    "clips": [
+      "idle",
+      "run",
+      "walk",
+      "jump",
+      "fall",
+      "basic",
+      "pulse",
+      "bolt",
+      "field",
+      "fury",
+      "airJump"
+    ]
   },
   {
     "group": "magnus",

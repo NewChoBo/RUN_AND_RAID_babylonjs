@@ -383,6 +383,12 @@ body.raid-mode .title-copy h1 {
   width: 0;
   height: 0;
 }
+.raid-jump progress {
+  display: block;
+  width: calc(var(--jump-size) * 0.49);
+  height: 7px;
+  accent-color: #79dcef;
+}
 .raid-hud .raid-skills button {
   --ink: #ffd391;
   --well: #75412e;

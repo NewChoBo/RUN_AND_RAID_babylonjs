@@ -138,3 +138,7 @@ uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/verify_p
 ```powershell
 uv run --no-project --python 3.13 --with bpy==5.3.0 python tools/assets/assemble_turrets.py
 ```
+
+## 공중 이동 클립
+
+롱샷 출전 외형 4종의 `airJump`는 기본·근위대의 `double_jump.max`를 사용한다. 호프 출전 외형 3종의 `jetRise`와 `jetFall`은 각각 `jump_loopup.max`와 `jump_loopdown.max`다. 기존 단일 점프 클립은 별도로 유지된다. 각 GLB의 `extras.sourceTiming`과 그룹 ZIP 안의 `index.json`에서 스킨별 출처와 시간을 확인할 수 있다. [롱샷 GLB](https://drive.google.com/file/d/1ioOsDtY45Vk4xpi65lGS6PEAmB6mP2Jo/view) · [호프 GLB](https://drive.google.com/file/d/1_gx6jULimalAa2vJ3pnOpnuPUtbB19Bx/view)

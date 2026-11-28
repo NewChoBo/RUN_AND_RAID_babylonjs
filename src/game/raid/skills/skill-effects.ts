@@ -64,7 +64,13 @@ export function spin(ticks: number, attack: AreaAttack<'spinPulse'>): HeroSkill<
     kind: 'pulse',
     attack,
     apply(combat, cast) {
-      combat.self.spin = { skill: cast.skill, remaining: ticks, duration: ticks, interval: 15 };
+      combat.self.spin = {
+        skill: cast.skill,
+        remaining: ticks,
+        duration: ticks,
+        interval: 15,
+        radius: cast.radius,
+      };
       if (combat.controlImmune()) combat.self.slows.length = 0;
       combat.record(cast.skill, combat.self);
     },

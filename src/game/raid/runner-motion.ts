@@ -1,4 +1,6 @@
 import { activeSlow } from './raid-control.ts';
+import { airHeightAfter, RAID_JUMP_TICKS } from './air-movement.ts';
+export { RAID_JUMP_TICKS } from './air-movement.ts';
 import type { RaidRunner, RaidPoint } from './raid-view.ts';
 import { RAID_HZ, RAID_LEAP_TICKS, RAID_RUN_LIMIT_X, WAGON } from './raid-rules.ts';
 /** Distance in metres travelled by the wagon over this many match ticks (including sub-ticks). */
@@ -79,6 +81,7 @@ export function raidRunnerHeight(r: RaidRunner, subtick = 0) {
     const smooth = (t: number) => t * t * (3 - 2 * t);
     return 2.1 * smooth(rise) * smooth(fall) + (r.dash.takeoffHeight ?? 0) * (1 - smooth(rise));
   }
+  if (r.air && !r.launchDuration) return airHeightAfter(r, subtick);
   return r.leap
     ? raidLeapHeight(Math.min(1, (r.leap.elapsed + subtick) / RAID_LEAP_TICKS))
     : jumpHeight(
@@ -123,7 +126,6 @@ export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint
     ),
   };
 }
-export const RAID_JUMP_TICKS = 22;
 export function jumpHeight(ticks: number, duration = RAID_JUMP_TICKS) {
   const t = clamp(ticks / duration, 0, 1);
   return 4 * 3.2 * t * (1 - t);

@@ -1,5 +1,5 @@
 import { chartStats } from '../base-stats.ts';
-export const stats = { ...chartStats.rildin, power: 9, reach: 3.4, radius: 3.5 } as const;
+export const stats = { ...chartStats.rildin, power: 9, radius: 3.5 } as const;
 export const chainSlash = {
   reach: 5,
   maxHeight: 0.7,

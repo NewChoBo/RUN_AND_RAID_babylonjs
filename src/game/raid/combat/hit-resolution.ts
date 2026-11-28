@@ -120,8 +120,10 @@ export class RaidHitResolution {
             victim.taunt = { from: attacker.slot, until: tick + hit.rule.tauntTicks };
           if (hit.rule.launchTicks || hit.rule.displacement) {
             victim.dash = victim.leap = null;
-            if (hit.rule.launchTicks) victim.jumping = victim.launchDuration = hit.rule.launchTicks;
-            else {
+            if (hit.rule.launchTicks) {
+              victim.air = null;
+              victim.jumping = victim.launchDuration = hit.rule.launchTicks;
+            } else {
               const origin = hit.rule.displacementOrigin ?? attacker;
               const dx = victim.x - origin.x;
               const dz = victim.z - origin.z;
@@ -156,6 +158,7 @@ export class RaidHitResolution {
         victim.blindUntil = victim.controlGuardUntil = 0;
         victim.respawn = raidRespawnTicks(victim.deaths);
         victim.jumping = 0;
+        victim.air = null;
         victim.barrier = null;
         victim.taunt = null;
         victim.leap = null;

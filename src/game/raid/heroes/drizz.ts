@@ -37,7 +37,7 @@ export const drizz = defineHero(stats, () => darkHand, [
     attack: {
       kind: 'area',
       on: 'cast',
-      area: { kind: 'circle', radius: 4.5 },
+      area: { kind: 'circle', radius: 6 },
       hit: { powerScale: 3, control: [slow(30, 8)] },
     },
     apply(combat, cast) {

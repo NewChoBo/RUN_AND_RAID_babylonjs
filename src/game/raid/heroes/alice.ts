@@ -1,7 +1,6 @@
 import { stats } from '../../../content/raid/heroes/alice.ts';
 import { silence, slow } from '../raid-control.ts';
 import { RAID_HZ } from '../raid-rules.ts';
-import { noAttack } from '../skills/attack-rule.ts';
 import { defineHero, type HeroCombat, type HeroEvents } from './hero-definition.ts';
 
 class Alice implements HeroEvents {
@@ -9,9 +8,6 @@ class Alice implements HeroEvents {
     return this;
   }
   orbTicks = 0;
-  blocksJump() {
-    return this.orbTicks > 0;
-  }
   resistsControl() {
     return this.orbTicks > 0;
   }
@@ -71,7 +67,7 @@ export const alice = defineHero(stats, () => new Alice(), [
   },
   {
     kind: 'pulse',
-    attack: noAttack,
+    attack: { kind: 'none', area: { kind: 'circle', radius: 14 } },
     apply(combat, cast, state) {
       state.orbTicks = 5 * RAID_HZ;
       combat.record(cast.skill, combat.self, 'ground');

@@ -1,7 +1,7 @@
 import { chartStats } from '../base-stats.ts';
 import { standardContact } from '../projectile-contact.ts';
 
-export const stats = { ...chartStats.longshot, power: 8, reach: 12, radius: 2.8 } as const;
+export const stats = { ...chartStats.longshot, power: 8, radius: 2.8 } as const;
 export const scatter = {
   reach: 15,
   speed: 15,

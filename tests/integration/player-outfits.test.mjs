@@ -9,6 +9,12 @@ import { ORIGINAL_HERO_IDS, PRACTICE_HERO_IDS } from '../../src/game/raid/heroes
 test('every original champion battle outfit and each practice runner includes a waiting motion', () => {
   for (const outfit of battleOutfits.filter((o) => ORIGINAL_HERO_IDS.includes(o.group))) {
     assert.ok(outfit.clips.includes('idle'), outfit.id);
+    if (outfit.group === 'longshot') assert.ok(outfit.clips.includes('airJump'), outfit.id);
+    if (outfit.group === 'hof')
+      assert.ok(
+        ['jetRise', 'jetFall'].every((name) => outfit.clips.includes(name)),
+        outfit.id,
+      );
   }
   for (const hero of PRACTICE_HERO_IDS) {
     const data = readFileSync(

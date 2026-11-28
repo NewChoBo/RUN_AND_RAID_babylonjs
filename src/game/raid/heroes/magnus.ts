@@ -34,7 +34,7 @@ class Magnus implements HeroEvents {
     for (const slot of [0, 1, 2] as const)
       if (this.inactiveCooldowns[slot]!) this.inactiveCooldowns[slot]!--;
     if (this.magnetUntil >= c.tick() && (this.magnetUntil - c.tick()) % RAID_HZ === 0) {
-      for (const id of c.enemies(c.self, 4)) c.strike(id, { powerScale: 1 }, 1);
+      for (const id of c.enemies(c.self, 5)) c.strike(id, { powerScale: 1 }, 1);
     }
   }
   onIncomingDamage(amount: number) {
@@ -45,28 +45,34 @@ class Magnus implements HeroEvents {
   }
 }
 export const magnus = defineHero(
-  { ...chartStats.magnus, power: 10, reach: 3.2, radius: 4 },
+  { ...chartStats.magnus, reach: chartStats.magnus.reach + 0.3, power: 10, radius: 4 },
   () => new Magnus(),
   [
     {
       kind: 'pulse',
-      attack: noAttack,
+      attack: {
+        kind: 'none',
+        area: { kind: 'circle', radius: (c) => (c.self.heroView.shieldMode ? 4 : 3) },
+      },
       apply(c, cast, state) {
         if (state.view.shieldMode) {
           c.dash(cast.skill, { x: c.self.x, z: c.self.z + 5 }, 8);
           return;
         }
-        for (const id of c.enemies(c.self, 4.5))
+        for (const id of c.enemies(c.self, 3))
           c.strike(id, { powerScale: 3, displacement: 'push' }, cast.skill);
         c.record(cast.skill, c.self, 'ground');
       },
     },
     {
       kind: 'pulse',
-      attack: noAttack,
+      attack: {
+        kind: 'none',
+        area: { kind: 'circle', radius: (c) => (c.self.heroView.shieldMode ? 8 : 5) },
+      },
       apply(c, cast, state) {
         if (state.view.shieldMode) {
-          for (const id of c.enemies(c.self, 4))
+          for (const id of c.enemies(c.self, 8))
             c.strike(id, { powerScale: 2, tauntTicks: RAID_HZ }, cast.skill);
         } else {
           c.barrier(c.self.slot, 24, 5 * RAID_HZ);
@@ -77,10 +83,13 @@ export const magnus = defineHero(
     },
     {
       kind: 'pulse',
-      attack: noAttack,
+      attack: {
+        kind: 'none',
+        area: { kind: 'circle', radius: (c) => (c.self.heroView.shieldMode ? 8 : 0) },
+      },
       apply(c, cast, state) {
         if (state.view.shieldMode)
-          c.heal(c.self.slot, 12 + 8 * c.enemies(c.self, 5).filter((id) => id !== 'wagon').length);
+          c.heal(c.self.slot, 12 + 8 * c.enemies(c.self, 8).filter((id) => id !== 'wagon').length);
         else state.rageUntil = c.tick() + 5 * RAID_HZ;
         c.record(cast.skill, c.self);
       },

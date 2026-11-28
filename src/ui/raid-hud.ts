@@ -3,7 +3,8 @@ import { createRaidScoreboard } from './raid-scoreboard.ts';
 import { createRaidMenu, type SkillSize } from './raid-menu.ts';
 import { createSkillRack } from './raid-skill-rack.ts';
 import { healthMeter, healthMeterPainter } from './raid-health-meter.ts';
-import { actionLocked, activeSlow } from '../game/raid/raid-control.ts';
+import { activeSlow } from '../game/raid/raid-control.ts';
+import { canPressJump, JET_CAPACITY } from '../game/raid/air-movement.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { RAID_HZ, type RaidView, type Skill } from '../game/raid/raid-match.ts';
 import { createRaidPing } from './raid-ping.ts';
@@ -29,7 +30,7 @@ interface RaidActions extends RaidAimActions {
   resume(): void;
   retry(): void;
   leave(): void;
-  jump(): void;
+  jump(held?: boolean): void;
   steer(side: number, brake: number): void;
   beginPadAim(): void;
   setSkillSize(percent: number): void;
@@ -93,12 +94,31 @@ export function createRaidHud(
   orders.className = 'raid-orders';
   const lock = button(orders, '', actions.target);
   const ping = createRaidPing(deck, actions.ping);
-  const jump = button(deck, t('jump'));
+  const jump = button(deck, '');
+  const jumpLabel = element('span', jump, t('jump'));
+  const fuel = element('progress', jump);
+  fuel.max = JET_CAPACITY;
+  fuel.hidden = true;
+  fuel.setAttribute('aria-label', t('jetFuel'));
+  let heldJet: number | null = null;
   // A second thumb does not always produce a compatibility click while steering.
   jump.onpointerdown = (e) => {
-    if (e.button === 0) jump.setPointerCapture(e.pointerId);
+    if (e.button !== 0 || heldJet !== null) return;
+    jump.setPointerCapture(e.pointerId);
+    if (!fuel.hidden) {
+      heldJet = e.pointerId;
+      actions.jump(true);
+    }
   };
+  function releaseJet(e: PointerEvent) {
+    if (heldJet !== e.pointerId) return false;
+    heldJet = null;
+    actions.jump(false);
+    return true;
+  }
+  jump.onpointercancel = jump.onlostpointercapture = releaseJet;
   jump.onpointerup = (e) => {
+    if (releaseJet(e)) return;
     if (
       e.button === 0 &&
       jump.hasPointerCapture(e.pointerId) &&
@@ -119,7 +139,20 @@ export function createRaidHud(
     stick.pad.hidden = aiming !== null;
     const runner = view.runners[slot]!;
     updateScore(view, runner);
-    jump.disabled = !!runner.leap || !!runner.jumping || !!runner.respawn || actionLocked(runner);
+    jump.disabled = heldJet === null && !canPressJump(runner);
+    fuel.hidden = runner.jetFuel === undefined;
+    const nextLabel = t(
+      runner.jetFuel !== undefined ? 'jet' : runner.air && !runner.air.second ? 'airJump' : 'jump',
+    );
+    if (jumpLabel.textContent !== nextLabel) jumpLabel.textContent = nextLabel;
+    if (runner.jetFuel !== undefined) {
+      fuel.value = runner.jetFuel;
+      jump.setAttribute(
+        'aria-label',
+        t('jetHold') + ' · ' + t('jetFuel') + ' ' + Math.round((100 * fuel.value) / fuel.max) + '%',
+      );
+    } else
+      jump.setAttribute('aria-label', t(runner.air && !runner.air.second ? 'airJump' : 'jump'));
     const request = view.calls[runner.team];
     ping.update(
       view,
@@ -180,6 +213,7 @@ export function createRaidHud(
     hint.hidden = !!runner.respawn || !hint.textContent;
   }
   function showPanel(view: RaidView | null, slot = 0, online = false) {
+    heldJet = null;
     stick.reset();
     ping.close();
     aimPad.close();
@@ -200,6 +234,7 @@ export function createRaidHud(
     aimPad,
     drawCombatNumbers,
     reset() {
+      heldJet = null;
       ping.close();
       menu.hide();
       root.hidden = true;

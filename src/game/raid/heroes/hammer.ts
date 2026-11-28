@@ -2,7 +2,6 @@ import { leapImpactRadius, stats } from '../../../content/raid/heroes/hammer.ts'
 import { defineHero } from './hero-definition.ts';
 import { bolt, spin, sweep } from '../skills/skill-effects.ts';
 import type { HeroEvents } from './hero-definition.ts';
-import { RAID_SKILL_RANGE } from '../raid-rules.ts';
 import { casterCircle } from '../skills/attack-area.ts';
 import type { AreaAttack } from '../skills/attack-rule.ts';
 import { slow, stun } from '../raid-control.ts';
@@ -27,7 +26,7 @@ export const hammer = defineHero(stats, () => hammerEvents, [
   sweep({ powerScale: 3, control: [slow(30, 10)] }),
   {
     kind: 'leap',
-    range: RAID_SKILL_RANGE.leap,
+    range: 13,
     attack: landing,
     apply(combat, cast) {
       combat.self.leap = {

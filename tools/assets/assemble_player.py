@@ -29,11 +29,13 @@ STANDARD = {
     "fury": "skill4start",
 }
 OVERRIDES = {
+    "longshot": {"airJump": "double_jump"},
     "alice": {"orbLoop": "skill4loop"},
     "kaiken": {"fullMoonEnd": "skill3end"},
     "elfprince": {"bolt": "skill2start1"},
     "vallet": {"fury": "skill4"},
-    "hof": {"jump": ("jump_loopup", "jump_loopdown"), "bolt": "humanmissle",
+    "hof": {"jump": ("jump_loopup", "jump_loopdown"), "jetRise": "jump_loopup",
+            "jetFall": "jump_loopdown", "bolt": "humanmissle",
             "field": "megabomb", "fury": "rapidrockets"},
     "magnus": {"pulse": "shockwave", "bolt": "shield_attack2", "field": "battleshout",
                "fury": "switchmode", "shieldCharge": "rollingattack", "shieldRun": "shield_run",

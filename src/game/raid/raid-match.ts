@@ -1,4 +1,5 @@
 import { actionLocked, activeSlow, advanceSlows } from './raid-control.ts';
+import { advanceRaidAir, JET_CAPACITY, startRaidJump } from './air-movement.ts';
 import { triggerAttack } from './skills/skill-execution.ts';
 import { measureSkill } from './skills/skill-range.ts';
 import { strikeAlongDash } from './skills/dash-path.ts';
@@ -39,7 +40,6 @@ import {
   distance,
 } from './raid-rules.ts';
 import {
-  RAID_JUMP_TICKS,
   raidBrakeAfter,
   limitAerialVolley,
   limitRaidDash,
@@ -118,6 +118,8 @@ const makeRunner = (hero: RaidHero, slot: number, view: () => HeroView): Runner 
   brake: 0,
   appliedBrake: 0,
   jumping: 0,
+  air: null,
+  jetFuel: hero === 'hof' ? JET_CAPACITY : undefined,
   leap: null,
   respawn: 0,
   basic: 0,
@@ -250,19 +252,15 @@ export class RaidMatch implements RaidView {
     r.brake = brake;
     return true;
   }
-  jump(slot: number) {
+  jump(slot: number, held?: boolean) {
     const r = this.#active(slot);
-    if (
-      !r ||
-      r.jumping ||
-      r.leap ||
-      r.dash ||
-      actionLocked(r) ||
-      this.#heroes[slot]!.events.blocksJump?.()
-    )
-      return false;
-    r.jumping = RAID_JUMP_TICKS;
-    return true;
+    if (!r) return false;
+    if (held === false) {
+      if (r.jetFuel === undefined) return false;
+      if (r.air) r.air.thrust = false;
+      return true;
+    }
+    return startRaidJump(r, held === true);
   }
   #position(r: Runner, target: RaidTarget) {
     if (target === 'wagon') return WAGON;
@@ -287,9 +285,14 @@ export class RaidMatch implements RaidView {
       pullback,
     );
   }
-  canAimGround(slot: number, point: RaidPoint) {
+  canAimGround(slot: number, point: RaidPoint, skill: Skill = 2) {
     const r = this.#active(slot);
-    return !!r && inRaidCastRange(r, point, 2);
+    if (!r) return false;
+    const kind = raidSkill(r.hero, skill).kind;
+    return (
+      (kind === 'field' || kind === 'leap') &&
+      distance(r, point) <= this.skillRange(slot, skill).range
+    );
   }
   #wardInRange(slot: number, ally: number, range: number) {
     const caster = this.#active(slot);
@@ -521,7 +524,10 @@ export class RaidMatch implements RaidView {
     const aerialVolley = 'travelTicks' in rule && rule.aerialVolley;
     const to = aerialVolley ? limitAerialVolley(r, desired) : limitRaidDash(r, desired, ticks);
     const takeoffHeight = aerialVolley ? raidRunnerHeight(r) : undefined;
-    if (aerialVolley) r.jumping = 0;
+    if (aerialVolley) {
+      r.jumping = 0;
+      r.air = null;
+    }
     this.#record(r, skill, to, 'dash');
     const struck = raidSkill(r.hero, skill).attack.kind === 'dashPath' ? [] : undefined;
     r.dash = {
@@ -626,6 +632,7 @@ export class RaidMatch implements RaidView {
       if (r.respawn) {
         if (--r.respawn === 0) {
           r.hp = HEROES[r.hero].hp;
+          if (r.jetFuel !== undefined) r.jetFuel = JET_CAPACITY;
           r.x = spawnX[r.slot]!;
           r.z = -6;
           if (previous) previous[r.slot] = { x: r.x, z: r.z, height: 0 };
@@ -649,7 +656,7 @@ export class RaidMatch implements RaidView {
       if (r.silenced) r.silenced--;
       advanceSlows(r);
       if (r.hasteTicks) r.hasteTicks--;
-      if (r.jumping && !r.launchDuration) r.jumping--;
+      advanceRaidAir(r);
       if (r.shield) r.shield--;
       if (r.barrier && r.barrier.until <= this.tick) r.barrier = null;
       if (r.taunt && (r.taunt.until <= this.tick || this.#runners[r.taunt.from]!.respawn))

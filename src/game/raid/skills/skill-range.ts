@@ -17,6 +17,7 @@ export function measureSkill(rule: SkillInfo, combat: CombatRead, slot: Skill): 
   const hidden =
     attack.kind === 'area' && (attack.on === 'counter' || (attack.on === 'dashEnd' && !recast));
   const radius = area && !hidden ? areaRadius(area, combat) : 0;
-  if (attack.kind === 'projectile') return { range: attack.flight.reach, radius };
+  if (attack.kind === 'projectile')
+    return { range: attack.flight.reach, radius: attack.splashRadius ?? radius };
   return { range: !recast && 'range' in rule ? (rule.range ?? radius) : radius, radius };
 }

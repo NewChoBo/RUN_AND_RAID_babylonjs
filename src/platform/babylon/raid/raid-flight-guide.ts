@@ -14,6 +14,7 @@ const straight = [0];
 export function createRaidFlightGuide(scene: Scene, ink: StandardMaterial) {
   const root = new TransformNode('skill flight direction', scene);
   const lanes: TransformNode[] = [];
+  const widths: Mesh[] = [];
   function addLane() {
     const lane = new TransformNode('skill flight lane', scene);
     lane.parent = root;
@@ -29,6 +30,13 @@ export function createRaidFlightGuide(scene: Scene, ink: StandardMaterial) {
     ];
     shape.indices = [0, 2, 1, 1, 2, 3, 4, 6, 5];
     shape.applyToMesh(mesh);
+    const width = MeshBuilder.CreateGround('skill travel width', { width: 2, height: 1 }, scene);
+    width.parent = lane;
+    width.position.z = 0.5;
+    width.position.y = -0.01;
+    width.material = wash;
+    width.isPickable = false;
+    widths.push(width);
     lanes.push(lane);
     return lane;
   }
@@ -87,16 +95,18 @@ export function createRaidFlightGuide(scene: Scene, ink: StandardMaterial) {
     const angles = aim.flight?.angles ?? straight;
     const filled = aim.flight?.guide === 'sector';
     const count = filled ? 0 : angles.length;
+    wash.emissiveColor = ink.emissiveColor;
     for (let i = 0; i < Math.max(count, lanes.length); i++) {
       const lane = lanes[i] ?? addLane();
       lane.setEnabled(i < count);
       if (i < count) {
         lane.rotation.y = angles[i]!;
         lane.scaling.z = aim.dash ? distance : aim.range;
+        widths[i]!.setEnabled(!!aim.flight);
+        if (aim.flight) widths[i]!.scaling.x = aim.flight.contact.halfWidth;
       }
     }
     if (filled) {
-      wash.emissiveColor = ink.emissiveColor;
       showSector(angles).scaling.set(aim.range, 1, aim.range);
     } else sector?.setEnabled(false);
   };

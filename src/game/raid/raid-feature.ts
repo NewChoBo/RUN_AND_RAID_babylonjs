@@ -23,7 +23,8 @@ export function createRaidFeature(match: RaidMatch): GameFeature<RaidPlayer> {
           'walk' in p && typeof p.walk === 'boolean' && match.move(slot, p.side, Number(p.walk)),
         );
       },
-      jump: ({ slot }) => result(match.jump(slot)),
+      jump: ({ slot }, held) =>
+        result((held == null || typeof held === 'boolean') && match.jump(slot, held ?? undefined)),
       call: ({ slot }, p) =>
         result(
           (p === 'advance' ||

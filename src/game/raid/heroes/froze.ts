@@ -37,7 +37,7 @@ class Frostbite implements HeroEvents {
   }
 }
 export const froze = defineHero(
-  { ...chartStats.froze, power: 10, reach: 3.4, radius: 6 },
+  { ...chartStats.froze, power: 10, radius: 6 },
   () => new Frostbite(),
   [
     {

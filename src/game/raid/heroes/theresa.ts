@@ -1,5 +1,4 @@
 import { defineHero, type HeroCombat, type HeroEvents } from './hero-definition.ts';
-import { noAttack } from '../skills/attack-rule.ts';
 import { chartStats } from '../../../content/raid/base-stats.ts';
 import { distance, RAID_HZ } from '../raid-rules.ts';
 import { stun } from '../raid-control.ts';
@@ -17,12 +16,12 @@ class Theresa implements HeroEvents {
   }
 }
 export const theresa = defineHero(
-  { ...chartStats.theresa, power: 10, reach: 3.5, radius: 3.6 },
+  { ...chartStats.theresa, power: 10, radius: 3 },
   () => new Theresa(),
   [
     {
       kind: 'pulse',
-      attack: noAttack,
+      attack: { kind: 'none', area: { kind: 'circle', radius: 6 } },
       apply(c, cast) {
         for (const ally of c.allies(c.self, 6)) c.heal(ally, ally === c.self.slot ? 28 : 14);
         c.record(cast.skill, c.self, 'ground');
@@ -55,7 +54,7 @@ export const theresa = defineHero(
     sweep({ powerScale: 3, launchTicks: RAID_HZ }),
     {
       kind: 'pulse',
-      attack: noAttack,
+      attack: { kind: 'none', area: { kind: 'circle', radius: 6 } },
       apply(c, cast, state) {
         state.auraTicks = 5 * RAID_HZ;
         c.record(cast.skill, c.self, 'ground');

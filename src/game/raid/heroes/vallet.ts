@@ -1,5 +1,4 @@
 import { defineHero, type HeroCombat, type HeroEvents } from './hero-definition.ts';
-import { noAttack } from '../skills/attack-rule.ts';
 import { chartStats } from '../../../content/raid/base-stats.ts';
 import { RAID_HZ } from '../raid-rules.ts';
 import type { SkillCast } from '../skills/skill-rule.ts';
@@ -21,7 +20,7 @@ class Vallet implements HeroEvents {
 }
 const scatter = shot({ powerScale: 2 }, [-0.28, 0, 0.28], false, 6);
 export const vallet = defineHero(
-  { ...chartStats.vallet, power: 10, reach: 10, radius: 3.8 },
+  { ...chartStats.vallet, power: 10, radius: 3.8 },
   () => new Vallet(),
   [
     bolt({ powerScale: 2 }, { range: 10 }),
@@ -40,7 +39,7 @@ export const vallet = defineHero(
     },
     {
       kind: 'pulse',
-      attack: noAttack,
+      attack: { kind: 'none', area: { kind: 'circle', radius: 4 } },
       apply(c, cast, state) {
         if (state.view.escapeTicks) {
           state.land(c);

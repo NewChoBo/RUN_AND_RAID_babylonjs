@@ -1,7 +1,7 @@
 import { chartStats } from '../base-stats.ts';
 import { RAID_HZ } from '../../../game/raid/raid-rules.ts';
 
-export const stats = { ...chartStats.kali, power: 9, reach: 3, radius: 3 } as const;
+export const stats = { ...chartStats.kali, power: 9, radius: 3 } as const;
 export const shadow = {
   comboLimit: 3,
   comboLifetime: 5 * RAID_HZ,

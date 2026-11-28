@@ -1,4 +1,5 @@
 import type { SkillKind } from './skills/skill-rule.ts';
+import type { AirMovement } from './air-movement.ts';
 import type { HeroView } from './heroes/hero-definition.ts';
 import type { RaidHero } from './heroes/hero-id.ts';
 import type { RaidControl } from './raid-control.ts';
@@ -43,7 +44,7 @@ export interface RaidHealthChange extends Readonly<RaidPoint> {
 export type Skill = 0 | 1 | 2 | 3;
 export interface RaidAim {
   kind: SkillKind;
-  flight?: Pick<ProjectileProfile, 'angles' | 'guide'>;
+  flight?: Pick<ProjectileProfile, 'angles' | 'guide' | 'contact'>;
   /** End of the directional dash in the wagon frame at arrival, once a direction is chosen. */
   dash?: { ticks: number; aerialVolley?: boolean; end: RaidPoint | null };
   status: 'needDirection' | 'ready' | 'needTarget' | 'outOfRange' | 'invalidGround' | 'unavailable';
@@ -78,8 +79,16 @@ export interface RaidAction {
 }
 
 export interface Runner extends RaidPoint, RaidControl {
+  air: AirMovement | null;
+  jetFuel?: number;
   readonly spinTicks: number;
-  spin: { skill: Skill; remaining: number; duration: number; interval: number } | null;
+  spin: {
+    skill: Skill;
+    remaining: number;
+    duration: number;
+    interval: number;
+    radius: number;
+  } | null;
   dash: RaidDash | null;
   readonly heroView: HeroView;
   slot: number;
