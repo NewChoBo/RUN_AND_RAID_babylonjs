@@ -186,7 +186,7 @@ export const raidText = defineMessages(
     rules:
       'Two teams chase one wagon. Break it first, or deal the most wagon damage in three minutes.',
     controls:
-      'Drag left or right to steer, down to brake. Tap instant skills once. For aimed skills, aim and release. Drag an aimed skill off its button to reuse the previous target or aim. On a keyboard, press Shift + its number.',
+      'Drag the left pad sideways to steer or pull it down to walk. Tap instant skills once. For aimed skills, aim and release. Drag an aimed skill off its button to reuse the previous target or aim. On a keyboard, press Shift + its number.',
     pingTeam: 'Team ping',
     pingHelp: 'Drag ! up to advance, down to fall back, or toward an enemy portrait to focus fire.',
     advance: 'Advance',
@@ -230,9 +230,9 @@ export const raidText = defineMessages(
     aimRange: 'Range {range} m',
     aimRadius: 'Radius {radius} m',
     cancelAim: 'Cancel aim',
-    steer: 'Drag left or right to steer, down to brake',
+    steer: 'Drag left or right to steer, down to walk',
     movePad: 'Move',
-    walkPad: 'Walk',
+    walkPad: 'WALK',
     shield: 'Shield',
     hammerPulse: 'Crush',
     hammerBolt: 'Leaping attack',

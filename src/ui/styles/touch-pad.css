@@ -55,38 +55,58 @@
   border-color: #fff0b7;
 }
 .touch-pad[data-shape='semicircle'] {
+  --pad-width: clamp(112px, min(34dvh, 25vw), 168px);
   display: block;
-  visibility: hidden;
   pointer-events: none;
   bottom: auto;
-  transform: translate(-50%, -24%);
-  width: clamp(112px, min(34dvh, 25vw), 168px);
+  transform: translateX(-50%);
+  width: var(--pad-width);
   height: auto;
   aspect-ratio: 2 / 1;
-  font-size: clamp(16px, 3.8dvh, 20px);
+  border: 1px solid #aaa69b;
   border-radius: 0 0 50% 50% / 0 0 100% 100%;
-  background: radial-gradient(ellipse at 50% 0%, #3e485855, #16212ab0 78%);
+  background: linear-gradient(#262522d4, #100f0feb);
+  box-shadow: 0 2px 4px #0005;
 }
 .touch-pad[data-shape='semicircle'].held {
-  visibility: visible;
+  left: max(var(--contact-x), calc(var(--hud-left) + var(--pad-width) / 2));
+  top: clamp(
+    calc(var(--hud-top) + var(--pad-width) * 0.21),
+    var(--contact-y),
+    calc(100% - var(--base) - var(--pad-width) / 2)
+  );
 }
 .touch-pad[data-shape='semicircle']:not(.held) {
-  visibility: visible;
   left: var(--hud-left);
   bottom: var(--base);
   transform: none;
 }
-.touch-pad[data-shape='semicircle'] {
-  border: 2px ridge #a8a395;
-  background: radial-gradient(ellipse at 50% 0%, #44433fbb, #22211fcc 76%);
-}
 .touch-pad[data-shape='semicircle'] i {
-  top: 24%;
-  width: 28%;
+  top: 0;
+  width: 42%;
   display: grid;
-  place-content: center;
-  border: 2px ridge #d7d0c0;
-  background: radial-gradient(ellipse at 45% 30%, #77756e, #292824 65%);
+  align-content: center;
+  justify-items: center;
+  border: 1px solid #aaa69b;
+  background: radial-gradient(ellipse at 48% 42%, #757471, #282724 58%, #0e0e0e 78%);
+}
+.touch-pad[data-shape='semicircle'] i::before {
+  content: '';
+  width: 83%;
+  height: 0.95em;
+  background: currentColor;
+  clip-path: polygon(
+    0 50%,
+    25% 0,
+    25% 30%,
+    75% 30%,
+    75% 0,
+    100% 50%,
+    75% 100%,
+    75% 70%,
+    25% 70%,
+    25% 100%
+  );
 }
 .touch-pad[data-shape='semicircle'] :is(i, span) {
   color: #f2eee5;
@@ -95,8 +115,7 @@
 }
 .touch-pad[data-shape='semicircle']::before,
 .touch-pad[data-shape='semicircle']::after {
-  top: 24%;
-  transform: translateY(-50%);
+  content: none;
 }
 @media (any-pointer: coarse) {
   .touch-pad {

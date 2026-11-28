@@ -6,7 +6,7 @@ const cancel = loadingScreen.querySelector<HTMLButtonElement>('.loading-cancel')
 const firstTip = tip.querySelector<HTMLElement>(
   `[lang="${document.documentElement.lang}"]`,
 )!.textContent!;
-const otherTips = ['tipMarkTarget', 'tipBrake', 'tipQuickMatch', 'tipPractice'] as const;
+const otherTips = ['tipMarkTarget', 'tipWalk', 'tipQuickMatch', 'tipPractice'] as const;
 let index = Math.floor(Math.random() * otherTips.length);
 let timer: number | undefined;
 

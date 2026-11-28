@@ -63,8 +63,8 @@ export function createTouchPad(
     if (id !== null && surface.hasPointerCapture(id)) surface.releasePointerCapture(id);
     puck.style.transform = '';
     if (layout.shape === 'semicircle') {
-      pad.style.removeProperty('left');
-      pad.style.removeProperty('top');
+      pad.style.removeProperty('--contact-x');
+      pad.style.removeProperty('--contact-y');
     }
     pad.classList.remove('held');
     axes(0, 0);
@@ -76,9 +76,9 @@ export function createTouchPad(
       if (e.clientX >= bounds.left + bounds.width / 2) return;
       e.preventDefault();
       if (pointer !== null) return;
-      // The HUD covers the viewport. Anchor its puck at the contact, even at a screen edge.
-      pad.style.left = e.clientX + 'px';
-      pad.style.top = e.clientY + 'px';
+      // The pad can sit inside the screen edge while steering stays relative to the touch.
+      pad.style.setProperty('--contact-x', e.clientX + 'px');
+      pad.style.setProperty('--contact-y', e.clientY + 'px');
     } else {
       if (pointer !== null) return;
       e.preventDefault();

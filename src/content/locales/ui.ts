@@ -152,7 +152,7 @@ const english = {
   cancelEntry: 'Cancel entry',
   tipMarkTarget:
     'Drag from the exclamation mark to an enemy portrait to call a target for your team.',
-  tipBrake: 'Hold back to slow down. Release to catch up with the wagon.',
+  tipWalk: 'Pull down on the left pad to walk. Release to run and catch up with the wagon.',
   tipQuickMatch: 'Quick match opens champion select once all four players have joined.',
   tipPractice: 'Choose Private room, then Offline bot practice to try a runner on your own.',
   arenaError: 'Could not open the arena. Please try again.',
