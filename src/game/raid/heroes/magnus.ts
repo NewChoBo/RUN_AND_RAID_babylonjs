@@ -1,3 +1,4 @@
+import { chartStats } from '../../../content/raid/base-stats.ts';
 import { defineHero, type HeroCombat, type HeroEvents, type Hit } from './hero-definition.ts';
 import { noAttack } from '../skills/attack-rule.ts';
 import { RAID_HZ } from '../raid-rules.ts';
@@ -25,7 +26,7 @@ class Magnus implements HeroEvents {
   }
 }
 export const magnus = defineHero(
-  { hp: 149, power: 10, reach: 3.2, cooldown: 25, radius: 4 },
+  { ...chartStats.magnus, power: 10, reach: 3.2, radius: 4 },
   () => new Magnus(),
   [
     {

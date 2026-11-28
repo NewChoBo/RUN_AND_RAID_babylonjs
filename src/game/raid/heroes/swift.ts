@@ -25,7 +25,7 @@ class Swift implements HeroEvents {
   private vengeance = 0;
   onBasicAttack(combat: HeroCombat) {
     this.vengeance += 4 * Math.floor((10 * (stats.hp - combat.self.hp)) / stats.hp);
-    let amount = stats.power;
+    let amount = stats.basicAttack;
     if (this.vengeance >= 100) {
       amount *= 2;
       this.vengeance -= 100;

@@ -6,6 +6,8 @@ import type { HeroSkill, SkillInfo, ResolvedCast } from '../skills/skill-rule.ts
 
 export interface HeroStats {
   readonly hp: number;
+  readonly basicAttack: number;
+  /** Base for skill coefficients, healing and barriers. */
   readonly power: number;
   readonly reach: number;
   readonly cooldown: number;

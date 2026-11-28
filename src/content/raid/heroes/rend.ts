@@ -1,1 +1,8 @@
-export const stats = { hp: 118, power: 11, reach: 3.6, cooldown: 24, radius: 4.1 } as const;
+export const stats = {
+  hp: 118,
+  basicAttack: 11,
+  power: 11,
+  reach: 3.6,
+  cooldown: 24,
+  radius: 4.1,
+} as const;

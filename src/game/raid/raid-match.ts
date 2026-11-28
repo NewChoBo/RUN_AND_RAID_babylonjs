@@ -544,7 +544,7 @@ export class RaidMatch implements RaidView {
       target = found;
     }
     const attack = this.#heroes[r.slot]!.events.onBasicAttack?.(this.#contexts[r.slot]!);
-    const hitPoint = this.#strike(r, target, attack?.amount ?? stats.power);
+    const hitPoint = this.#strike(r, target, attack?.amount ?? stats.basicAttack);
     r.basic = attack?.cooldown ?? stats.cooldown;
     if (hitPoint)
       this.#record(

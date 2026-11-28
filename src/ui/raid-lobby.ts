@@ -13,7 +13,7 @@ import {
   type DraftClock,
   type DraftSeat,
 } from '../game/raid/raid-draft.ts';
-import { HEROES, type RaidHero, type Skill } from '../game/raid/raid-match.ts';
+import { HEROES, RAID_HZ, type RaidHero, type Skill } from '../game/raid/raid-match.ts';
 import { HERO_IDS, heroKit, PRACTICE_HERO_IDS } from '../game/raid/heroes/hero-id.ts';
 import { adaptedSkills } from '../content/raid/draft-profiles.ts';
 import { createBattleOutfitPicker } from './raid-battle-outfit.ts';
@@ -145,7 +145,7 @@ export function createRaidLobby(
   portrait.width = portrait.height = 240;
   const caption = document.createElement('figcaption');
   const heroName = document.createElement('strong');
-  const range = document.createElement('small');
+  const baseStats = document.createElement('small');
   const detail = document.createElement('p');
   const skills = document.createElement('p');
   skills.className = 'raid-pick-skills';
@@ -169,7 +169,7 @@ export function createRaidLobby(
   more.className = 'draft-character-details';
   const moreTitle = document.createElement('summary');
   moreTitle.textContent = uiText('championDetails');
-  more.append(moreTitle, range, detail, skills, guide);
+  more.append(moreTitle, baseStats, detail, skills, guide);
   function changePreference() {
     actions.resetPracticeOutfit();
     actions.prefer(preview, battleModel.value());
@@ -318,7 +318,13 @@ export function createRaidLobby(
         source.href = 'https://cafe.naver.com/runandraid/' + original.article;
       }
     }
-    range.textContent = t('reach', { range: HEROES[preview].reach });
+    const stats = HEROES[preview];
+    baseStats.textContent = t('baseCombatStats', {
+      hp: stats.hp,
+      attack: stats.basicAttack,
+      seconds: (stats.cooldown / RAID_HZ).toFixed(2),
+      range: stats.reach,
+    });
     detail.textContent =
       kit === preview
         ? t(`${kit}Info`)

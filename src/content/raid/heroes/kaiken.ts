@@ -1,6 +1,7 @@
+import { chartStats } from '../base-stats.ts';
 import { standardContact } from '../projectile-contact.ts';
 
-export const stats = { hp: 108, power: 9, reach: 3.3, cooldown: 28, radius: 3.1 } as const;
+export const stats = { ...chartStats.kaiken, power: 9, reach: 3.3, radius: 3.1 } as const;
 export const crescent = {
   reach: 13,
   speed: 19,

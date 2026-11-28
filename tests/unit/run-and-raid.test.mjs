@@ -736,7 +736,7 @@ test('each runner opens fire as the wagon crosses the radius of their basic atta
       match.step();
     }
     assert.ok(player.basic > 0 && distance() <= metres, hero);
-    assert.equal(match.damage[0] - before, HEROES[hero].power, hero);
+    assert.equal(match.damage[0] - before, HEROES[hero].basicAttack, hero);
   }
 });
 test('held steering reaches both widened lateral limits and releases inward immediately', () => {
@@ -866,7 +866,7 @@ test('an opponent beside the runner enters basic attack range only after moving 
   send(0, 'move', { side: 1, walk: true });
   advance(match, 12);
   assert.ok(rival.z - player.z >= Math.abs(rival.x - player.x));
-  assert.equal(rival.hp, HEROES.longshot.hp - HEROES.hammer.power);
+  assert.equal(rival.hp, HEROES.longshot.hp - HEROES.hammer.basicAttack);
 });
 test('a viewport edge limits player locks but leaves in-range fields and bot vision independent', () => {
   let aspect = 16 / 9;

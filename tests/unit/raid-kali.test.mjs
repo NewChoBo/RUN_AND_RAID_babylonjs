@@ -45,12 +45,12 @@ test('Poison arms the next landed basic and ticks three times after contact', ()
   assert.equal(r.heroView.comboPoints, 1);
   for (let i = 1; i <= 3; i++) {
     advance(m, 29);
-    assert.equal(m.damage[0], i * 9);
+    assert.equal(m.damage[0], HEROES.kali.basicAttack + (i - 1) * 9);
     m.step();
-    assert.equal(m.damage[0], (i + 1) * 9);
+    assert.equal(m.damage[0], HEROES.kali.basicAttack + i * 9);
   }
   advance(m, 30);
-  assert.equal(m.damage[0], 36);
+  assert.equal(m.damage[0], HEROES.kali.basicAttack + 27);
   assert.equal(r.heroView.comboPoints, 1);
 });
 test('Shadow Step uses either team, excludes self and checks sight and thirteen-metre reach', () => {
@@ -94,11 +94,11 @@ test('three different skill hits empower one basic, then start a fresh combo', (
   const before = m.damage[0];
   r.basic = 0;
   m.step();
-  assert.equal(m.damage[0] - before, 18);
+  assert.equal(m.damage[0] - before, HEROES.kali.basicAttack + 9);
   assert.equal(r.heroView.comboPoints, 0);
   r.basic = 0;
   m.step();
-  assert.equal(m.damage[0] - before, 27);
+  assert.equal(m.damage[0] - before, 2 * HEROES.kali.basicAttack + 9);
 });
 test('Dark Blades crosses moving rivals once per dash, preserves saved rage and requires three manual releases', () => {
   const m = arena(),

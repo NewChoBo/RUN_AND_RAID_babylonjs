@@ -155,7 +155,8 @@ export const korean = {
   pickSolo: '주자를 확정하면 혼자서 봇과 경기할 수 있습니다.',
   startSoloRoom: '봇전 시작',
   pickPlayers: '다른 참가자를 기다리는 중입니다.',
-  reach: '평타 사거리 {range}m',
+  baseCombatStats:
+    '기본 체력 {hp} · 평타 공격력 {attack} · 공격 간격 {seconds}초 · 사거리 {range}m',
   solo: '봇과 연습',
   online: '온라인 · 2대2',
   hostRoom: '방 만들기',

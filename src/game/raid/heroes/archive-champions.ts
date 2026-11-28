@@ -1,3 +1,4 @@
+import { chartStats } from '../../../content/raid/base-stats.ts';
 import { defineHero, type HeroCombat, type HeroEvents, type Hit } from './hero-definition.ts';
 import { bolt, field, sweep } from '../skills/skill-effects.ts';
 import { silence, slow, stagger } from '../raid-control.ts';
@@ -5,7 +6,7 @@ import { noAttack } from '../skills/attack-rule.ts';
 import { aid, barrage, rush, shot } from './archive-skills.ts';
 
 export const flare = defineHero(
-  { hp: 98, power: 10, reach: 9, cooldown: 24, radius: 4 },
+  { ...chartStats.flare, power: 10, reach: 9, radius: 4 },
   () => ({}),
   [
     shot({ powerScale: 3 }),
@@ -40,7 +41,7 @@ class Frostbite implements HeroEvents {
   }
 }
 export const froze = defineHero(
-  { hp: 100, power: 10, reach: 3.4, cooldown: 22, radius: 6 },
+  { ...chartStats.froze, power: 10, reach: 3.4, radius: 6 },
   () => new Frostbite(),
   [
     {
@@ -73,7 +74,7 @@ export const froze = defineHero(
   ],
 );
 export const theresa = defineHero(
-  { hp: 131, power: 10, reach: 3.5, cooldown: 23, radius: 3.6 },
+  { ...chartStats.theresa, power: 10, reach: 3.5, radius: 3.6 },
   () => ({}),
   [
     aid(28, 0, 7),
@@ -82,18 +83,14 @@ export const theresa = defineHero(
     barrage({ powerScale: 3 }, { powerScale: 2 }, 2, 15),
   ],
 );
-export const hof = defineHero(
-  { hp: 115, power: 10, reach: 8, cooldown: 24, radius: 4.2 },
-  () => ({}),
-  [
-    barrage({ powerScale: 1 }, { powerScale: 1, control: [slow(22)] }, 4, 8),
-    rush({ powerScale: 3, displacement: 'push' }, 9),
-    field({ powerScale: 4, control: [stagger(12)] }),
-    shot({ powerScale: 3 }, [-0.15, 0, 0.15], true, 19),
-  ],
-);
+export const hof = defineHero({ ...chartStats.hof, power: 10, reach: 8, radius: 4.2 }, () => ({}), [
+  barrage({ powerScale: 1 }, { powerScale: 1, control: [slow(22)] }, 4, 8),
+  rush({ powerScale: 3, displacement: 'push' }, 9),
+  field({ powerScale: 4, control: [stagger(12)] }),
+  shot({ powerScale: 3 }, [-0.15, 0, 0.15], true, 19),
+]);
 export const vallet = defineHero(
-  { hp: 103, power: 10, reach: 10, cooldown: 21, radius: 3.8 },
+  { ...chartStats.vallet, power: 10, reach: 10, radius: 3.8 },
   () => ({}),
   [
     shot({ powerScale: 2 }, [-0.075, 0.075]),
@@ -103,7 +100,7 @@ export const vallet = defineHero(
   ],
 );
 export const freesia = defineHero(
-  { hp: 96, power: 10, reach: 8, cooldown: 22, radius: 4 },
+  { hp: 96, basicAttack: 10, power: 10, reach: 8, cooldown: 22, radius: 4 },
   () => ({}),
   [
     shot({ powerScale: 2, control: [slow(48)] }, [-0.1, 0.1]),

@@ -18,6 +18,32 @@ function advance(match, n) {
   for (let i = 0; i < n; i++) match.step();
 }
 
+test('chart grades control starting health, unmodified basic damage and ticks between hits', () => {
+  for (const [hero, hp, basic, interval] of [
+    ['flare', 105, 10, 26],
+    ['kali', 115, 10, 22],
+    ['kaiken', 115, 12, 22],
+    ['hammer', 140, 12, 24],
+    ['swift', 140, 12, 24],
+    ['magnus', 155, 14, 26],
+    ['silurian', 140, 12, 24],
+    ['bird', 96, 10, 22],
+  ]) {
+    const match = new RaidMatch([hero, 'rend', 'bastion', 'rime']);
+    const runner = match.runners[0];
+    for (const other of match.runners.slice(1)) other.basic = 1000;
+    Object.assign(runner, { x: 0, z: 8 });
+    assert.equal(runner.hp, hp, hero);
+    match.step();
+    assert.equal(match.damage[0], basic, hero);
+    assert.equal(runner.basic, interval, hero);
+    advance(match, interval - 1);
+    assert.equal(match.damage[0], basic, hero);
+    match.step();
+    assert.equal(match.damage[0], basic * 2, hero);
+  }
+});
+
 test('Drizz pulls a rival, launches them, lands from his own jump and punches through a shield', () => {
   const m = arena('drizz');
   const [r, , enemy] = m.runners;

@@ -157,7 +157,8 @@ export const raidText = defineMessages(
     pickSolo: 'Lock in your runner to play with bots.',
     startSoloRoom: 'Start bot match',
     pickPlayers: 'Waiting for another player.',
-    reach: 'Basic range {range} m',
+    baseCombatStats:
+      'Base HP {hp} · Basic attack {attack} · Attack interval {seconds} s · Range {range} m',
     solo: 'Practice with bots',
     online: 'Online · 2v2',
     hostRoom: 'Create room',
