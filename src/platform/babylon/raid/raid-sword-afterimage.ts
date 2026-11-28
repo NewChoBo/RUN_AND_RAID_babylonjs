@@ -8,40 +8,47 @@
   type AbstractMesh,
   type Bone,
 } from '@babylonjs/core';
-import type { RaidAction } from '../../../game/raid/raid-view.ts';
+import type { RaidAction, RaidRunner } from '../../../game/raid/raid-view.ts';
 import type { RaidHero } from '../../../game/raid/heroes/hero-id.ts';
 
+type Spin = NonNullable<RaidRunner['spin']>;
+export type WeaponSwing = RaidAction | Spin;
 const rows = 9;
 const lifetime = 4;
 const steel = [0.66, 0.8, 1, 0, 0.95, 0.98, 1, 0];
 const sunlight = [1, 0.72, 0.32, 0, 1, 0.95, 0.73, 0];
 
-function bladeEdge(body: AbstractMesh, bone: Bone, axis: 'x' | 'z') {
+function weaponEdge(body: AbstractMesh, bone: Bone, axis: 'x' | 'z', innerFraction: number) {
   const node = bone.getTransformNode();
   const positions = body.getVerticesData(VertexBuffer.PositionKind);
   const joints = body.getVerticesData(VertexBuffer.MatricesIndicesKind);
   const weights = body.getVerticesData(VertexBuffer.MatricesWeightsKind);
   if (!node || !positions || !joints || !weights) return;
-  // The weapon is merged into the skinned fighter. Measure this skin's furthest blade vertex
-  // along the prop's authored axis, excluding the hilt and Kali's separate sheaths.
-  const tip = Vector3.Zero(),
-    point = Vector3.Zero();
+  // The weapon is merged into the skinned fighter. Use vertices rigidly bound to its
+  // own prop, so a wider hammer head or a shorter blade follows the equipped skin.
+  const vertices: Vector3[] = [];
+  let tip: Vector3 | undefined;
   const inverseBind = bone.getAbsoluteInverseBindMatrix();
   const joint = bone.getIndex();
   for (let i = 0; i < positions.length / 3; i++) {
     if (joints[i * 4] !== joint || weights[i * 4]! < 0.99) continue;
-    Vector3.FromArrayToRef(positions, i * 3, point);
+    const point = Vector3.FromArray(positions, i * 3);
     Vector3.TransformCoordinatesToRef(point, inverseBind, point);
-    if (point[axis] > tip[axis]) tip.copyFrom(point);
+    vertices.push(point);
+    if (!tip || point[axis] > tip[axis]) tip = point;
   }
-  if (tip[axis] <= 0) return;
-  return { node, tip };
+  if (!tip || tip[axis] <= 0) return;
+  const target = tip.scale(innerFraction);
+  const inner = vertices.reduce((best, point) =>
+    Vector3.DistanceSquared(target, point) < Vector3.DistanceSquared(target, best) ? point : best,
+  );
+  return { node, tip, inner };
 }
 
 function makeRibbon(
   body: AbstractMesh,
   hero: RaidHero,
-  edge: NonNullable<ReturnType<typeof bladeEdge>>,
+  edge: NonNullable<ReturnType<typeof weaponEdge>>,
 ) {
   const scene = body.getScene();
   const mesh = new Mesh(hero + ' blade afterimage', scene);
@@ -76,10 +83,8 @@ function makeRibbon(
     tip: Vector3.Zero(),
     relativeTip: Vector3.Zero(),
   }));
-  const inner = edge.tip.scale(0.22);
   let count = 0,
-    nextSample = 0,
-    lastCue: number | undefined;
+    lastCue: number | Spin | undefined;
 
   function hide() {
     count = 0;
@@ -89,23 +94,24 @@ function makeRibbon(
   return {
     hide,
     dispose: () => mesh.dispose(false, true),
-    draw(cue: number, now: number, origin: Vector3, empowered: boolean) {
+    draw(cue: number | Spin, now: number, origin: Vector3, empowered: boolean) {
       const elapsed = now - samples[0]!.at;
       if (cue !== lastCue || elapsed < 0 || elapsed >= lifetime) hide();
       if (count && !elapsed) return;
       lastCue = cue;
-      if (count <= 1 || now >= nextSample) {
+      // Keep a live leading edge at 120Hz; retain history at most every half combat tick.
+      if (count <= 1 || samples[0]!.at - samples[1]!.at >= 0.5 - 1e-6) {
         samples.unshift(samples.pop()!);
         count = Math.min(count + 1, rows);
-        nextSample = now + 0.5;
       }
       const head = samples[0]!,
         world = edge.node.computeWorldMatrix(true);
       head.at = now;
-      Vector3.TransformCoordinatesToRef(inner, world, head.base);
+      Vector3.TransformCoordinatesToRef(edge.inner, world, head.base);
       Vector3.TransformCoordinatesToRef(edge.tip, world, head.tip);
       head.tip.subtractToRef(origin, head.relativeTip);
-      const ink = hero === 'kali' || (hero === 'rildin' && empowered) ? sunlight : steel;
+      const ink =
+        hero === 'hammer' || hero === 'kali' || (hero === 'rildin' && empowered) ? sunlight : steel;
       if (ink !== palette) {
         for (let i = 0; i < rows; i++) colors.set(ink, i * 8);
         palette = ink;
@@ -135,13 +141,23 @@ function makeRibbon(
 
 /** Bind to the imported weapon, independently for each hand and equipped skin. */
 export function createSwordAfterimage(hero: RaidHero, meshes: readonly AbstractMesh[]) {
-  if (hero !== 'rildin' && hero !== 'swift' && hero !== 'kaiken' && hero !== 'kali') return;
+  if (!['hammer', 'rildin', 'swift', 'kaiken', 'kali'].includes(hero)) return;
   const body = meshes.find((m) => m.skeleton);
   if (!body?.skeleton) return;
-  const names = hero === 'kali' ? ['Lswordbone', 'Rswordbone'] : ['Bip001 Prop1'];
+  const names =
+    hero === 'hammer'
+      ? ['wp_bn']
+      : hero === 'kali'
+        ? ['Lswordbone', 'Rswordbone']
+        : ['Bip001 Prop1'];
   const ribbons = body.skeleton.bones.flatMap((bone) => {
     if (!names.includes(bone.name)) return [];
-    const edge = bladeEdge(body, bone, hero === 'kali' ? 'x' : 'z');
+    const edge = weaponEdge(
+      body,
+      bone,
+      hero === 'hammer' || hero === 'kali' ? 'x' : 'z',
+      hero === 'hammer' ? 0.7 : 0.22,
+    );
     return edge ? [makeRibbon(body, hero, edge)] : [];
   });
   if (!ribbons.length) return;
@@ -154,17 +170,20 @@ export function createSwordAfterimage(hero: RaidHero, meshes: readonly AbstractM
     dispose() {
       for (const ribbon of ribbons) ribbon.dispose();
     },
-    draw(cue: RaidAction | undefined, now: number, origin: Vector3, empowered = false) {
+    draw(cue: WeaponSwing | undefined, now: number, origin: Vector3, empowered = false) {
       if (
         cue &&
-        (cue.skill === 'basic' ||
-          ((hero === 'rildin' || hero === 'kali') && cue.skill === 0) ||
-          (hero === 'swift' && cue.skill === 1))
+        ('remaining' in cue ||
+          cue.skill === 'basic' ||
+          ((hero === 'rildin' || hero === 'kali' || hero === 'hammer') && cue.skill === 0) ||
+          (hero === 'swift' && cue.skill === 1) ||
+          (hero === 'kaiken' && cue.phase === 'spin'))
       ) {
         // A knockback or pull can instantly move the runner between two samples.
         if (Vector3.DistanceSquared(previousOrigin, origin) > 1) hide();
         previousOrigin.copyFrom(origin);
-        for (const ribbon of ribbons) ribbon.draw(cue.id, now, origin, empowered);
+        for (const ribbon of ribbons)
+          ribbon.draw('id' in cue ? cue.id : cue, now, origin, empowered);
       } else hide();
     },
   };

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { NullEngine, Scene, Vector3 } from '@babylonjs/core';
-import { RaidMatch, raidRoadTravel } from '../../src/game/raid/raid-match.ts';
+import { RaidMatch, raidRespawnTicks, raidRoadTravel } from '../../src/game/raid/raid-match.ts';
 import { createRaidCounterVisual } from '../../src/platform/babylon/raid/raid-counter-visual.ts';
 import { RAID_ELECTRIC_GRID } from '../../src/game/raid/raid-boss.ts';
 import { createRaidEffects } from '../../src/platform/babylon/raid/raid-effects.ts';
@@ -175,11 +175,12 @@ test('Dark Blades follows the moving caster, layers two cuts and finishes with t
   }
 });
 
-test('Full Moon spin and its impact ring stay on the road tile where the backward dash stopped', (t) => {
+test('Full Moon uses the weapon trail or a road-anchored fallback only while the finisher plays', (t) => {
   const engine = new NullEngine();
   t.after(() => engine.dispose());
   const scene = new Scene(engine);
-  const draw = createRaidEffects(scene);
+  let hasWeapon = false;
+  const draw = createRaidEffects(scene, () => hasWeapon);
   const match = new RaidMatch('kaiken');
   assert.ok(match.cast(0, 0, { dx: 0, dz: -1 }));
   assert.ok(match.cast(0, 2));
@@ -199,7 +200,115 @@ test('Full Moon spin and its impact ring stay on the road tile where the backwar
     assert.equal(ring.position.x, spin.to.x);
     assert.ok(Math.abs(ring.position.z + raidRoadTravel(age + 0.5) - spin.to.z) < 1e-8);
     assert.ok(Math.abs(ring.position.z + raidRoadTravel(0.5) - match.runners[0].z) < 1e-8);
+    hasWeapon = true;
+    draw(match, 0.5);
+    assert.ok(!ring.isEnabled());
+    hasWeapon = false;
     match.step();
+  }
+  draw(match, 0);
+  assert.ok(!scene.meshes.some((m) => m.name === 'raid impact rim' && m.isEnabled()));
+});
+
+test('Hammer slam follows the authored downswing; a completed impact stays on its road tile', (t) => {
+  const engine = new NullEngine();
+  t.after(() => engine.dispose());
+  const scene = new Scene(engine),
+    draw = createRaidEffects(scene);
+  const match = new RaidMatch('hammer');
+  const hammer = match.runners[0],
+    enemy = match.runners[2];
+  for (const r of match.runners) r.basic = 999;
+  enemy.x = hammer.x;
+  enemy.z = hammer.z;
+  const hp = enemy.hp;
+  assert.ok(match.cast(0, 0));
+  const ring = () => scene.meshes.find((m) => m.name === 'raid impact rim' && m.isEnabled());
+  while (match.tick < 10) {
+    draw(match, 0.9);
+    assert.equal(ring(), undefined);
+    match.step();
+  }
+  assert.ok(enemy.hp < hp);
+  const hit = { x: hammer.x, z: hammer.z };
+  draw(match, 0.5);
+  assert.equal(ring().position.x, hit.x);
+  assert.equal(ring().position.z, hit.z - raidRoadTravel(0.5));
+  match.step();
+  // Later skills can supersede the animating caster without lifting this wave off the ground.
+  assert.ok(match.cast(0, 2));
+  while (match.tick < 27) match.step();
+  draw(match, 0.5);
+  assert.equal(ring().position.z, hit.z - raidRoadTravel(17.5));
+  match.step();
+  draw(match, 0);
+  assert.equal(ring(), undefined);
+});
+
+test('superseding or losing a Hammer swing during wind-up suppresses its cosmetic burst', (t) => {
+  const engine = new NullEngine();
+  t.after(() => engine.dispose());
+  const scene = new Scene(engine),
+    draw = createRaidEffects(scene);
+  for (const interrupt of ['spin', 'leap', 'death']) {
+    const match = new RaidMatch('hammer'),
+      hammer = match.runners[0];
+    for (const r of match.runners) r.basic = 999;
+    assert.ok(match.cast(0, 0));
+    for (let i = 0; i < 6; i++) match.step();
+    if (interrupt === 'spin') assert.ok(match.cast(0, 2));
+    else if (interrupt === 'leap') assert.ok(match.cast(0, 1, { x: 0, z: 1 }));
+    else {
+      hammer.deaths = 1;
+      hammer.respawn = raidRespawnTicks(hammer.deaths);
+    }
+    while (match.tick < 12) match.step();
+    draw(match, 0.5);
+    assert.ok(!scene.meshes.some((m) => m.name === 'raid impact rim' && m.isEnabled()), interrupt);
+  }
+});
+
+test('Hammer landing burst waits one contact frame and melee basics honor attack playback speed', (t) => {
+  const engine = new NullEngine();
+  t.after(() => engine.dispose());
+  const scene = new Scene(engine),
+    draw = createRaidEffects(scene);
+  const match = new RaidMatch('hammer');
+  for (const r of match.runners) r.basic = 999;
+  assert.ok(match.cast(0, 1, { x: 0, z: 1 }));
+  while (match.runners[0].leap) match.step();
+  const landingTick = match.tick,
+    landing = match.actions.at(-1);
+  const part = (name) => scene.meshes.find((m) => m.name === name && m.isEnabled());
+  draw(match, 0.99);
+  assert.equal(part('raid impact rim'), undefined);
+  match.step();
+  draw(match, 0.5);
+  assert.equal(part('raid impact rim').position.z, landing.to.z - raidRoadTravel(1.5));
+  assert.equal(match.tick, landingTick + 1);
+
+  for (const [hero, frame] of [
+    ['hammer', 7],
+    ['kaiken', 6],
+  ]) {
+    const melee = new RaidMatch(hero);
+    for (const r of melee.runners) r.basic = 999;
+    const [caster, , target] = melee.runners;
+    target.x = caster.x;
+    target.z = caster.z + 1;
+    caster.basic = 0;
+    melee.step();
+    const basic = melee.actions.find((a) => a.slot === 0 && a.skill === 'basic');
+    assert.ok(basic);
+    basic.basicSpeed = 2;
+    const contact = basic.tick + frame / 2;
+    while (melee.tick < Math.floor(contact - 0.1)) melee.step();
+    draw(melee, contact - 0.1 - melee.tick);
+    assert.equal(part('raid impact flash'), undefined);
+    while (melee.tick < Math.floor(contact)) melee.step();
+    draw(melee, contact - melee.tick);
+    const flash = part('raid impact flash');
+    assert.deepEqual(flash.position.asArray(), [basic.to.x, basic.toY, basic.to.z]);
   }
 });
 

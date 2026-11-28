@@ -1,8 +1,7 @@
 import { healthMeter, healthMeterPainter } from '../../../ui/raid-health-meter.ts';
 import { isJetFiring } from '../../../game/raid/air-movement.ts';
 import { sacrificeRadius } from '../../../content/raid/heroes/abyss.ts';
-import { createBladeWave } from './raid-blade-wave.ts';
-import { createSwordAfterimage } from './raid-sword-afterimage.ts';
+import { createSwordAfterimage, type WeaponSwing } from './raid-sword-afterimage.ts';
 import { heroKit } from '../../../game/raid/heroes/hero-id.ts';
 import {
   appearance,
@@ -90,7 +89,10 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
     // Rildin's default run repeats in about 0.70 s in match footage (see ORIGINAL-ROSTER).
     const runCycle =
       hero === 'rildin' && (!outfit || outfit === 'rildin/default') ? 0.7 : undefined;
-    return { model, motion, modelSize, runCycle };
+    const left = model.transformNodes.find((node) => node.name === 'Bip001 L UpperArm');
+    const right = model.transformNodes.find((node) => node.name === 'Bip001 R UpperArm');
+    const dashShoulders = left && right ? { left, right } : undefined;
+    return { model, motion, modelSize, runCycle, dashShoulders };
   } catch (error) {
     model.dispose();
     throw error;
@@ -203,20 +205,6 @@ export function createRaidActor(
     sacrifice.alpha = 0.65;
     sacrifice.isPickable = false;
   }
-  const spinTrail = art.spinClip
-    ? MeshBuilder.CreateTorus(
-        hero + ' moving sweep',
-        { diameter: 2, thickness: 0.025, tessellation: 64 },
-        scene,
-      )
-    : null;
-  if (spinTrail) {
-    spinTrail.parent = root;
-    spinTrail.position.y = 0.25;
-    spinTrail.material = raidMaterial(scene, hero + ' sweep light', raidColors[heroKit(hero)], 0.8);
-    spinTrail.isPickable = false;
-    spinTrail.setEnabled(false);
-  }
   const shadow = MeshBuilder.CreateDisc(
     hero + ' foot contact',
     { radius: 0.5, tessellation: 18 },
@@ -263,20 +251,6 @@ export function createRaidActor(
     power: 2,
   });
   shield.alpha = 0.13;
-  const spinTrails =
-    hero === 'kaiken' || hero === 'hammer'
-      ? [-1, 1].map((side) => {
-          const trail = createBladeWave(
-            scene,
-            hero + ' spinning weapon trail',
-            hero === 'hammer' ? new Color3(1, 0.73, 0.32) : new Color3(0.65, 0.91, 1),
-          );
-          trail.parent = root;
-          trail.isPickable = false;
-          trail.setEnabled(false);
-          return { trail, side };
-        })
-      : [];
   const exhaust =
     hero === 'hof'
       ? MeshBuilder.CreateCylinder(
@@ -331,8 +305,6 @@ export function createRaidActor(
         Math.sin(now * 0.08) * 0.56,
       );
     }
-    spinTrail?.setEnabled(r.spinTicks > 0 && !r.respawn);
-    if (spinTrail && r.spin) spinTrail.scaling.set(r.spin.radius, 1, r.spin.radius);
     const fallAge = raidRespawnTicks(r.deaths) - r.respawn;
     const concealed = r.team !== localTeam && (r.heroView.concealedUntil ?? 0) > tick;
     root.setEnabled(
@@ -352,17 +324,6 @@ export function createRaidActor(
     if (exhaust) {
       exhaust.setEnabled(isJetFiring(r) && !r.respawn);
       exhaust.scaling.y = 0.95 + 0.18 * Math.sin((tick + subtick) * 1.7);
-    }
-    for (const { trail, side } of spinTrails) {
-      trail.setEnabled(!!r.spin && !r.respawn);
-      if (r.spin) {
-        const phase =
-          ((r.spin.duration - r.spin.remaining + subtick) * Math.PI * 2) / r.spin.interval +
-          (side < 0 ? Math.PI : 0);
-        trail.rotation.set(0.08, phase, side * 0.16);
-        trail.position.set(1.2 * Math.sin(phase), 0.82 + side * 0.1, 1.2 * Math.cos(phase));
-        trail.scaling.set(1.65, 1, 0.9);
-      }
     }
     const { x, z } = position;
     const elevation = raidRunnerHeight(r, subtick);
@@ -414,7 +375,7 @@ export function createRaidActor(
       return { clip, duration: motion?.duration(clip) ?? 0, start };
     });
     const facing = raidFacing(r, pose?.cue ?? active);
-    let swing: RaidAction | undefined;
+    let swing: WeaponSwing | undefined;
     if (r.leap) {
       motion?.once(actionClip(clips[r.leap.skill]), (r.leap.elapsed + subtick) / RAID_HZ, dt);
     } else if (r.dash) {
@@ -428,12 +389,15 @@ export function createRaidActor(
         (r.heroView.rootDuration - r.heroView.rootedTicks + subtick) / RAID_HZ,
         dt,
       );
+      // The displayed pose stays on the finisher even if a new skill cue arrives during it.
+      swing = actions.find((cue) => cue.slot === r.slot && cue.phase === 'spin' && cue.skill === 2);
     } else if (r.spin) {
       motion?.loop(
         clips[r.spin.skill],
         (r.spin.duration - r.spin.remaining + subtick) / RAID_HZ,
         dt,
       );
+      swing = r.spin;
     } else if (
       r.air &&
       (!pose || pose.cue.skill === 'basic') &&
@@ -454,7 +418,7 @@ export function createRaidActor(
       );
     } else if (pose && !(hero === 'longshot' && pose.cue.skill === 2)) {
       motion?.once(pose.clip, ((now - pose.start) / RAID_HZ) * (pose.cue.basicSpeed ?? 1), dt);
-      if (pose.clip !== 'run') swing = pose.cue;
+      if (pose.clip !== 'run' && pose.cue.phase !== 'spin') swing = pose.cue;
     } else if (r.jumping)
       motion?.once(
         modeClip('shieldJump', 'jump'),
@@ -488,6 +452,9 @@ export function createRaidActor(
     prepareModel,
     get hasBladeTrail() {
       return !!bladeTrail;
+    },
+    get dashShoulders() {
+      return current?.dashShoulders;
     },
     hit,
     get barHeight() {

@@ -93,3 +93,90 @@ test('each afterimage reaches the equipped, animated blade and resets between sw
     asset.dispose();
   }
 });
+
+test('Hammer sweeps and Kaiken spins trace both edges on every equipped weapon', async (t) => {
+  const engine = new NullEngine();
+  t.after(() => engine.dispose());
+  const scene = new Scene(engine);
+  const actor = new TransformNode('moving runner', scene);
+  actor.scaling.setAll(0.96);
+  for (const [hero, skins] of [
+    ['hammer', ['default', 'doomguard', 'royalguard', 'warmachine']],
+    ['kaiken', ['default', 'onimusha', 'sin', 'suit']],
+  ]) {
+    for (const skin of skins) {
+      const file = new URL(`../../public/assets/fighters/${hero}-${skin}.glb`, import.meta.url);
+      const asset = await LoadAssetContainerAsync(new Uint8Array(readFileSync(file)), scene, {
+        pluginExtension: '.glb',
+        pluginOptions: { gltf: { animationStartMode: 0, skipMaterials: true } },
+      });
+      asset.addAllToScene();
+      asset.meshes[0].parent = actor;
+      const body = asset.meshes.find((mesh) => mesh.skeleton);
+      const bone = body.skeleton.bones.find(
+        (b) => b.name === (hero === 'hammer' ? 'wp_bn' : 'Bip001 Prop1'),
+      );
+      const joints = body.getVerticesData(VertexBuffer.MatricesIndicesKind);
+      const weights = body.getVerticesData(VertexBuffer.MatricesWeightsKind);
+      const weapon = [];
+      for (let i = 0; i < joints.length; i += 4) {
+        if (joints[i] === bone.getIndex() && weights[i] >= 0.99) weapon.push((i / 4) * 3);
+      }
+      const effect = createSwordAfterimage(hero, asset.meshes);
+      const ribbon = scene.getMeshByName(hero + ' blade afterimage');
+      const motions =
+        hero === 'hammer'
+          ? [
+              ['field', { remaining: 60, skill: 2 }],
+              ['basic', { id: 2, skill: 'basic' }],
+              ['pulse', { id: 3, skill: 0 }],
+            ]
+          : [
+              ['fullMoonEnd', { id: 4, skill: 2, phase: 'spin' }],
+              ['fury', { remaining: 75, skill: 3 }],
+            ];
+      const motion = new ModelMotion(
+        asset.animationGroups,
+        motions.map(([clip]) => clip),
+        motions[0][0],
+      );
+      for (const [clip, swing] of motions) {
+        for (const fps of [30, 60, 120]) {
+          let verified = 0;
+          for (let frame = 0; frame < fps / 2; frame++) {
+            const seconds = frame / fps;
+            actor.position.set(1 + seconds, 0.2, -3);
+            actor.rotation.y = seconds * 0.7;
+            motion.once(clip, seconds, 1 / fps);
+            effect.draw(swing, seconds * 30, actor.position);
+            if (!ribbon.isEnabled() || frame % (fps / 30)) continue;
+            const edge = ribbon.getVerticesData(VertexBuffer.PositionKind);
+            body.skeleton.prepare(true);
+            const posed = body.getPositionData(true);
+            const world = body.computeWorldMatrix(true);
+            for (const offset of [0, 3]) {
+              const point = Vector3.FromArray(edge, offset);
+              assert.ok(
+                weapon.some(
+                  (i) =>
+                    Vector3.DistanceSquared(
+                      point,
+                      Vector3.TransformCoordinates(Vector3.FromArray(posed, i), world),
+                    ) < 1e-6,
+                ),
+                `${hero} ${skin} ${clip} ${fps}fps edge ${offset}`,
+              );
+            }
+            verified++;
+          }
+          assert.ok(verified >= 2, `${hero} ${skin} ${clip} ${fps}fps missing stroke`);
+          // An old cast cue may still be in the event log after cancelling the spin.
+          effect.draw({ id: 5, skill: 2 }, 15, actor.position);
+          assert.equal(ribbon.isEnabled(), false);
+        }
+      }
+      effect.dispose();
+      asset.dispose();
+    }
+  }
+});

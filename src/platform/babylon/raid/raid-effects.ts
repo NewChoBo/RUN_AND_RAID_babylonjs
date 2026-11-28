@@ -1,5 +1,6 @@
 import { actionLocked } from '../../../game/raid/raid-control.ts';
 import { lungeTicks } from '../../../content/raid/heroes/swift.ts';
+import { FULL_MOON_SPIN_TICKS } from '../../../game/raid/heroes/kaiken.ts';
 import { heroKit, KIT_IDS } from '../../../game/raid/heroes/hero-id.ts';
 import { appearance } from './hero-appearance.ts';
 import { raidProjectileProfile, raidSkill } from '../../../game/raid/heroes/hero-catalog.ts';
@@ -10,7 +11,7 @@ import { createRaidArrowRain } from './raid-arrow-rain.ts';
 import { createSwiftDaggerFx } from './raid-swift-dagger.ts';
 import { createIgnitionFx, createFlame, createFlameMaterial } from './raid-ignition.ts';
 import { createFlyingShots } from './raid-flying-shots.ts';
-import { createRaidDashWind } from './raid-dash-wind.ts';
+import { createRaidDashWind, type DashShoulders } from './raid-dash-wind.ts';
 import { createShadowBlades } from './raid-shadow-blades.ts';
 import {
   Color3,
@@ -25,10 +26,13 @@ import {
 import {
   raidAimKind,
   raidGroundPointAfter,
+  raidRespawnTicks,
+  RAID_LEAP_TICKS,
   raidRunnerPositionAfter,
   raidRunnerHeight,
   type RaidAction,
   type RaidHero,
+  type RaidPoint,
   type RaidView,
 } from '../../../game/raid/raid-match.ts';
 import { raidColors } from './raid-material.ts';
@@ -36,19 +40,45 @@ import { raidColors } from './raid-material.ts';
 const lifetime = (cue: RaidAction) =>
   cue.skill !== 'basic' && raidAimKind(cue.hero, cue.skill) === 'field'
     ? Math.max(36, (cue.fieldTicks ?? 0) + 4)
-    : cue.skill === 3
-      ? 28
-      : cue.skill === 'basic'
-        ? 10
-        : 18;
+    : cue.phase === 'spin' && cue.hero === 'kaiken' && cue.skill === 2
+      ? FULL_MOON_SPIN_TICKS
+      : cue.skill === 3
+        ? 28
+        : cue.skill === 'basic'
+          ? 10
+          : 18;
 const tau = Math.PI * 2;
+
+// First forward strike / downswing in the four authored 30 FPS battle skins of each hero.
+function contactDelay(cue: RaidAction) {
+  if (cue.hero === 'hammer') {
+    if (cue.skill === 'basic') return 7 / (cue.basicSpeed ?? 1);
+    if (cue.skill === 0) return 10;
+    if (cue.skill === 1 && cue.phase === 'ground') return 16 - RAID_LEAP_TICKS;
+  }
+  return cue.hero === 'kaiken' && cue.skill === 'basic' ? 6 / (cue.basicSpeed ?? 1) : 0;
+}
+
+function interruptedBeforeContact(view: RaidView, cue: RaidAction, contact: number) {
+  const runner = view.runners[cue.slot]!;
+  if (runner.respawn && view.tick - (raidRespawnTicks(runner.deaths) - runner.respawn) <= contact)
+    return true;
+  // Hammer's leap records its action on landing. Takeoff already replaced the previous swing.
+  if (runner.leap && view.tick - runner.leap.elapsed <= contact) return true;
+  return view.actions.some((next) => {
+    if (next.slot !== cue.slot || next.id <= cue.id || next.skill === 'basic') return false;
+    const takeoff = next.hero === 'hammer' && next.skill === 1 && next.phase === 'ground';
+    return next.tick - (takeoff ? RAID_LEAP_TICKS : 0) <= contact;
+  });
+}
 
 /** Effects sample match ticks, so pausing, catching up and starting a rematch have no independent timers. */
 export function createRaidEffects(
   scene: Scene,
   hasBladeTrail: (hero: RaidHero) => boolean = () => false,
+  shoulders?: (hero: RaidHero) => DashShoulders | undefined,
 ) {
-  const drawDashWind = createRaidDashWind(scene);
+  const drawDashWind = createRaidDashWind(scene, shoulders);
   const drawTurrets = createHofTurrets(scene);
   const drawAirArrows = createAirArrows(scene);
   const drawSwiftDagger = createSwiftDaggerFx(scene);
@@ -98,8 +128,10 @@ export function createRaidEffects(
     let blades: ReturnType<typeof createShadowBlades> | undefined;
     let lightning: LinesMesh | undefined;
     let swordCut: Mesh | undefined;
+    let slamOrigin: RaidPoint | undefined;
     const parts = [stamp, flare, ring, ...shards];
     function hide() {
+      slamOrigin = undefined;
       for (const part of parts) part.setEnabled(false);
       sector?.setEnabled(false);
       for (const pillar of pillars ?? []) pillar.setEnabled(false);
@@ -111,7 +143,7 @@ export function createRaidEffects(
     }
     for (const part of parts) part.isPickable = false;
     hide();
-    function draw(cue: RaidAction, age: number, view: RaidView, subtick: number) {
+    function draw(cue: RaidAction, age: number, view: RaidView, subtick: number, delay: number) {
       const { hero, skill } = cue;
       const art = appearance[heroKit(hero)];
       if (cue.lines?.length && !lightning) {
@@ -163,15 +195,28 @@ export function createRaidEffects(
       const kind = skill === 'basic' ? null : raidAimKind(hero, skill);
       const roadMotion = cue.phase === 'dash' || cue.phase === 'spin';
       const from = roadMotion ? raidGroundPointAfter(cue.from, age) : cue.from;
-      const to =
+      let to =
         roadMotion || kind === 'field' || kind === 'leap'
-          ? raidGroundPointAfter(cue.to, age)
+          ? raidGroundPointAfter(cue.to, age + delay)
           : cue.to;
+      if (hero === 'hammer' && skill === 0) {
+        // Use the caster's position on the contact tick. If a frame skipped over it,
+        // interpolate from the cast position to the latest sim position.
+        if (!slamOrigin) {
+          const runner = view.runners[cue.slot]!;
+          const fraction = delay / (view.tick - cue.tick);
+          slamOrigin = {
+            x: from.x + (runner.x - from.x) * fraction,
+            z: from.z + (runner.z - from.z) * fraction,
+          };
+        }
+        to = raidGroundPointAfter(slamOrigin, age);
+      }
       const t = age / lifetime(cue);
       const { sigil, light } = materials.get(heroKit(hero))!;
       const area = kind === 'field' || kind === 'leap' || kind === 'pulse';
       const healing = kind === 'ward';
-      const impactTime = area || healing || art.particles === 'heavy' ? 0 : 0.48;
+      const impactTime = delay || area || healing || art.particles === 'heavy' ? 0 : 0.48;
       const burst = Math.max(0, (t - impactTime) / (1 - impactTime));
       const strength = skill === 3 ? 1.75 : skill === 'basic' ? 0.65 : 1;
       const radius = cue.footprint?.radius ?? strength;
@@ -285,9 +330,20 @@ export function createRaidEffects(
     drawIgnition(view, subtick);
     const now = view.tick + subtick;
     drawFlyingShots(view, subtick);
-    const visible = view.actions.filter(
-      (cue) =>
-        now - cue.tick < lifetime(cue) &&
+    const visible = view.actions.filter((cue) => {
+      const delay = contactDelay(cue);
+      const contact = cue.tick + delay;
+      return (
+        now >= contact &&
+        now - contact < lifetime(cue) &&
+        now < (cue.cancelledAt ?? Infinity) &&
+        !(delay && interruptedBeforeContact(view, cue, contact)) &&
+        !(
+          cue.hero === 'kaiken' &&
+          cue.skill === 2 &&
+          cue.phase === 'spin' &&
+          hasBladeTrail(cue.hero)
+        ) &&
         !(heroKit(cue.hero) === 'hof' && cue.skill !== 'basic') &&
         !(cue.hero === 'longshot' && cue.skill === 2) &&
         !(cue.hero === 'swift' && cue.skill === 2) &&
@@ -302,8 +358,9 @@ export function createRaidEffects(
           appearance[heroKit(cue.hero)].dashClip &&
           !appearance[heroKit(cue.hero)].dashTrail
         ) &&
-        (cue.skill === 'basic' || !raidProjectileProfile(cue.hero, cue.skill)),
-    );
+        (cue.skill === 'basic' || !raidProjectileProfile(cue.hero, cue.skill))
+      );
+    });
     for (const [id, fx] of active) {
       if (match === view && visible.some((cue) => cue.id === id)) continue;
       fx.hide();
@@ -312,9 +369,11 @@ export function createRaidEffects(
     }
     match = view;
     for (const cue of visible) {
+      const delay = contactDelay(cue);
+      const contact = cue.tick + delay;
       const fx = active.get(cue.id) ?? pool.pop() ?? allocate();
       active.set(cue.id, fx);
-      fx.draw(cue, now - cue.tick, view, subtick);
+      fx.draw(cue, now - contact, view, subtick, delay);
     }
   };
 }
