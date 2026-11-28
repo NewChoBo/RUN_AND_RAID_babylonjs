@@ -6,6 +6,7 @@ import {
   RAID_COUNTERS,
   RAID_ELECTRIC_GRID,
   inElectricCell,
+  raidElectricColumnX,
   raidElectricRowZ,
 } from '../../src/game/raid/raid-boss.ts';
 import {
@@ -17,14 +18,15 @@ import {
 } from '../../src/game/raid/raid-match.ts';
 import { RaidRound } from '../../src/game/raid/raid-round.ts';
 import { driveRaidBots } from '../../src/game/raid/raid-bots.ts';
+import { RAID_ROAD_WIDTH, RAID_RUN_LIMIT_X } from '../../src/game/raid/raid-rules.ts';
 import { RAID_FRONT_Z } from '../../src/game/raid/runner-motion.ts';
-import { wagonCenter } from '../../src/game/raid/wagon.ts';
+import { WAGON_BODY, wagonCenter } from '../../src/game/raid/wagon.ts';
 
 test('low electricity warns each road cell before striking, reaches rear runners later and only hits grounded runners once', () => {
   const boss = new RaidBoss();
   const runners = [8.4, 0, 0, -40, 0].map((z, slot) => ({
     slot,
-    x: slot === 4 ? 3.6 : 0,
+    x: slot === 4 ? RAID_ELECTRIC_GRID.width : 0,
     z,
     respawn: 0,
   }));
@@ -81,7 +83,7 @@ test('lightning pillars leave a safe flank and can hit airborne runners after th
       assert.equal(boss.counter.kind, 'pillar');
       assert.deepEqual(
         boss.counter.cells.map((c) => c.column),
-        [0, 1, 2],
+        [0, 1, 2, 3, 4],
       );
       runners[1].x = 6.6;
       runners[2].x = -6.6;
@@ -95,15 +97,52 @@ test('lightning pillars leave a safe flank and can hit airborne runners after th
   assert.equal(boss.counter, null);
 });
 
-test('neighboring cells share one edge and scroll with their road tile', () => {
-  const center = { x: 0, z: 0 },
-    edge = RAID_ELECTRIC_GRID.width / 2;
-  const right = { x: 2 * edge, z: 0 };
-  assert.equal(inElectricCell(center, { x: edge, z: 0 }), false);
-  assert.equal(inElectricCell(right, { x: edge, z: 0 }), true);
-  assert.equal(inElectricCell(center, { x: 0, z: edge }), false);
-  assert.equal(inElectricCell(center, { x: 0, z: -edge }), true);
+test('eight 2.25m columns cover the road with one owner per seam and keep the 3.6m row pitch', () => {
+  const { columns, width, depth } = RAID_ELECTRIC_GRID;
+  assert.equal(columns, 8);
+  assert.equal(width, 2.25);
+  assert.equal(width * columns, RAID_ROAD_WIDTH);
+  assert.equal(depth, 3.6);
+  const cells = Array.from({ length: columns }, (_, col) => ({
+    x: raidElectricColumnX(col),
+    z: 0,
+  }));
+  assert.equal(cells[0].x - width / 2, -RAID_ROAD_WIDTH / 2);
+  assert.equal(cells.at(-1).x + width / 2, RAID_ROAD_WIDTH / 2);
+  for (let col = 1; col < columns; col++) {
+    const seam = { x: cells[col].x - width / 2, z: 0 };
+    assert.deepEqual(
+      cells.filter((cell) => inElectricCell(cell, seam)),
+      [cells[col]],
+    );
+  }
+  assert.equal(inElectricCell(cells[4], { x: 0, z: depth / 2 }), false);
+  assert.equal(inElectricCell(cells[4], { x: 0, z: -depth / 2 }), true);
   assert.equal(raidElectricRowZ(0, 15), raidElectricRowZ(0, 0) - 3);
+});
+
+test('aiming at the centre seam, landing damage and bot jumps all include only the right-hand tile', () => {
+  for (const x of [-0.001, 0, 0.001]) {
+    const match = new RaidMatch(['hammer', 'rime', 'jade', 'longshot']);
+    const runner = match.runners[0];
+    for (const r of match.runners) r.basic = 9999;
+    Object.assign(runner, { x: 0, z: RAID_FRONT_Z });
+    while (match.tick < 80) match.step();
+    assert.equal(match.hazard.cells[0].column, 4);
+    runner.x = x;
+    let wouldJump = false;
+    driveRaidBots(
+      match,
+      (_, action) => {
+        if (action === 'jump') wouldJump = true;
+      },
+      new Set([1, 2, 3]),
+    );
+    assert.equal(wouldJump, x >= 0);
+    const hp = runner.hp;
+    while (match.tick < 90) match.step();
+    assert.equal(hp - runner.hp, x >= 0 ? RAID_COUNTERS.low.damage : 0);
+  }
 });
 
 test('all four runner slots take turns drawing low electricity and each bank width appears on both flanks', () => {
@@ -122,12 +161,12 @@ test('all four runner slots take turns drawing low electricity and each bank wid
     if (boss.counter.kind === 'low') low.push(...cells);
     else pillar.push(cells);
   }
-  assert.deepEqual(low, [0, 1, 3, 4]);
+  assert.deepEqual(low, [1, 2, 5, 6]);
   assert.deepEqual(pillar, [
+    [0, 1, 2, 3, 4],
+    [5, 6, 7],
     [0, 1, 2],
-    [3, 4],
-    [0, 1],
-    [2, 3, 4],
+    [3, 4, 5, 6, 7],
   ]);
   runners[0].respawn = 100;
   boss.step(
@@ -136,7 +175,7 @@ test('all four runner slots take turns drawing low electricity and each bank wid
     () => 0,
     () => {},
   );
-  assert.notEqual(boss.counter.cells[0].column, 0);
+  assert.equal(boss.counter.cells[0].column, low[2]);
 });
 
 test('a bot jumps the low tile, holds the open flank through the pillars, then returns to its attack position', () => {
@@ -145,7 +184,8 @@ test('a bot jumps the low tile, holds the open flank through the pillars, then r
     humans = new Set([0, 2, 3]);
   for (const r of match.runners) r.basic = 9999;
   match.runners[2].respawn = match.runners[3].respawn = 9999;
-  match.runners[0].x = bot.x = 0;
+  // The second runner takes the left wheel. Aim the first low arc into that runner's formation.
+  match.runners[0].x = bot.x = -1.8;
   bot.z = RAID_FRONT_Z;
   const hp = bot.hp;
   let jumpedOverTile = false,
@@ -167,7 +207,7 @@ test('a bot jumps the low tile, holds the open flank through the pillars, then r
       jumpedOverTile = true;
     }
     if (hazard?.kind === 'pillar' && active.some((c) => inElectricCell(c, { x: 0, z: bot.z }))) {
-      assert.ok(bot.x >= RAID_ELECTRIC_GRID.width / 2);
+      assert.ok(bot.x >= RAID_ELECTRIC_GRID.width);
       assert.equal(bot.jumping, 0);
       dodgedPillars = true;
     }
@@ -175,10 +215,10 @@ test('a bot jumps the low tile, holds the open flank through the pillars, then r
   assert.ok(jumpedOverTile && dodgedPillars);
   assert.equal(bot.hp, hp);
   const flank = bot.x - wagonCenter(match.tick).x;
-  assert.ok(flank < 0 && Math.abs(flank) < RAID_ELECTRIC_GRID.width / 2);
+  assert.ok(flank < 0 && Math.abs(flank) <= WAGON_BODY.halfWidth);
 });
 
-test('late discharges progress row by row and reverse horizontally at both edges', () => {
+test('late discharges travel row by row, reverse at both flanks and always leave room to dodge', () => {
   const firstLate = 60 + Math.ceil((ROUND_TICKS / 2 - 60) / 144) * 144;
   for (const start of [firstLate, firstLate + 144]) {
     const boss = new RaidBoss();
@@ -205,8 +245,21 @@ test('late discharges progress row by row and reverse horizontally at both edges
       path = [...rows.values()];
     assert.ok(indices.length > 8);
     assert.ok(indices.slice(1).every((row, i) => row === indices[i] - 1));
-    assert.ok(path.every((cols) => cols.length >= 1 && cols.length < RAID_ELECTRIC_GRID.columns));
-    assert.ok(path.some((cols) => cols.includes(0)) && path.some((cols) => cols.includes(4)));
+    // Low arcs reflect at the outermost reachable columns; a wide pillar bank extends to the rail.
+    const pillar = start === firstLate;
+    const first = pillar ? 0 : 1;
+    const last = pillar ? 7 : 6;
+    assert.ok(
+      path.some((cols) => cols.includes(first)) && path.some((cols) => cols.includes(last)),
+    );
+    for (const cols of path) {
+      assert.equal(cols.length, pillar ? 5 : 1);
+      assert.ok(cols[0] >= first && cols.at(-1) <= last);
+      const xMin = raidElectricColumnX(cols[0]) - RAID_ELECTRIC_GRID.width / 2;
+      const xMax = raidElectricColumnX(cols.at(-1)) + RAID_ELECTRIC_GRID.width / 2;
+      assert.ok(xMin < RAID_RUN_LIMIT_X && xMax > -RAID_RUN_LIMIT_X);
+      assert.ok(xMin > -RAID_RUN_LIMIT_X || xMax < RAID_RUN_LIMIT_X);
+    }
     const steps = path.slice(1).map((cols, i) => cols[0] - path[i][0]);
     assert.ok(steps.every((step) => Math.abs(step) === 1));
     assert.ok(steps.filter((step, i) => i && step !== steps[i - 1]).length >= 2);
@@ -349,7 +402,7 @@ test('four-player replay reproduces contact stuns from both discharges and late 
     guest = new RaidRound(seats);
   assert.ok(host.enqueue(1, { seq: 1, action: 'cast', payload: { skill: 0 } }));
   const impacts = new Set();
-  for (let i = 0; i < ROUND_TICKS / 2 + 320; i++) {
+  for (let i = 0; i < ROUND_TICKS && impacts.size < 4; i++) {
     const frames = host.advance(1);
     assert.ok(guest.replay(JSON.parse(JSON.stringify(frames))));
     if (i === 0) assert.equal(guest.match.runners[2].staggered, 12);

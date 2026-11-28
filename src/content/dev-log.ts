@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T20:31+09:00',
+    tag: 'arena',
+    title: '원작 화면에 맞춘 번개 간격과 기절 표시',
+    body: '두 경기 영상에서 번개 사이 간격을 재고 도로를 가로 8칸으로 나눴습니다. 한 칸은 3.6m에서 2.25m로 줄었고, 기둥은 세 개 또는 다섯 개가 나란히 섭니다. 기절한 주자의 체력바 위에서는 금빛 별 세 개가 꼬리를 그리며 돕니다.',
+  },
+  {
     updatedAt: '2026-11-28T20:19+09:00',
     tag: 'arena',
     title: '발치에서 솟는 기둥 번개',

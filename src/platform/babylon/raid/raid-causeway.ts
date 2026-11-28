@@ -402,8 +402,9 @@ export function createRaidCauseway(scene: Scene) {
   );
   const road = raidMaterial(scene, 'warm flagstone paving', '#c0997e');
   const paving = new Texture('./assets/polyhaven/cobblestone_floor_001_diff_1k.webp', scene);
-  paving.uScale = RAID_ROAD_WIDTH / (grid.width * 2);
-  paving.vScale = rows / 2;
+  const textureRepeat = grid.depth * 2;
+  paving.uScale = RAID_ROAD_WIDTH / textureRepeat;
+  paving.vScale = length / textureRepeat;
   road.diffuseTexture = paving;
   ground.material = road;
 

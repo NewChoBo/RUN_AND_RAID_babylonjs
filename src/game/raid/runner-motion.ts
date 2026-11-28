@@ -14,6 +14,7 @@ const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n
 // Metres per second relative to the wagon, from a free run to full braking.
 const RUN_SPEED = 2.8;
 const BRAKE_SPEED = -4.2;
+export const RAID_STRAFE_SPEED = 4.8;
 const forwardSpeed = (brake: number) => RUN_SPEED + (BRAKE_SPEED - RUN_SPEED) * brake;
 // Full braking takes 0.30 s. Returning to a free run takes 0.40 s.
 function brakeTransitionTicks(r: RaidRunner) {
@@ -103,8 +104,9 @@ export function raidRunnerPositionAfter(r: RaidRunner, ticks: number): RaidPoint
   // Keep steering intent through a stagger so held controls resume on recovery.
   const speed = (1 - (activeSlow(r)?.percent ?? 0) / 100) * (r.hasteTicks ? 1.2 : 1);
   const seconds = r.respawn ? 0 : (ticks / RAID_HZ) * speed;
+  const stride = RAID_STRAFE_SPEED * seconds;
   return {
-    x: runAxis(r.x, r.side * 4.8 * seconds, -RAID_RUN_LIMIT_X, RAID_RUN_LIMIT_X, 4.8 * seconds),
+    x: runAxis(r.x, r.side * stride, -RAID_RUN_LIMIT_X, RAID_RUN_LIMIT_X, stride),
     z: runAxis(
       r.z,
       r.respawn ? 0 : forwardTravel(r, ticks) * speed,

@@ -889,11 +889,13 @@ test('each runner opens fire as the wagon crosses the radius of their basic atta
   }
 });
 test('held steering reaches both widened lateral limits and releases inward immediately', () => {
-  const { match, send } = battle();
-  const runner = match.runners[0];
   for (const side of [-1, 1]) {
+    // Cross the whole road before the first discharge can stun the runner.
+    const { match, send } = battle();
+    const runner = match.runners[0];
+    runner.x = -side * RAID_RUN_LIMIT_X;
     assert.ok(send(0, 'move', { side, brake: 0.4 }));
-    advance(match, 3 * RAID_HZ);
+    advance(match, 84);
     assert.equal(runner.x, side * 6.6);
     assert.equal(raidRunnerPositionAfter(runner, 0.5).x, runner.x);
     assert.ok(send(0, 'move', { side: -side, brake: 0.4 }));

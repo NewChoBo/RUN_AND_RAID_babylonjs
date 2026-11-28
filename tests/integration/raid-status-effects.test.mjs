@@ -30,7 +30,7 @@ function field(t) {
 }
 
 test('Froze stuns both rivals before the delayed slow becomes visible, then clears the ankle effects', (t) => {
-  const { scene, draw, visible } = field(t);
+  const { scene, barHeight, draw, visible } = field(t);
   const match = new RaidMatch(['froze', 'jade', 'hammer', 'longshot']);
   for (const runner of match.runners) Object.assign(runner, { basic: 9999, x: 0, z: 0 });
   draw(match);
@@ -44,10 +44,23 @@ test('Froze stuns both rivals before the delayed slow becomes visible, then clea
   assert.equal(stars[0].geometry, stars[1].geometry);
   assert.equal(stars[0].material, stars[1].material);
   assert.ok(stars.every((m) => !m.isPickable));
+  for (const [index, star] of stars.entries()) {
+    const box = star.getBoundingInfo().boundingBox;
+    assert.ok(star.position.y + box.minimum.y > barHeight(index + 2) + 0.11);
+  }
   assert.equal(visible('slow').length, 0);
   const angle = stars[0].rotation.y;
   draw(match, 0.5);
   assert.notEqual(stars[0].rotation.y, angle);
+  for (let tick = 0; tick < 12; tick++) match.step();
+  draw(match);
+  assert.equal(visible('stun')[0], stars[0]);
+  assert.ok(Math.abs(stars[0].rotation.y - angle) >= Math.PI - 1e-8);
+  draw(match, 0.25, 0, true);
+  const stillStun = stars[0].rotation.y;
+  match.step();
+  draw(match, 0.75, 0, true);
+  assert.equal(visible('stun')[0].rotation.y, stillStun);
   while (match.runners[2].stunned) match.step();
   draw(match);
   assert.equal(visible('stun').length, 0);
@@ -87,6 +100,17 @@ test('status cues follow the player in the air, coexist and vanish on concealmen
     positions[0].z,
   ]);
   assert.equal(visible('haste')[0].position.y, height + 0.29);
+  runner.stunned = 6;
+  draw(match, 0.5);
+  const star = visible('stun')[0];
+  assert.equal(star.position.x, positions[0].x);
+  assert.equal(star.position.z, positions[0].z);
+  const crown = star.getBoundingInfo().boundingBox;
+  assert.ok(star.position.y + crown.minimum.y > height + barHeight(0) + 0.11);
+  for (const glyph of glyphs) {
+    const bottom = glyph.position.y + glyph.getBoundingInfo().boundingBox.minimum.y;
+    assert.ok(bottom > star.position.y + crown.maximum.y);
+  }
   const total = scene.meshes.length;
   draw(match, 0.5, 1);
   assert.ok(scene.meshes.every((m) => !m.isEnabled()));

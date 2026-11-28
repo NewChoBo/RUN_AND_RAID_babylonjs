@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { NullEngine, Scene, VertexBuffer } from '@babylonjs/core';
+import { RAID_ELECTRIC_GRID, raidElectricColumnX } from '../../src/game/raid/raid-boss.ts';
 import { RAID_HZ, ROUND_TICKS } from '../../src/game/raid/raid-rules.ts';
 import { RAID_FRONT_Z, RAID_REAR_Z, raidRoadTravel } from '../../src/game/raid/runner-motion.ts';
 import { createRaidCauseway } from '../../src/platform/babylon/raid/raid-causeway.ts';
@@ -36,6 +37,21 @@ test('roadside pillar pairs stay on the paving as runners walk, run and cross re
   });
   const scene = new Scene(engine);
   const causeway = createRaidCauseway(scene);
+  const { minimum, maximum } = causeway.ground.getBoundingInfo().boundingBox;
+  const texture = causeway.ground.material.diffuseTexture;
+  assert.equal((maximum.x - minimum.x) / texture.uScale, (maximum.z - minimum.z) / texture.vScale);
+  const joints = scene.getMeshByName('pavement joints').getVerticesData(VertexBuffer.PositionKind);
+  const boundaries = [];
+  for (let i = 0; i < joints.length; i += 6) {
+    if (joints[i] === joints[i + 3]) boundaries.push(joints[i]);
+  }
+  assert.deepEqual(
+    boundaries,
+    Array.from(
+      { length: RAID_ELECTRIC_GRID.columns - 1 },
+      (_, column) => raidElectricColumnX(column) + RAID_ELECTRIC_GRID.width / 2,
+    ),
+  );
   const rails = scene.getMeshByName('moulded stone parapets');
   const local = pillarCentres(rails, 1);
   assert.equal(local.length, 3);

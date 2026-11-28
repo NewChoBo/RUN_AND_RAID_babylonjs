@@ -2,7 +2,11 @@ import { actionLocked } from './raid-control.ts';
 import { RAID_RUN_LIMIT_X } from './raid-rules.ts';
 import { wagonCenter, wagonContact } from './wagon.ts';
 import { RAID_COUNTERS, RAID_ELECTRIC_GRID, type RaidCounter } from './raid-boss.ts';
-import { raidGroundPointAfter, raidRunnerPositionAfter } from './runner-motion.ts';
+import {
+  RAID_STRAFE_SPEED,
+  raidGroundPointAfter,
+  raidRunnerPositionAfter,
+} from './runner-motion.ts';
 import { canUseRaidSkill, raidSkill } from './heroes/hero-catalog.ts';
 import {
   HEROES,
@@ -20,6 +24,8 @@ import {
 import type { RaidOrder } from './raid-feature.ts';
 
 const soloSlot = new Set([0]);
+const steeringTicks = 8;
+const steeringStride = (RAID_STRAFE_SPEED * steeringTicks) / RAID_HZ;
 
 function aimWithinRange(from: RaidPoint, to: RaidPoint, range: number): RaidPoint {
   const dx = to.x - from.x;
@@ -59,7 +65,7 @@ export function driveRaidBots(
     if (humanSlots.has(r.slot)) continue;
     // Mirror the two formation positions across teams. Both teams open on the objective.
     const rank = r.slot % 2;
-    if (r.respawn || (view.tick + rank * 4) % 8 !== 0) continue;
+    if (r.respawn || (view.tick + rank * 4) % steeringTicks !== 0) continue;
     let nearest: RaidRunner | undefined;
     let nearestDistance = Infinity;
     for (const other of view.runners) {
@@ -88,7 +94,8 @@ export function driveRaidBots(
     // Keep the team's preferred lane while it faces the hull. Follow the near wheel when it passes.
     const formationX = (r.team === 0 ? -1 : 1) * (rank ? 1.8 : 0.65);
     const carriage = wagonCenter(view.tick);
-    let goalX = target?.x ?? wagonContact({ x: formationX, z: r.z }, view.tick).x;
+    const goalX = target?.x ?? wagonContact({ x: formationX, z: r.z }, view.tick).x;
+    let side = Math.abs(goalX - r.x) < 0.5 ? 0 : Math.sign(goalX - r.x);
     const counter = view.hazard;
     const threat = counter && approachingCell(counter, r, goalX);
     const danger = threat?.cell;
@@ -98,16 +105,18 @@ export function driveRaidBots(
       const margin = RAID_ELECTRIC_GRID.width / 2 + 0.65;
       const left = row[0]!.x - margin;
       const right = row[row.length - 1]!.x + margin;
-      goalX =
+      const escapeX =
         left < -RAID_RUN_LIMIT_X || (right <= RAID_RUN_LIMIT_X && right - r.x < r.x - left)
           ? right
           : left;
+      // A full steering step is wider than half a lane. Ease into the open flank.
+      side = Math.max(-1, Math.min(1, (escapeX - r.x) / steeringStride));
     }
     // Ranged runners need their duel target in front of them to land a basic attack.
     const keepDistance =
       target && HEROES[r.hero].reach >= 8 && target.z - r.z <= Math.abs(target.x - r.x);
     send(r.slot, 'move', {
-      side: Math.abs(goalX - r.x) < 0.5 ? 0 : Math.sign(goalX - r.x),
+      side,
       brake:
         call && 'movement' in call
           ? Number(call.movement === 'retreat')

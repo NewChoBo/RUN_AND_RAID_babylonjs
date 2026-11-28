@@ -1,12 +1,12 @@
-import { RAID_ROAD_WIDTH, ROUND_TICKS, WAGON } from './raid-rules.ts';
+import { RAID_ROAD_WIDTH, RAID_RUN_LIMIT_X, ROUND_TICKS, WAGON } from './raid-rules.ts';
 import { RAID_FRONT_Z, RAID_REAR_Z, raidRoadTravel } from './runner-motion.ts';
 import type { RaidPoint, RaidRunner } from './raid-view.ts';
 
-const columns = 5;
+const columns = 8;
 export const RAID_ELECTRIC_GRID = {
   columns,
   width: RAID_ROAD_WIDTH / columns,
-  depth: RAID_ROAD_WIDTH / columns,
+  depth: 3.6,
 } as const;
 export const RAID_COUNTERS = {
   // The original stun durations are unknown. Both discharges use 0.6 seconds for now.
@@ -17,13 +17,18 @@ const firstWarningTick = 60;
 const attackInterval = 144;
 const ticksPerRow = 6;
 const jumpClearance = 0.6;
-// Over four pillar attacks both sides receive a two-cell and a three-cell bank.
+// Over four pillar attacks both sides receive a three-cell and a five-cell bank.
 const pillarBanks = [
-  { firstColumn: 0, span: 3 },
-  { firstColumn: columns - 2, span: 2 },
-  { firstColumn: 0, span: 2 },
+  { firstColumn: 0, span: 5 },
   { firstColumn: columns - 3, span: 3 },
+  { firstColumn: 0, span: 3 },
+  { firstColumn: columns - 5, span: 5 },
 ] as const;
+
+const columnAt = (x: number) => Math.floor((x + RAID_ROAD_WIDTH / 2) / RAID_ELECTRIC_GRID.width);
+// A single low arc must stay on a lane the runner can reach. Pillar banks can extend to the rails.
+const leftRunColumn = columnAt(-RAID_RUN_LIMIT_X);
+const rightRunColumn = columnAt(RAID_RUN_LIMIT_X);
 
 export interface RaidCounterCell extends Readonly<RaidPoint> {
   readonly column: number;
@@ -64,13 +69,14 @@ interface Discharge {
 function planDischarge(tick: number, turn: number, targetX: number): Discharge {
   const kind = turn % 2 === 0 ? 'low' : 'pillar';
   const zigzag = tick >= ROUND_TICKS / 2;
-  const { width, depth } = RAID_ELECTRIC_GRID;
+  const { depth } = RAID_ELECTRIC_GRID;
   const bank = pillarBanks[Math.floor(turn / 2) % pillarBanks.length]!;
   const span = kind === 'low' ? 1 : bank.span;
-  const targetColumn = Math.floor((targetX + RAID_ROAD_WIDTH / 2) / width);
+  const left = kind === 'low' ? leftRunColumn : 0;
+  const right = kind === 'low' ? rightRunColumn : columns - span;
   // Pillar banks alternate flanks. The open side can be read from the first row.
   let firstColumn =
-    kind === 'pillar' ? bank.firstColumn : Math.min(columns - 1, Math.max(0, targetColumn));
+    kind === 'pillar' ? bank.firstColumn : Math.min(right, Math.max(left, columnAt(targetX)));
   let direction = turn % 4 < 2 ? 1 : -1;
   // The leading charged tile meets the front runners after its warning has scrolled with the road.
   const firstImpact = tick + RAID_COUNTERS[kind].windup;
@@ -84,7 +90,7 @@ function planDischarge(tick: number, turn: number, targetX: number): Discharge {
     path.push({ firstColumn, row, warningAt });
     row--;
     if (zigzag) {
-      if (firstColumn + direction < 0 || firstColumn + direction + span > columns) direction *= -1;
+      if (firstColumn + direction < left || firstColumn + direction > right) direction *= -1;
       firstColumn += direction;
     }
   }
