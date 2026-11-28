@@ -28,12 +28,13 @@
           if (event.target instanceof HTMLScriptElement && event.target.type === 'module') {
             document.documentElement.classList.add('launch-error');
             window.frameElement?.gameReady?.();
+            document.querySelector('.loading-recovery button')?.focus();
           }
         },
         true,
       );
     </script>
-    <title data-i18n="homeTitle">런앤레이드 · 로비</title>
+    <title data-i18n="gameName">런앤레이드</title>
     <link rel="icon" href="./favicon.ico" />
     <link rel="stylesheet" href="./src/ui/styles/shell.css" />
     <link rel="stylesheet" href="./src/ui/styles/loading.css" />

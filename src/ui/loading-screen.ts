@@ -1,8 +1,9 @@
 import { uiText } from '../content/locales/ui.ts';
 
-export const loadingScreen = document.querySelector<HTMLDialogElement>('#launch-splash')!;
-const tip = loadingScreen.querySelector<HTMLElement>('#loading-tip')!;
-const cancel = loadingScreen.querySelector<HTMLButtonElement>('.loading-cancel')!;
+export const launchScreen = document.querySelector<HTMLDialogElement>('#launch-splash')!;
+const arenaLoading = document.querySelector<HTMLDialogElement>('#arena-loading')!;
+const tip = arenaLoading.querySelector<HTMLElement>('#loading-tip')!;
+const cancel = arenaLoading.querySelector<HTMLButtonElement>('.loading-cancel')!;
 const firstTip = tip.querySelector<HTMLElement>(
   `[lang="${document.documentElement.lang}"]`,
 )!.textContent!;
@@ -16,35 +17,39 @@ function nextTip() {
   index = (index + 1) % (otherTips.length + 1);
 }
 
-export function rotateLoadingTips() {
-  window.clearInterval(timer);
-  timer = window.setInterval(nextTip, 8000);
+export function showTitleScreen(enter: () => void) {
+  launchScreen.querySelector<HTMLElement>('#launch-status')!.hidden = true;
+  const start = launchScreen.querySelector<HTMLButtonElement>('#title-start')!;
+  start.hidden = false;
+  start.onclick = enter;
+  start.focus({ preventScroll: true });
 }
 
 export function closeLoadingScreen() {
   window.clearInterval(timer);
-  loadingScreen.close();
+  arenaLoading.close();
 }
 
 export function showLaunchError() {
-  window.clearInterval(timer);
   document.documentElement.classList.add('launch-error');
-  loadingScreen.querySelector<HTMLButtonElement>('.loading-recovery button')!.focus();
+  if (!launchScreen.open) launchScreen.showModal();
+  launchScreen.querySelector<HTMLButtonElement>('.loading-recovery button')!.focus();
 }
 
 export function showArenaLoading(cancelEntry: () => void) {
-  const title = loadingScreen.querySelector<HTMLElement>('#loading-title')!;
+  const title = arenaLoading.querySelector<HTMLElement>('#loading-title')!;
   title.textContent = uiText('wagonChase');
-  loadingScreen.querySelector<HTMLElement>('.loading-status')!.textContent = uiText('arenaLoading');
+  arenaLoading.querySelector<HTMLElement>('.loading-status')!.textContent = uiText('arenaLoading');
   cancel.hidden = false;
   cancel.textContent = uiText('cancelEntry');
   cancel.onclick = cancelEntry;
-  loadingScreen.oncancel = (event) => {
+  arenaLoading.oncancel = (event) => {
     event.preventDefault();
     cancelEntry();
   };
   nextTip();
-  rotateLoadingTips();
-  loadingScreen.showModal();
+  window.clearInterval(timer);
+  timer = window.setInterval(nextTip, 8000);
+  arenaLoading.showModal();
   title.focus({ preventScroll: true });
 }

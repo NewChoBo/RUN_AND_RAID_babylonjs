@@ -1,7 +1,8 @@
 ﻿import { uiText } from './content/locales/ui.ts';
 import './app/home.ts';
 import { prepareRaid } from './app/run-and-raid.ts';
-import { syncGameUrl } from './platform/browser/game-navigation.ts';
+import { replaceGameUrl, syncGameUrl } from './platform/browser/game-navigation.ts';
+import { launchScreen, showTitleScreen } from './ui/loading-screen.ts';
 import { installSettings } from './ui/settings.ts';
 import { installViewportLimit } from './ui/viewport-limit.ts';
 
@@ -56,6 +57,10 @@ function route() {
   } else if (leavingRaid) {
     play.focus({ preventScroll: true });
   }
+  if (launchScreen.open) {
+    launchScreen.close();
+    lobby.inert = false;
+  }
 }
 home.addEventListener('click', () => {
   location.hash = '/home';
@@ -63,8 +68,18 @@ home.addEventListener('click', () => {
 shop.onclick = () => {
   location.hash = '/shop';
 };
-window.addEventListener('hashchange', route);
-lobby.inert = false;
-route();
-installSettings();
-installViewportLimit(document.querySelector<HTMLDialogElement>('#viewport-limit')!);
+export function openInitialRoute() {
+  window.addEventListener('hashchange', route);
+  if (location.hash) route();
+  else {
+    showTitleScreen(() => {
+      const url = new URL(location.href);
+      url.hash = '/home';
+      replaceGameUrl(url);
+      route();
+      play.focus({ preventScroll: true });
+    });
+  }
+  installSettings();
+  installViewportLimit(document.querySelector<HTMLDialogElement>('#viewport-limit')!);
+}

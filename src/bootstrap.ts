@@ -2,26 +2,20 @@ import { landscapeFrame, mountLandscapeFrame } from './platform/browser/game-nav
 import { installLandscapeRecovery, requestLandscape } from './platform/browser/landscape.ts';
 import { initializeUiLanguage } from './platform/browser/ui-language.ts';
 import { installGameGestures } from './platform/browser/game-gestures.ts';
-import {
-  closeLoadingScreen,
-  loadingScreen,
-  rotateLoadingTips,
-  showLaunchError,
-} from './ui/loading-screen.ts';
+import { launchScreen, showLaunchError } from './ui/loading-screen.ts';
 
 installGameGestures();
 initializeUiLanguage();
 const frame = landscapeFrame();
-rotateLoadingTips();
 if (!frame && document.documentElement.hasAttribute('data-mobile')) {
   installLandscapeRecovery();
   void requestLandscape();
-  mountLandscapeFrame(requestLandscape, loadingScreen, closeLoadingScreen);
+  mountLandscapeFrame(requestLandscape, launchScreen);
 } else {
   void import('./routes.ts')
-    .then(() => {
-      closeLoadingScreen();
+    .then(({ openInitialRoute }) => {
       frame?.gameReady();
+      openInitialRoute();
     })
     .catch(() => {
       frame?.gameReady();

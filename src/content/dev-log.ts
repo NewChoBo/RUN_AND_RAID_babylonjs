@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T18:47+09:00',
+    tag: 'lobby',
+    title: '원작 타이틀에서 로비로',
+    body: '첫 화면에 원작의 금빛 로고와 주자들이 등장합니다. 불러오기가 끝나면 하단의 게임 시작하기를 눌러 로비로 들어갈 수 있습니다.',
+  },
+  {
     updatedAt: '2026-11-28T18:38+09:00',
     tag: 'arena',
     title: '돌다리 양옆을 스쳐 가는 석주',

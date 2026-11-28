@@ -1,10 +1,38 @@
-<dialog id="launch-splash" aria-labelledby="loading-title" open>
-  <img
-    class="loading-art"
-    src="./assets/raid/lobby/returning-runners.webp"
-    alt=""
-    fetchpriority="high"
-  />
+<dialog id="launch-splash" data-i18n-aria="gameName" aria-label="런앤레이드" open>
+  <div class="title-frame">
+    <img
+      class="title-art"
+      src="./assets/raid/lobby/title-screen.webp"
+      width="1196"
+      height="560"
+      alt=""
+      fetchpriority="high"
+    />
+    <div class="title-actions">
+      <p id="launch-status" role="status">
+        <span lang="ko">게임 불러오는 중…</span><span lang="en">Loading game…</span>
+      </p>
+      <button id="title-start" type="button" hidden>
+        <span lang="ko">게임 시작하기</span><span lang="en">Start Game</span>
+      </button>
+      <div class="loading-recovery" role="alert">
+        <p>
+          <span lang="ko">게임 화면을 불러오지 못했습니다.</span
+          ><span lang="en">Could not load the game.</span>
+        </p>
+        <button type="button" onclick="location.reload()">
+          <span lang="ko">다시 불러오기</span><span lang="en">Reload</span>
+        </button>
+      </div>
+    </div>
+    <small class="title-credits" lang="en">
+      <span>© 2014 bluedice Inc. All Rights Reserved</span>
+      <span>Original music by Matthew Pablo</span>
+    </small>
+  </div>
+</dialog>
+<dialog id="arena-loading" aria-labelledby="loading-title">
+  <img class="loading-art" src="./assets/raid/lobby/returning-runners.webp" alt="" />
   <h1 id="loading-title" tabindex="-1">
     <span lang="ko">런앤레이드</span><span lang="en">Run &amp; Raid</span>
   </h1>
@@ -23,15 +51,6 @@
       <p class="loading-status" role="status">
         <span lang="ko">게임 불러오는 중…</span><span lang="en">Loading game…</span>
       </p>
-    </div>
-    <div class="loading-recovery" role="alert">
-      <p>
-        <span lang="ko">게임 화면을 불러오지 못했습니다.</span
-        ><span lang="en">Could not load the game.</span>
-      </p>
-      <button type="button" onclick="location.reload()">
-        <span lang="ko">다시 불러오기</span><span lang="en">Reload</span>
-      </button>
     </div>
   </div>
   <button type="button" class="loading-cancel" hidden></button>
