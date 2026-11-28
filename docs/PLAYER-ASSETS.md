@@ -2,6 +2,8 @@
 
 ## 현재 작업본과 경기 에셋
 
+원본 한 장면씩 편집하거나 3ds Max에서 계산한 표면과 비교하려면 [원본별 Blender 작업본](MAX-PRESERVATION.md)을 사용한다.
+
 Google Drive의 **Run and Raid - Player Assets**에서 `Blender/<그룹>.blend`를 내려받아 편집한다. Scene 선택기의 각 장면은 원본 MAX 한 개와 대응한다. `FBX/<그룹>.zip`에는 FBX와 텍스처가 있다. `GLB/<그룹>.zip`의 `Scenes/`에는 원본별 GLB, `Outfits/`에는 경기·상점용 GLB, `index.json`에는 출처와 클립 매핑이 있다. 다운로드한 파일은 Drive 루트의 `SHA256SUMS.txt`로 검사할 수 있다.
 
 게임과 Drive에서 같은 외형은 같은 파일명을 쓴다. 예를 들어 해머 근위대 외형은 `hammer-royalguard.glb`, 해머 기본 달리기는 `hammer-default-run.glb`와 `hammer-default-run.fbx`, 기본 편집 장면은 `hammer-default-scene.glb`다. 구버전·변형 장면은 원본의 하위 폴더 이름까지 덧붙인다. 각 FBX의 원본 MAX 경로와 프레임 범위는 `fbx-index.csv`에서 찾을 수 있다. FBX에 연결된 원본 TGA는 재연결에 쓰이는 이름을 유지한다.
