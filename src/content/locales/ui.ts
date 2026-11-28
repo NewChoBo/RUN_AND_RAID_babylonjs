@@ -151,7 +151,7 @@ const english = {
   tipMarkTarget:
     'Drag from the exclamation mark to an enemy portrait to call a target for your team.',
   tipWalk: 'Pull down on the left pad to walk. Release to run and catch up with the wagon.',
-  tipQuickMatch: 'Quick match opens champion select once all four players have joined.',
+  tipQuickMatch: 'Quick match opens champion select once both teams are full.',
   tipPractice: 'Choose Private room, then Offline bot practice to try a runner on your own.',
   arenaError: 'Could not open the arena. Please try again.',
   assets: 'Original assets',

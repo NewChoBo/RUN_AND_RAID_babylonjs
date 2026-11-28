@@ -1,29 +1,13 @@
+import {
+  RAID_COUNTERS,
+  RAID_ELECTRIC_GRID,
+  RAID_LIGHTNING,
+} from '../../content/raid/boss-lightning.ts';
 import { RAID_ROAD_WIDTH, RAID_RUN_LIMIT_X, ROUND_TICKS, WAGON } from './raid-rules.ts';
 import { RAID_FRONT_Z, RAID_REAR_Z, raidRoadTravel } from './runner-motion.ts';
 import type { RaidPoint, RaidRunner } from './raid-view.ts';
 
-const columns = 8;
-export const RAID_ELECTRIC_GRID = {
-  columns,
-  width: RAID_ROAD_WIDTH / columns,
-  depth: 3.6,
-} as const;
-export const RAID_COUNTERS = {
-  // The original stun durations are unknown. Both discharges use 0.6 seconds for now.
-  low: { windup: 30, active: 7, damage: 20, stunTicks: 18 },
-  pillar: { windup: 42, active: 9, damage: 26, stunTicks: 18 },
-} as const;
-const firstWarningTick = 60;
-const attackInterval = 144;
-const ticksPerRow = 6;
-const jumpClearance = 0.6;
-// Over four pillar attacks both sides receive a three-cell and a five-cell bank.
-const pillarBanks = [
-  { firstColumn: 0, span: 5 },
-  { firstColumn: columns - 3, span: 3 },
-  { firstColumn: 0, span: 3 },
-  { firstColumn: columns - 5, span: 5 },
-] as const;
+export { RAID_COUNTERS, RAID_ELECTRIC_GRID };
 
 const columnAt = (x: number) => Math.floor((x + RAID_ROAD_WIDTH / 2) / RAID_ELECTRIC_GRID.width);
 // A single low arc must stay on a lane the runner can reach. Pillar banks can extend to the rails.
@@ -47,7 +31,7 @@ export function raidElectricRowZ(row: number, tick: number) {
   return WAGON.z + row * RAID_ELECTRIC_GRID.depth - raidRoadTravel(tick);
 }
 export function raidElectricColumnX(column: number) {
-  return (column - (columns - 1) / 2) * RAID_ELECTRIC_GRID.width;
+  return (column - (RAID_ELECTRIC_GRID.columns - 1) / 2) * RAID_ELECTRIC_GRID.width;
 }
 
 export function inElectricCell(cell: RaidPoint, point: RaidPoint) {
@@ -68,15 +52,17 @@ interface Discharge {
 
 function planDischarge(tick: number, turn: number, targetX: number): Discharge {
   const kind = turn % 2 === 0 ? 'low' : 'pillar';
-  const zigzag = tick >= ROUND_TICKS / 2;
-  const { depth } = RAID_ELECTRIC_GRID;
+  const zigzag = tick >= ROUND_TICKS * RAID_LIGHTNING.zigzagFromRoundFraction;
+  const { columns, depth } = RAID_ELECTRIC_GRID;
+  const { pillarBanks, ticksPerRow } = RAID_LIGHTNING;
   const bank = pillarBanks[Math.floor(turn / 2) % pillarBanks.length]!;
   const span = kind === 'low' ? 1 : bank.span;
   const left = kind === 'low' ? leftRunColumn : 0;
   const right = kind === 'low' ? rightRunColumn : columns - span;
   // Pillar banks alternate flanks. The open side can be read from the first row.
+  const bankStart = bank.side === 'left' ? left : right;
   let firstColumn =
-    kind === 'pillar' ? bank.firstColumn : Math.min(right, Math.max(left, columnAt(targetX)));
+    kind === 'pillar' ? bankStart : Math.min(right, Math.max(left, columnAt(targetX)));
   let direction = turn % 4 < 2 ? 1 : -1;
   // The leading charged tile meets the front runners after its warning has scrolled with the road.
   const firstImpact = tick + RAID_COUNTERS[kind].windup;
@@ -112,8 +98,9 @@ export class RaidBoss {
     height: (r: RaidRunner) => number,
     hit: (slot: number, damage: number, stunTicks: number) => void,
   ) {
-    if (tick >= firstWarningTick && (tick - firstWarningTick) % attackInterval === 0) {
-      const turn = (tick - firstWarningTick) / attackInterval;
+    const { firstWarningTick, attackIntervalTicks } = RAID_LIGHTNING;
+    if (tick >= firstWarningTick && (tick - firstWarningTick) % attackIntervalTicks === 0) {
+      const turn = (tick - firstWarningTick) / attackIntervalTicks;
       const alive = runners.filter((r) => !r.respawn);
       if (alive.length) {
         const volley = Math.floor(turn / 2);
@@ -146,7 +133,11 @@ export class RaidBoss {
     }
     this.#counter = { startedAt, kind, zigzag, cells };
     for (const r of runners) {
-      if (r.respawn || this.#struck.has(r.slot) || (kind === 'low' && height(r) >= jumpClearance))
+      if (
+        r.respawn ||
+        this.#struck.has(r.slot) ||
+        (kind === 'low' && height(r) >= RAID_LIGHTNING.lowJumpClearance)
+      )
         continue;
       if (cells.some((cell) => cell.phase === 'impact' && inElectricCell(cell, r))) {
         this.#struck.add(r.slot);

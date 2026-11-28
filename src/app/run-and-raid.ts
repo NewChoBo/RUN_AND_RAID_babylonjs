@@ -17,22 +17,17 @@ import {
 } from '../game/raid/raid-match.ts';
 import { practiceRoster } from '../game/raid/raid-draft.ts';
 import type { RaidRageLoadout } from '../content/raid/rage.ts';
+import { RAID_SHORTCUTS, RAID_TOUCH } from '../content/raid/controls.ts';
+import { startDelayMs } from '../content/raid/match-format.ts';
 import type { RaidCommandName } from '../game/raid/raid-feature.ts';
 import { RaidSimulation } from '../game/raid/raid-simulation.ts';
 import type { openRaidCourse } from '../platform/babylon/raid/raid-course.ts';
 import { createPreferences } from '../platform/browser/preferences.ts';
 import { createRaidAudio } from '../platform/browser/raid-audio.ts';
 import { createRaidHud } from '../ui/raid-hud.ts';
-import {
-  RAID_AIM_RADIUS,
-  type AimPoint,
-  type RaidAimFeedback,
-  type RaidAimInput,
-} from '../ui/raid-aim-pad.ts';
+import type { AimPoint, RaidAimFeedback, RaidAimInput } from '../ui/raid-aim-pad.ts';
 import { playableViewport } from '../ui/viewport-limit.ts';
 import { closeLoadingScreen, showArenaLoading } from '../ui/loading-screen.ts';
-
-const startDelayMs = 3000;
 
 export function prepareRaid(showStartupError: (error: unknown) => void) {
   const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
@@ -109,8 +104,11 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
   function keyboardPing() {
     if (state !== 'playing' || aiming !== null || hud.aimPad.skill !== null) return;
     if (keyboardAimPoint && canvas.matches(':hover')) {
-      const { target } = course.pickTarget(keyboardAimPoint, 'enemies', RAID_AIM_RADIUS, (id) =>
-        match.canTarget(slot, id),
+      const { target } = course.pickTarget(
+        keyboardAimPoint,
+        'enemies',
+        RAID_TOUCH.targetRadiusPx,
+        (id) => match.canTarget(slot, id),
       );
       if (target !== undefined) {
         order('call', target);
@@ -304,7 +302,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       match.previewSkill(slot, skill, null, id).status === 'ready';
     const side =
       kind === 'ward' ? 'allies' : rule.kind === 'target' && rule.allowAlly ? 'either' : 'enemies';
-    const hit = course.pickTarget(event, side, RAID_AIM_RADIUS, eligible);
+    const hit = course.pickTarget(event, side, RAID_TOUCH.targetRadiusPx, eligible);
     return match.previewSkill(slot, skill, hit.point, hit.target);
   }
   function drop(skill: Skill, event: RaidAimInput) {
@@ -348,6 +346,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
         hud.update(match, null, slot);
       },
       preview: previewSkill,
+      aimSensitivity: () => device.get().sensitivity,
       jump: evade,
       repeatCast,
       ping(intent) {
@@ -581,8 +580,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
       return;
     }
     if (state === 'countdown' && e.code !== 'Escape') return;
-    const keys = ['Digit1', 'Digit2', 'Digit3', 'Digit4'];
-    if (e.code !== jump && e.code !== 'KeyG' && e.code !== 'Escape' && !keys.includes(e.code))
+    const skillSlot = RAID_SHORTCUTS.skills.findIndex((code) => code === e.code);
+    if (e.code !== jump && e.code !== RAID_SHORTCUTS.ping && e.code !== 'Escape' && skillSlot < 0)
       return;
     e.preventDefault();
     if (e.repeat) return;
@@ -595,9 +594,9 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
         hud.update(match, null, slot);
       } else pause();
     } else if (e.code === jump) evade(true, 'key');
-    else if (e.code === 'KeyG') keyboardPing();
-    else if (e.shiftKey) repeatCast(keys.indexOf(e.code) as Skill);
-    else cast(keys.indexOf(e.code) as Skill);
+    else if (e.code === RAID_SHORTCUTS.ping) keyboardPing();
+    else if (e.getModifierState(RAID_SHORTCUTS.repeatModifier)) repeatCast(skillSlot as Skill);
+    else cast(skillSlot as Skill);
   });
   window.addEventListener('keyup', (e) => {
     if (e.code === jump) evade(false, 'key');

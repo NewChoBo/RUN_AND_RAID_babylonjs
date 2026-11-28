@@ -2,8 +2,9 @@ import type { RaidCommandName } from './raid-feature.ts';
 import { RaidSimulation } from './raid-simulation.ts';
 import { HERO_IDS, RaidMatch } from './raid-match.ts';
 import { isRaidRoster, type RaidSeat } from './raid-draft.ts';
+import { RAID_ROOM_CAPACITY, seatOrder } from '../../content/raid/match-format.ts';
 
-export const seatOrder = [0, 2, 1, 3] as const;
+export { seatOrder };
 interface Order {
   slot: number;
   action: RaidCommandName;
@@ -27,12 +28,12 @@ export class RaidRound {
   readonly #simulation: RaidSimulation;
   readonly #seq = new Map<number, number>();
   readonly #pending: Order[] = [];
-  readonly #pendingCounts = new Uint8Array(4);
+  readonly #pendingCounts = new Uint8Array(RAID_ROOM_CAPACITY);
   constructor(roster: RaidSeat[]) {
     if (!isRaidRoster(roster)) throw new Error('Invalid raid roster');
     const vacant = HERO_IDS.filter((hero) => !roster.some((p) => p.hero === hero));
     const seats = Array.from(
-      { length: 4 },
+      { length: RAID_ROOM_CAPACITY },
       (_, slot) => roster[seatOrder.findIndex((s) => s === slot)],
     );
     const heroes = seats.map((seat, slot) => {
@@ -102,7 +103,11 @@ export class RaidRound {
     )
       return false;
     for (const frame of batch.frames) {
-      if (this.match.result || !Array.isArray(frame) || frame.length > perSeatLimit * 4)
+      if (
+        this.match.result ||
+        !Array.isArray(frame) ||
+        frame.length > perSeatLimit * RAID_ROOM_CAPACITY
+      )
         return false;
       for (const o of frame) {
         if (

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import Photon from 'photon-realtime';
+import { RAID_ROOM_CAPACITY, pickOrder, seatOrder } from '../../src/content/raid/match-format.ts';
+import { isDraft } from '../../src/game/raid/raid-draft.ts';
 import { RaidRoom } from '../../src/platform/photon/raid-room.ts';
 
 // Drive the SDK membership callbacks in the order seen by one browser, without a server.
@@ -39,6 +41,46 @@ function peer(t, self = 1) {
     },
   };
 }
+
+test('public matchmaking, private rooms and draft packets use the same 2v2 capacity', (t) => {
+  assert.equal(RAID_ROOM_CAPACITY, 4);
+  const slots = Array.from({ length: RAID_ROOM_CAPACITY }, (_, i) => i);
+  assert.deepEqual([...pickOrder].sort(), slots);
+  assert.deepEqual([...seatOrder].sort(), slots);
+  const seats = Array.from({ length: RAID_ROOM_CAPACITY }, (_, i) => ({
+    actor: i + 1,
+    hero: null,
+  }));
+  assert.ok(isDraft(seats));
+  assert.equal(isDraft([...seats, { actor: seats.length + 1, hero: null }]), false);
+
+  const Client = Photon.LoadBalancing.LoadBalancingClient;
+  let client;
+  t.mock.method(Client.prototype, 'connectToRegionMaster', function () {
+    client = this;
+    return true;
+  });
+  for (const entry of ['quick', 'host']) {
+    const room = new RaidRoom('test', 'ABC234', entry, {});
+    t.after(() => room.close());
+    client.joinRandomOrCreateRoom = t.mock.fn(() => true);
+    client.createRoom = t.mock.fn(() => true);
+    client.disconnect = t.mock.fn();
+    client.onStateChange(Client.State.JoinedLobby);
+    if (entry === 'quick') {
+      assert.deepEqual(client.joinRandomOrCreateRoom.mock.calls[0].arguments, [
+        { expectedMaxPlayers: RAID_ROOM_CAPACITY },
+        '',
+        { maxPlayers: RAID_ROOM_CAPACITY, isVisible: true },
+      ]);
+    } else {
+      assert.deepEqual(client.createRoom.mock.calls[0].arguments, [
+        'raid-ABC234',
+        { maxPlayers: RAID_ROOM_CAPACITY, isVisible: false },
+      ]);
+    }
+  }
+});
 
 test('three queued players cannot pick or start, and a replacement gets a fresh draft', (t) => {
   const { room, client, waiting, lobby, start, join, leave } = peer(t);

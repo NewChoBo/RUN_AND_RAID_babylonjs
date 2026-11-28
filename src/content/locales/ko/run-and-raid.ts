@@ -1,4 +1,5 @@
 import { ROUND_MINUTES } from '../../../game/raid/raid-rules.ts';
+import { RAID_SHORTCUTS } from '../../raid/controls.ts';
 
 export const korean = {
   taunted: '도발',
@@ -170,7 +171,7 @@ export const korean = {
   startRound: '경기 시작',
   leaveRoom: '방 나가기',
   connecting: 'Photon에 연결 중…',
-  roomStatus: '방 코드 {code} · {count}/4명',
+  roomStatus: '방 코드 {code} · {count}/{capacity}명',
   teamA: 'A팀',
   teamB: 'B팀',
   you: '나',
@@ -183,11 +184,10 @@ export const korean = {
   homeMode: '2대2 마차 추격전',
   mode: '런앤레이드',
   rules: `두 팀이 한 마차를 추격합니다. 마차를 먼저 파괴하면 승리합니다. ${ROUND_MINUTES}분이 지나면 마차에 더 많은 피해를 준 팀이 이깁니다.`,
-  controls:
-    '왼쪽 패드를 좌우로 밀면 방향을 바꾸고 아래로 당기면 걷습니다. 작은 조준선이 붙은 스킬은 탭한 뒤 겨누고 손을 떼세요. 나머지 스킬은 한 번 탭하면 바로 시전합니다. 조준 스킬 아이콘을 밖으로 끌어 놓으면 직전 대상이나 방향으로 빠르게 시전합니다. 키보드는 Shift와 스킬 숫자를 함께 누르세요.',
+  controls: `왼쪽 패드를 좌우로 밀면 방향을 바꾸고 아래로 당기면 걷습니다. 작은 조준선이 붙은 스킬은 탭한 뒤 겨누고 손을 떼세요. 나머지 스킬은 한 번 탭하면 바로 시전합니다. 조준 스킬 아이콘을 밖으로 끌어 놓으면 직전 대상이나 방향으로 빠르게 시전합니다. 키보드는 ${RAID_SHORTCUTS.repeatModifier}와 스킬 숫자를 함께 누르세요.`,
   pingTeam: '아군 핑',
   pingHelp:
-    '느낌표를 위로 끌면 전진, 아래로 끌면 후퇴, 적 얼굴로 끌면 집중공격을 요청합니다. 키보드에서는 G로 핑 메뉴를 열거나, 적이나 마차에 마우스를 올리고 G를 눌러 집중공격을 요청하세요.',
+    '느낌표를 위로 끌면 전진, 아래로 끌면 후퇴, 적 얼굴로 끌면 집중공격을 요청합니다. 키보드에서는 {key}로 핑 메뉴를 열거나, 적이나 마차에 마우스를 올리고 {key}를 눌러 집중공격을 요청하세요.',
   advance: '전진',
   retreat: '후진',
   enemy1: '적 1',
@@ -197,9 +197,9 @@ export const korean = {
   teamMessageFrom: '{name}의 팀원메시지',
   quickMatch: '빠른 매칭',
   quickSearching: '빠른 매칭 중',
-  quickWaiting: '참가자 {count}/4명 · 네 명이 모이면 캐릭터 선택을 시작합니다.',
+  quickWaiting: '참가자 {count}/{capacity}명 · 모두 모이면 캐릭터 선택을 시작합니다.',
   cancelMatch: '매칭 취소',
-  quickRoomStatus: '공개 대전 · {count}/4명',
+  quickRoomStatus: '공개 대전 · {count}/{capacity}명',
   attackRequest: '팀원메시지: {target} 집중공격!',
   wagonRequest: '팀원메시지: 마차 집중공격!',
   teamKills: '처치 {count}',
@@ -210,6 +210,7 @@ export const korean = {
   repeatUnavailable: '이전 조준으로 지금 시전할 수 없습니다',
   skillSize: '스킬 버튼 크기',
   hudPadding: 'HUD 가장자리 여백',
+  aimSensitivity: '조준 커서 감도',
   touchAim: '{skill} · 밀어서 조준 · 패드 안에서 떼면 시전, 밖은 취소',
   touchStick: '{skill} · 끌어 조준 · 오른쪽에서 떼면 발사, 왼쪽은 취소',
   typeDirection: '방향',

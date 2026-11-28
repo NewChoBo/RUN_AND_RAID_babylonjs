@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { RAID_CONTROL_RANGES } from '../../src/content/raid/controls.ts';
 import {
   createPreferences,
   sanitizePreferences,
@@ -25,6 +26,19 @@ test('old controls keep their skill size and save the HUD inset across sessions'
     ['12', 0],
   ])
     assert.equal(sanitizePreferences({ raidHudPadding: given }).raidHudPadding, expected);
+});
+
+test('aim pad sensitivity keeps saved gains and uses the same limits as the settings slider', () => {
+  const { min, max, defaultValue } = RAID_CONTROL_RANGES.sensitivity;
+  for (const [saved, expected] of [
+    [undefined, defaultValue],
+    [NaN, defaultValue],
+    [min / 2, min],
+    [max + 1, max],
+    [1.67, 1.67],
+  ]) {
+    assert.equal(sanitizePreferences({ version: 11, sensitivity: saved }).sensitivity, expected);
+  }
 });
 
 test('a legacy mute, last audible volume and graphics quality survive a reload', async (t) => {

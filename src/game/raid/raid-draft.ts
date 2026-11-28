@@ -2,10 +2,20 @@ import { HERO_IDS, type RaidHero } from './heroes/hero-id.ts';
 import { battleOutfit } from '../../content/raid/battle-outfits.ts';
 import type { RaidRageLoadout } from '../../content/raid/rage.ts';
 
+import {
+  RAID_ROOM_CAPACITY,
+  minimumOnlineSeats,
+  pickOrder,
+  pickTimeMs,
+  readyTimeMs,
+} from '../../content/raid/match-format.ts';
+
+export { pickTimeMs, readyTimeMs };
+
 export function practiceRoster(hero: RaidHero): RaidHero[] {
   const start = HERO_IDS.findIndex((id) => id === hero) + 1;
   const bots = Array.from(
-    { length: 3 },
+    { length: RAID_ROOM_CAPACITY - 1 },
     (_, offset) => HERO_IDS[(start + offset) % HERO_IDS.length]!,
   );
   return [hero, ...bots];
@@ -22,9 +32,6 @@ export interface RaidSeat extends DraftSeat {
   hero: RaidHero;
 }
 export const draftMessageLimit = 140;
-const pickOrder = [0, 1, 3, 2];
-export const pickTimeMs = 20_000;
-export const readyTimeMs = 15_000;
 
 export function pickNumber(index: number) {
   return pickOrder.indexOf(index) + 1;
@@ -37,7 +44,7 @@ export interface DraftClock {
 
 /** All deadlines use the local monotonic clock. Only the room master advances turns. */
 export function nextDraftClock(seats: DraftSeat[], previous: DraftClock | null, now: number) {
-  if (seats.length < 2) return null;
+  if (seats.length < minimumOnlineSeats) return null;
   if (previous && seats.some((s) => s.actor === previous.actor && !s.hero)) return previous;
   const actor =
     pickOrder.map((index) => seats[index]).find((seat) => seat && !seat.hero)?.actor ?? null;
@@ -90,7 +97,7 @@ function isRageLoadout(hero: unknown, value: unknown): value is RaidRageLoadout 
   });
 }
 export function isDraft(value: unknown): value is DraftSeat[] {
-  if (!Array.isArray(value) || value.length < 1 || value.length > 4) return false;
+  if (!Array.isArray(value) || value.length < 1 || value.length > RAID_ROOM_CAPACITY) return false;
   const claimed = new Set<RaidHero>();
   return value.every((seat, i) => {
     if (!seat || !Number.isSafeInteger(seat.actor) || seat.actor <= (i ? value[i - 1].actor : 0))
@@ -114,7 +121,9 @@ export function isDraft(value: unknown): value is DraftSeat[] {
   });
 }
 export function isRaidRoster(value: unknown): value is RaidSeat[] {
-  return isDraft(value) && value.length >= 2 && value.every((s) => s.hero !== null);
+  return (
+    isDraft(value) && value.length >= minimumOnlineSeats && value.every((s) => s.hero !== null)
+  );
 }
 
 export function readDraftSnapshot(value: unknown, now: number) {

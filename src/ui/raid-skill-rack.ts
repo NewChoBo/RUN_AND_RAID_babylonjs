@@ -1,4 +1,6 @@
 import { raidText as t } from '../content/locales/run-and-raid.ts';
+import { RAID_SHORTCUTS, RAID_TOUCH } from '../content/raid/controls.ts';
+import { keyLabel } from '../platform/browser/preferences.ts';
 import { heroKit } from '../game/raid/heroes/hero-id.ts';
 import { raidRunnerAimKind } from '../game/raid/heroes/hero-catalog.ts';
 import type { RaidView, Skill } from '../game/raid/raid-match.ts';
@@ -53,7 +55,10 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
     };
     function track(e: PointerEvent) {
       if (!gesture || gesture.id !== e.pointerId || gesture.slot !== slot) return;
-      if (Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) > 12) gesture.dragged = true;
+      if (
+        Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) > RAID_TOUCH.skillDragThresholdPx
+      )
+        gesture.dragged = true;
     }
     b.onpointermove = track;
     b.onpointerup = (e) => {
@@ -104,10 +109,10 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
       );
       if (b.dataset.kind !== status.kind) {
         b.dataset.kind = status.kind;
-        const digit = String(slot + 1);
+        const key = keyLabel(RAID_SHORTCUTS.skills[slot]);
         b.setAttribute(
           'aria-keyshortcuts',
-          status.kind === 'pulse' ? digit : digit + ' Shift+' + digit,
+          status.kind === 'pulse' ? key : key + ' ' + RAID_SHORTCUTS.repeatModifier + '+' + key,
         );
       }
       const skillName = t(`${heroKit(runner.hero)}${skillNames[slot]}`);

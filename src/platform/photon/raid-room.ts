@@ -1,4 +1,5 @@
 import Photon from 'photon-realtime';
+import { RAID_ROOM_CAPACITY } from '../../content/raid/match-format.ts';
 import type { RaidRageLoadout } from '../../content/raid/rage.ts';
 import {
   readDraftChoice,
@@ -69,14 +70,14 @@ export class RaidRoom {
         if (entry === 'quick') {
           // Photon fills a public room or creates one atomically. Code rooms stay unlisted.
           if (
-            !client.joinRandomOrCreateRoom({ expectedMaxPlayers: 4 }, '', {
-              maxPlayers: 4,
+            !client.joinRandomOrCreateRoom({ expectedMaxPlayers: RAID_ROOM_CAPACITY }, '', {
+              maxPlayers: RAID_ROOM_CAPACITY,
               isVisible: true,
             })
           )
             this.fail('connectError');
         } else if (entry === 'host')
-          client.createRoom('raid-' + code, { maxPlayers: 4, isVisible: false });
+          client.createRoom('raid-' + code, { maxPlayers: RAID_ROOM_CAPACITY, isVisible: false });
         else client.joinRoom('raid-' + code);
       } else if (state === Client.State.Disconnected || state === Client.State.Error)
         this.fail('connectError');
@@ -191,8 +192,8 @@ export class RaidRoom {
     if (this.#entry !== 'quick') return true;
     const actors = this.#client.myRoomActorsArray();
     return (
-      seats.length === 4 &&
-      actors.length === 4 &&
+      seats.length === RAID_ROOM_CAPACITY &&
+      actors.length === RAID_ROOM_CAPACITY &&
       actors.every((a) => seats.some((s) => s.actor === a.actorNr))
     );
   }
@@ -204,7 +205,7 @@ export class RaidRoom {
   #membershipChanged(joined = false) {
     if (this.#closed || !this.#joined || this.#roster.length) return;
     const count = this.#client.myRoomActorsArray().length;
-    if (this.#entry === 'quick' && count < 4) {
+    if (this.#entry === 'quick' && count < RAID_ROOM_CAPACITY) {
       clearTimeout(this.#draftTimer);
       this.#draft = [];
       this.#clock = null;
@@ -225,7 +226,7 @@ export class RaidRoom {
     )
       return;
     const members = this.#members();
-    if (this.#entry === 'quick' && members.length !== 4) return;
+    if (this.#entry === 'quick' && members.length !== RAID_ROOM_CAPACITY) return;
     clearTimeout(this.#draftTimer);
     this.#draft = members;
     const now = performance.now();

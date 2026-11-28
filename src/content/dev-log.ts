@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T20:56+09:00',
+    tag: 'controls',
+    title: '경기 설정에서 조준 커서 감도 조절',
+    body: '경기 오른쪽 위 톱니바퀴에서 지점과 대상을 겨누는 커서의 속도를 조절할 수 있습니다. 기본은 100%이며 200%로 올리면 손가락을 같은 거리만큼 밀어도 커서가 두 배 멀리 움직입니다. 선택한 감도는 다음 경기에도 적용됩니다.',
+  },
+  {
     updatedAt: '2026-11-28T20:44+09:00',
     tag: 'controls',
     title: '조준 중 점프와 취소 버튼 정리',

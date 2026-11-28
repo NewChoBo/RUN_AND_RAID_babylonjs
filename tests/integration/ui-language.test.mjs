@@ -52,3 +52,17 @@ test('the selected language changes room and character labels while preserving o
     setLocale(previous);
   }
 });
+
+test('room and waiting labels display the supplied occupancy in either language', (t) => {
+  const previous = getLocale();
+  t.after(() => setLocale(previous));
+  for (const locale of ['ko', 'en']) {
+    setLocale(locale);
+    for (const label of ['quickWaiting', 'quickRoomStatus', 'roomStatus']) {
+      const message = raidText(label, { code: 'ABC234', count: 3, capacity: 8 });
+      assert.match(message, /3\/8/);
+      assert.doesNotMatch(message, /\{\w+\}/);
+      if (label === 'roomStatus') assert.match(message, /ABC234/);
+    }
+  }
+});

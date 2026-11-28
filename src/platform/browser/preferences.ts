@@ -1,4 +1,5 @@
 import { controlText } from '../../content/locales/controls.ts';
+import { RAID_CONTROL_RANGES } from '../../content/raid/controls.ts';
 
 const actionIds = [
   'forward',
@@ -34,14 +35,12 @@ export interface InputSettings {
   fpsLimit: number | null;
   bindings: Record<InputAction, string>;
 }
-export const RAID_SKILL_SIZE = { min: 80, max: 140, step: 5 } as const;
-export const RAID_HUD_PADDING = { min: 0, max: 24, step: 2 } as const;
-export type RaidHudSettings = Pick<InputSettings, 'raidSkillSize' | 'raidHudPadding'>;
+export type RaidHudSettings = Pick<InputSettings, keyof typeof RAID_CONTROL_RANGES>;
 export const DEFAULTS: InputSettings = {
   version: 11,
-  sensitivity: 1,
-  raidSkillSize: 100,
-  raidHudPadding: 0,
+  sensitivity: RAID_CONTROL_RANGES.sensitivity.defaultValue,
+  raidSkillSize: RAID_CONTROL_RANGES.raidSkillSize.defaultValue,
+  raidHudPadding: RAID_CONTROL_RANGES.raidHudPadding.defaultValue,
   dominantHand: 'right',
   cameraShoulder: 'left',
   pointerLock: true,
@@ -98,10 +97,14 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object';
 function sliderValue(
   value: unknown,
-  fallback: number,
-  { min, max, step }: { min: number; max: number; step: number },
+  {
+    min,
+    max,
+    step,
+    defaultValue,
+  }: { min: number; max: number; step: number; defaultValue: number },
 ) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  if (typeof value !== 'number' || !Number.isFinite(value)) return defaultValue;
   return Math.max(min, Math.min(max, min + Math.round((value - min) / step) * step));
 }
 export function sanitizePreferences(raw: unknown): InputSettings {
@@ -133,8 +136,8 @@ export function sanitizePreferences(raw: unknown): InputSettings {
     ACTIONS.every(([id]) => id === 'inventory' || bindings[id] !== 'Tab');
   return {
     version: DEFAULTS.version,
-    raidSkillSize: sliderValue(value.raidSkillSize, DEFAULTS.raidSkillSize, RAID_SKILL_SIZE),
-    raidHudPadding: sliderValue(value.raidHudPadding, DEFAULTS.raidHudPadding, RAID_HUD_PADDING),
+    raidSkillSize: sliderValue(value.raidSkillSize, RAID_CONTROL_RANGES.raidSkillSize),
+    raidHudPadding: sliderValue(value.raidHudPadding, RAID_CONTROL_RANGES.raidHudPadding),
     dominantHand: value?.dominantHand === 'left' ? 'left' : 'right',
     cameraShoulder:
       value.cameraShoulder === 'left' ||
@@ -144,8 +147,11 @@ export function sanitizePreferences(raw: unknown): InputSettings {
         : DEFAULTS.cameraShoulder,
     sensitivity:
       typeof value.sensitivity === 'number' && Number.isFinite(value.sensitivity)
-        ? Math.max(0.25, Math.min(3, value.sensitivity))
-        : 1,
+        ? Math.max(
+            RAID_CONTROL_RANGES.sensitivity.min,
+            Math.min(RAID_CONTROL_RANGES.sensitivity.max, value.sensitivity),
+          )
+        : DEFAULTS.sensitivity,
     pointerLock: typeof value?.pointerLock === 'boolean' ? value.pointerLock : true,
     showPerformance: value?.showPerformance === true,
     shadowQuality:

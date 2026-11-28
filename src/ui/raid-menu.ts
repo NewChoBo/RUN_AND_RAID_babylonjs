@@ -1,10 +1,7 @@
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { uiText as ui } from '../content/locales/ui.ts';
-import {
-  RAID_HUD_PADDING,
-  RAID_SKILL_SIZE,
-  type RaidHudSettings,
-} from '../platform/browser/preferences.ts';
+import { RAID_CONTROL_RANGES } from '../content/raid/controls.ts';
+import type { RaidHudSettings } from '../platform/browser/preferences.ts';
 import { button, element } from './elements.ts';
 import { setButtonIcon } from './icons.ts';
 import { createBattleSettings } from './battle-settings.ts';
@@ -54,10 +51,10 @@ export function createRaidMenu(root: HTMLElement, actions: MenuActions, saved: R
   function addHudSlider(
     key: keyof RaidHudSettings,
     label: string,
-    limits: { min: number; max: number; step: number },
-    unit: string,
-    apply: (value: number) => void,
+    format: (value: number) => string,
+    apply?: (value: number) => void,
   ) {
+    const limits = RAID_CONTROL_RANGES[key];
     const row = element('label', card);
     row.className = 'raid-hud-range';
     element('span', row, label);
@@ -71,22 +68,33 @@ export function createRaidMenu(root: HTMLElement, actions: MenuActions, saved: R
     readout.setAttribute('aria-hidden', 'true');
     const paint = () => {
       const value = slider.valueAsNumber;
-      readout.textContent = value + unit;
+      readout.textContent = format(value);
       slider.setAttribute('aria-valuetext', readout.textContent);
-      apply(value);
+      apply?.(value);
     };
     paint();
     slider.oninput = paint;
     slider.onchange = () => actions.setHudPreference(key, slider.valueAsNumber);
     return row;
   }
-  addHudSlider('raidSkillSize', t('skillSize'), RAID_SKILL_SIZE, '%', (percent) => {
-    root.style.setProperty('--skill-scale', String(percent / 100));
-    root.classList.toggle('large-skills', percent > 100);
-  }).classList.add('raid-skill-size');
-  addHudSlider('raidHudPadding', t('hudPadding'), RAID_HUD_PADDING, 'px', (pixels) => {
-    root.style.setProperty('--hud-padding', pixels + 'px');
-  });
+  addHudSlider(
+    'raidSkillSize',
+    t('skillSize'),
+    (value) => value + '%',
+    (percent) => {
+      root.style.setProperty('--skill-scale', String(percent / 100));
+      root.classList.toggle('large-skills', percent > 100);
+    },
+  ).classList.add('raid-skill-size');
+  addHudSlider(
+    'raidHudPadding',
+    t('hudPadding'),
+    (value) => value + 'px',
+    (pixels) => {
+      root.style.setProperty('--hud-padding', pixels + 'px');
+    },
+  );
+  addHudSlider('sensitivity', t('aimSensitivity'), (value) => Math.round(value * 100) + '%');
 
   const footer = element('footer', panel);
   const surrender = button(footer, ui('surrender'));

@@ -1,10 +1,10 @@
 import { raidText as t } from '../content/locales/run-and-raid.ts';
+import { RAID_TOUCH } from '../content/raid/controls.ts';
 import type { RaidAim, RaidHero, Skill } from '../game/raid/raid-match.ts';
 import type { RaidDirection } from '../game/raid/raid-projectiles.ts';
 
 export type AimPoint = Pick<PointerEvent, 'clientX' | 'clientY'>;
 export type RaidAimInput = AimPoint | RaidDirection;
-export const RAID_AIM_RADIUS = 22;
 export type RaidAimFeedback = RaidAim & {
   targetName?: RaidHero | 'wagon';
   limitedCursor?: AimPoint;
@@ -39,6 +39,7 @@ export function aimFeedback(aim: RaidAimFeedback) {
   return { state, metrics };
 }
 export interface RaidAimActions {
+  aimSensitivity(): number;
   preview(skill: Skill, input: RaidAimInput): RaidAimFeedback;
   clearPreview(): void;
   drop(skill: Skill, input: RaidAimInput): void;
@@ -75,7 +76,7 @@ export class RaidAimPad {
     this.#surface.append(readout, this.#stick);
     this.#surface.type = 'button';
     this.#cursor.className = 'raid-aim-cursor';
-    this.#cursor.style.setProperty('--aim-diameter', 2 * RAID_AIM_RADIUS + 'px');
+    this.#cursor.style.setProperty('--aim-diameter', 2 * RAID_TOUCH.targetRadiusPx + 'px');
     this.#cursor.setAttribute('aria-hidden', 'true');
     this.#layer.append(this.#surface, this.#cursor);
     root.append(this.#layer);
@@ -129,7 +130,9 @@ export class RaidAimPad {
       id: event.pointerId,
       x: event.clientX,
       y: event.clientY,
-      gain: Math.min(bounds.width / pad.width, bounds.height / pad.height),
+      gain:
+        Math.min(bounds.width / pad.width, bounds.height / pad.height) *
+        this.#actions.aimSensitivity(),
     };
     this.#surface.setPointerCapture(event.pointerId);
     if ('dx' in this.#input) {
@@ -149,7 +152,10 @@ export class RaidAimPad {
       const x = e.clientX - c.x;
       const y = e.clientY - c.y;
       const distance = Math.hypot(x, y);
-      const scale = distance <= width * 0.07 ? 0 : Math.min(1, (width * 0.33) / distance);
+      const scale =
+        distance <= width * RAID_TOUCH.directionDeadZone
+          ? 0
+          : Math.min(1, (width * RAID_TOUCH.directionThumbTravel) / distance);
       this.#stick.style.setProperty('--thumb-x', x * scale + 'px');
       this.#stick.style.setProperty('--thumb-y', y * scale + 'px');
       this.#input = scale ? { dx: x / distance, dz: -y / distance } : { dx: 0, dz: 0 };

@@ -9,6 +9,7 @@ import { setRunnerArt } from './raid-runner-art.ts';
 import { officialGuides } from '../content/raid/official-guides.ts';
 import { battleIconIndex, skillLabel } from './raid-skill-icon.ts';
 import { createDraftChat } from './raid-draft-chat.ts';
+import { RAID_ROOM_CAPACITY } from '../content/raid/match-format.ts';
 import { uiIcon } from './icons.ts';
 import {
   isRaidRoster,
@@ -63,7 +64,7 @@ export function createRaidLobby(
   status.setAttribute('aria-live', 'polite');
   const teams = document.createElement('ul');
   teams.className = 'team-seats';
-  const seatViews = Array.from({ length: 4 }, (_, i) => {
+  const seatViews = Array.from({ length: RAID_ROOM_CAPACITY }, (_, i) => {
     const item = document.createElement('li');
     item.className = i % 2 ? 'red-seat' : 'blue-seat';
     const pick = document.createElement('small');
@@ -455,7 +456,7 @@ export function createRaidLobby(
     },
     waiting(count: number) {
       if (group.dataset.stage !== 'waiting') show('waiting');
-      const text = t('quickWaiting', { count });
+      const text = t('quickWaiting', { count, capacity: RAID_ROOM_CAPACITY });
       if (message.textContent !== text) message.textContent = text;
     },
     reset(reason?: RoomError) {
@@ -485,11 +486,12 @@ export function createRaidLobby(
       if (enteringDraft && quickMatch) picker.showModal();
       if (enteringDraft && !offline && !seats[nextSeat]?.hero && !seats[nextSeat]?.preferred)
         actions.prefer(preview, loadout.outfit(), loadout.rageLoadout());
+      const occupancy = { count: seats.length, capacity: RAID_ROOM_CAPACITY };
       const roomStatus = offline
         ? uiText('offlinePractice')
         : roomCode
-          ? t('roomStatus', { code: roomCode, count: seats.length })
-          : t('quickRoomStatus', { count: seats.length });
+          ? t('roomStatus', { code: roomCode, ...occupancy })
+          : t('quickRoomStatus', occupancy);
       if (status.textContent !== roomStatus) {
         if (roomCode && !offline) {
           const invite = document.createElement('span');

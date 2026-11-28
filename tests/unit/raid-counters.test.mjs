@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { RAID_LIGHTNING } from '../../src/content/raid/boss-lightning.ts';
 import { activeSlow, applyCrowdControl, slow } from '../../src/game/raid/raid-control.ts';
 import {
   RaidBoss,
@@ -50,6 +51,12 @@ test('low electricity warns each road cell before striking, reaches rear runners
     }
     if (tick < 60 + RAID_COUNTERS.low.windup) assert.deepEqual(hits, []);
     if (hazard) {
+      for (const cell of hazard.cells) {
+        if (cell.phase === 'warning' && cell.ticks === RAID_COUNTERS.low.windup) {
+          const elapsedRows = first.row - cell.row;
+          assert.equal(tick - hazard.startedAt, elapsedRows * RAID_LIGHTNING.ticksPerRow);
+        }
+      }
       assert.ok(
         hazard.cells.every((c) => c.x === first.x && c.z === raidElectricRowZ(c.row, tick)),
       );

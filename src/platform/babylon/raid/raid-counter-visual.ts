@@ -6,6 +6,7 @@ import {
   TransformNode,
   type Scene,
 } from '@babylonjs/core';
+import { RAID_LIGHTNING_ART } from '../../../content/raid/boss-lightning-art.ts';
 import {
   RAID_COUNTERS,
   RAID_ELECTRIC_GRID,
@@ -13,9 +14,9 @@ import {
 } from '../../../game/raid/raid-boss.ts';
 import { raidRoadTravel } from '../../../game/raid/runner-motion.ts';
 
-const straight = { glow: new Color3(0.12, 0.48, 1), core: new Color3(0.78, 0.96, 1) };
-const zigzag = { glow: new Color3(0.4, 0.83, 0.07), core: new Color3(1, 1, 0.6) };
-const pillarHeight = 5.8;
+const { straight, zigzag, pillar: pillarArt, brightness } = RAID_LIGHTNING_ART;
+const straightColors = { glow: new Color3(...straight.glow), core: new Color3(...straight.core) };
+const zigzagColors = { glow: new Color3(...zigzag.glow), core: new Color3(...zigzag.core) };
 
 const electricShader = {
   vertexSource: `
@@ -111,10 +112,10 @@ function electricTile(scene: Scene, index: number) {
     { width, height: depth },
     scene,
   );
-  floor.position.y = 0.045;
+  floor.position.y = RAID_LIGHTNING_ART.groundOffsetMetres;
   const pillar = MeshBuilder.CreatePlane(
     'wagon electric pillar ' + index,
-    { width: width * 0.52, height: pillarHeight },
+    { width: width * pillarArt.widthInCells, height: pillarArt.heightMetres },
     scene,
   );
   for (const mesh of [floor, pillar]) {
@@ -142,7 +143,7 @@ export function createRaidCounterVisual(scene: Scene) {
       return;
     }
     const timing = RAID_COUNTERS[counter.kind];
-    const palette = counter.zigzag ? zigzag : straight;
+    const palette = counter.zigzag ? zigzagColors : straightColors;
     const pillar = counter.kind === 'pillar';
     const warningRow = pillar ? firstPillarWarning(counter.cells) : undefined;
     let count = 0;
@@ -154,17 +155,25 @@ export function createRaidCounterVisual(scene: Scene) {
       tile.root.setEnabled(true);
       tile.root.position.set(cell.x, 0, cell.z - raidRoadTravel(subtick));
       const elapsed = (strike ? timing.active : timing.windup) - cell.ticks + subtick;
-      tile.floor.scaling.set(pillar ? 0.34 : 1, 1, pillar ? 0.28 : 1);
+      tile.floor.scaling.set(
+        pillar ? pillarArt.footWidthInCells : 1,
+        1,
+        pillar ? pillarArt.footDepthInCells : 1,
+      );
       tile.pillar.setEnabled(pillar);
       if (pillar) {
-        const heightScale = strike ? 1 : 0.48 + 0.16 * (elapsed / timing.windup);
-        tile.pillar.scaling.set(strike ? 1 : 0.6, heightScale, 1);
-        tile.pillar.position.y = tile.floor.position.y + (pillarHeight * heightScale) / 2;
+        const heightScale = strike
+          ? 1
+          : pillarArt.warningHeightScale +
+            pillarArt.warningHeightGrowth * (elapsed / timing.windup);
+        tile.pillar.scaling.set(strike ? 1 : pillarArt.warningWidthScale, heightScale, 1);
+        tile.pillar.position.y = tile.floor.position.y + (pillarArt.heightMetres * heightScale) / 2;
       }
-      // The final two impact ticks leave a softer arc on the same hazardous cell.
+      // The discharge fades on the same hazardous cell.
       const strength = strike
-        ? 0.72 + 0.22 * Math.min(1, (cell.ticks - subtick) / 2)
-        : 0.31 + 0.29 * Math.min(1, elapsed / timing.windup);
+        ? brightness.afterglow +
+          brightness.impactGain * Math.min(1, (cell.ticks - subtick) / brightness.fadeTicks)
+        : brightness.warningBase + brightness.warningGain * Math.min(1, elapsed / timing.windup);
       tile.material.setColor3('glowColor', palette.glow);
       tile.material.setColor3('coreColor', palette.core);
       tile.material.setFloat('pillarWave', pillar ? 1 : 0);

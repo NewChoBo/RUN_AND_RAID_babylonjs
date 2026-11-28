@@ -1,4 +1,6 @@
 import { setButtonIcon } from './icons.ts';
+import { RAID_SHORTCUTS, RAID_TOUCH } from '../content/raid/controls.ts';
+import { keyLabel } from '../platform/browser/preferences.ts';
 import { addPickFace } from './raid-pick-face.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { enemySlots, type RaidPing, type RaidView, type Team } from '../game/raid/raid-view.ts';
@@ -18,7 +20,9 @@ export function createRaidPing(parent: HTMLElement, send: (intent: RaidPing) => 
   trigger.type = 'button';
   trigger.className = 'raid-ping-trigger';
   trigger.textContent = '!';
-  trigger.title = t('pingHelp');
+  const shortcut = keyLabel(RAID_SHORTCUTS.ping);
+  trigger.title = t('pingHelp', { key: shortcut });
+  trigger.setAttribute('aria-keyshortcuts', shortcut);
   trigger.setAttribute('aria-label', t('pingTeam'));
   trigger.setAttribute('aria-description', trigger.title);
   const choices = document.createElement('div');
@@ -71,7 +75,7 @@ export function createRaidPing(parent: HTMLElement, send: (intent: RaidPing) => 
     if (!contact || contact.id !== e.pointerId) return;
     const dx = e.clientX - contact.x,
       dy = e.clientY - contact.y;
-    if (Math.hypot(dx, dy) < 15) selected = undefined;
+    if (Math.hypot(dx, dy) < RAID_TOUCH.pingDragThresholdPx) selected = undefined;
     else if (Math.abs(dx) > Math.abs(dy)) selected = dx < 0 ? 'enemy1' : 'enemy2';
     else selected = dy < 0 ? 'advance' : 'retreat';
     if (selected) pad.dataset.selected = selected;

@@ -1,4 +1,5 @@
 import { ROUND_MINUTES } from '../../game/raid/raid-rules.ts';
+import { RAID_SHORTCUTS } from '../raid/controls.ts';
 import { defineMessages } from './locale.ts';
 import { korean } from './ko/run-and-raid.ts';
 export const raidText = defineMessages(
@@ -172,7 +173,7 @@ export const raidText = defineMessages(
     startRound: 'Start match',
     leaveRoom: 'Leave room',
     connecting: 'Connecting to Photon…',
-    roomStatus: 'Room {code} · {count}/4 players',
+    roomStatus: 'Room {code} · {count}/{capacity} players',
     teamA: 'Team A',
     teamB: 'Team B',
     you: 'you',
@@ -185,11 +186,10 @@ export const raidText = defineMessages(
     homeMode: '2v2 wagon chase',
     mode: 'Run & Raid',
     rules: `Two teams chase one wagon. Destroy it first to win. After ${ROUND_MINUTES} minutes, the team that dealt more wagon damage wins.`,
-    controls:
-      'Drag the left pad sideways to steer or pull it down to walk. Tap a skill marked with a crosshair, then aim and release. Other skills cast with one tap. Drag an aimed skill off its button to reuse the previous target or aim. On a keyboard, press Shift + its number.',
+    controls: `Drag the left pad sideways to steer or pull it down to walk. Tap a skill marked with a crosshair, then aim and release. Other skills cast with one tap. Drag an aimed skill off its button to reuse the previous target or aim. On a keyboard, press ${RAID_SHORTCUTS.repeatModifier} + its number.`,
     pingTeam: 'Team ping',
     pingHelp:
-      'Drag ! up to advance, down to fall back, or toward an enemy portrait to focus fire. Press G to open the ping menu, or point at an enemy or the wagon and press G to call for focus fire.',
+      'Drag ! up to advance, down to fall back, or toward an enemy portrait to focus fire. Press {key} to open the ping menu, or point at an enemy or the wagon and press {key} to call for focus fire.',
     advance: 'Advance',
     retreat: 'Fall back',
     enemy1: 'Enemy 1',
@@ -199,9 +199,10 @@ export const raidText = defineMessages(
     teamMessageFrom: 'Team message from {name}',
     quickMatch: 'Quick match',
     quickSearching: 'Finding players',
-    quickWaiting: '{count}/4 players · Champion selection starts when all four have joined.',
+    quickWaiting:
+      '{count}/{capacity} players · Champion selection starts when both teams are full.',
     cancelMatch: 'Cancel matchmaking',
-    quickRoomStatus: 'Public match · {count}/4 players',
+    quickRoomStatus: 'Public match · {count}/{capacity} players',
     attackRequest: 'Team message: Focus fire on {target}!',
     wagonRequest: 'Team message: Focus fire on the wagon!',
     teamKills: '{count} KOs',
@@ -212,6 +213,7 @@ export const raidText = defineMessages(
     repeatUnavailable: 'Previous aim unavailable',
     skillSize: 'Skill button size',
     hudPadding: 'HUD edge spacing',
+    aimSensitivity: 'Aim cursor sensitivity',
     touchAim: '{skill} · Drag to aim · Release inside the pad to cast or outside to cancel',
     touchStick: '{skill} · Drag to aim · Release on the right to fire or left to cancel',
     typeDirection: 'Dir',

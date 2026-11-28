@@ -147,7 +147,7 @@ export const korean = {
   cancelEntry: '입장 취소',
   tipMarkTarget: '느낌표에서 적의 얼굴로 밀면 아군에게 집중 공격할 대상을 알립니다.',
   tipWalk: '왼쪽 패드를 아래로 당기면 걷습니다. 손을 떼면 다시 달려 마차를 따라잡습니다.',
-  tipQuickMatch: '빠른 매칭에서는 네 명이 모이면 캐릭터 선택이 시작됩니다.',
+  tipQuickMatch: '빠른 매칭에서는 양 팀의 자리가 모두 차면 캐릭터 선택이 시작됩니다.',
   tipPractice: '혼자 주자를 연습하려면 사설방에서 오프라인 봇 연습을 고르세요.',
   arenaError: '경기장을 열지 못했습니다. 다시 시도해 주세요.',
   assets: '원작 에셋',
