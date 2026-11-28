@@ -9,8 +9,9 @@ export const RAID_ELECTRIC_GRID = {
   depth: RAID_ROAD_WIDTH / columns,
 } as const;
 export const RAID_COUNTERS = {
-  low: { windup: 30, active: 7, damage: 20 },
-  pillar: { windup: 42, active: 9, damage: 26 },
+  // The original stun durations are unknown. Both discharges use 0.6 seconds for now.
+  low: { windup: 30, active: 7, damage: 20, stunTicks: 18 },
+  pillar: { windup: 42, active: 9, damage: 26, stunTicks: 18 },
 } as const;
 const firstWarningTick = 60;
 const attackInterval = 144;
@@ -103,7 +104,7 @@ export class RaidBoss {
     tick: number,
     runners: readonly RaidRunner[],
     height: (r: RaidRunner) => number,
-    hit: (slot: number, damage: number) => void,
+    hit: (slot: number, damage: number, stunTicks: number) => void,
   ) {
     if (tick >= firstWarningTick && (tick - firstWarningTick) % attackInterval === 0) {
       const turn = (tick - firstWarningTick) / attackInterval;
@@ -118,7 +119,7 @@ export class RaidBoss {
     }
     if (!this.#discharge) return;
     const { startedAt, kind, zigzag, span, path } = this.#discharge;
-    const { windup, active, damage } = RAID_COUNTERS[kind];
+    const { windup, active, damage, stunTicks } = RAID_COUNTERS[kind];
     const cells: RaidCounterCell[] = [];
     for (const { firstColumn, row, warningAt } of path) {
       const age = tick - warningAt;
@@ -143,7 +144,7 @@ export class RaidBoss {
         continue;
       if (cells.some((cell) => cell.phase === 'impact' && inElectricCell(cell, r))) {
         this.#struck.add(r.slot);
-        hit(r.slot, damage);
+        hit(r.slot, damage, stunTicks);
       }
     }
   }

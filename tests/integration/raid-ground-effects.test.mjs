@@ -3,7 +3,8 @@ import test from 'node:test';
 import { NullEngine, Scene, Vector3 } from '@babylonjs/core';
 import { RaidMatch, raidRespawnTicks, raidRoadTravel } from '../../src/game/raid/raid-match.ts';
 import { createRaidCounterVisual } from '../../src/platform/babylon/raid/raid-counter-visual.ts';
-import { RAID_ELECTRIC_GRID } from '../../src/game/raid/raid-boss.ts';
+import { RaidBoss, RAID_ELECTRIC_GRID } from '../../src/game/raid/raid-boss.ts';
+import { ROUND_TICKS } from '../../src/game/raid/raid-rules.ts';
 import { createRaidEffects } from '../../src/platform/babylon/raid/raid-effects.ts';
 
 test('an incoming orb keeps its shape at first contact, then its pooled mesh switches to the next skill', (t) => {
@@ -369,6 +370,71 @@ test('electric tells follow individual road cells, raise pillars only on impact 
   assert.ok(scene.meshes.every((mesh) => !mesh.isEnabled()));
   draw(counter, 0);
   assert.equal(scene.meshes.length, 4);
+});
+
+test('straight and zigzag volleys retain their own glow and core through warning, impact and afterglow', (t) => {
+  const engine = new NullEngine();
+  t.after(() => engine.dispose());
+  const scene = new Scene(engine);
+  const draw = createRaidCounterVisual(scene);
+  const boss = new RaidBoss();
+  const runners = new RaidMatch().runners;
+  const samples = new Map();
+  for (let tick = 1; tick < ROUND_TICKS && samples.size < 4; tick++) {
+    boss.step(
+      tick,
+      runners,
+      () => 0,
+      () => {},
+    );
+    const wave = boss.counter;
+    if (!wave) continue;
+    const key = wave.kind + (wave.zigzag ? '-zigzag' : '-straight');
+    if (samples.has(key)) continue;
+    const indices = [
+      wave.cells.findIndex((cell) => cell.phase === 'warning'),
+      wave.cells.findIndex((cell) => cell.phase === 'impact' && cell.ticks > 2),
+      wave.cells.findIndex((cell) => cell.phase === 'impact' && cell.ticks === 1),
+    ];
+    if (indices.every((i) => i >= 0)) samples.set(key, { wave, indices });
+  }
+  assert.deepEqual([...samples.keys()].sort(), [
+    'low-straight',
+    'low-zigzag',
+    'pillar-straight',
+    'pillar-zigzag',
+  ]);
+
+  function check({ wave, indices }) {
+    draw(wave, 0.5);
+    const strengths = indices.map((i) => {
+      const pool = scene.getMeshByName('wagon electric pool ' + i);
+      const pillar = scene.getMeshByName('wagon electric pillar ' + i);
+      assert.ok(pool.isEnabled());
+      assert.equal(pillar.material, pool.material);
+      assert.equal(pillar.isEnabled(), wave.kind === 'pillar' && wave.cells[i].phase === 'impact');
+      const { colors3, floats } = pool.material.serialize();
+      const [r, g, b] = colors3.glowColor;
+      const [cr, cg, cb] = colors3.coreColor;
+      if (wave.zigzag) {
+        assert.ok(g > r && r > b, 'yellow-green branches and pool');
+        assert.ok(cr > cb && cg > cb && cr > r, 'pale yellow flash');
+      } else {
+        assert.deepEqual([r, g, b], [0.12, 0.48, 1]);
+        assert.deepEqual([cr, cg, cb], [0.78, 0.96, 1]);
+      }
+      return floats.strength;
+    });
+    const [warning, impact, afterglow] = strengths;
+    assert.ok(warning < afterglow && afterglow < impact);
+  }
+  for (const sample of samples.values()) check(sample);
+  const meshes = [...scene.meshes];
+  const materials = [...scene.materials];
+  draw(null, 0);
+  for (const sample of [...samples.values()].reverse()) check(sample);
+  assert.deepEqual(scene.meshes, meshes);
+  assert.deepEqual(scene.materials, materials);
 });
 
 test('persistent ground rings and sigils stay on the same road tile between ticks and across bridge spans', (t) => {

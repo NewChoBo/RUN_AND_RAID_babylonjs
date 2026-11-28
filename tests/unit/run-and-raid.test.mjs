@@ -1109,11 +1109,11 @@ test('the approaching low electric tile can be avoided by jumping or sidesteppin
     }
     const before = match.runners[0].hp;
     advance(match, 12);
-    return before - match.runners[0].hp;
+    return [before - match.runners[0].hp, match.runners[0].stunned];
   }
-  assert.ok(hit('stand') > 0);
-  assert.equal(hit('jump'), 0);
-  assert.equal(hit('side'), 0);
+  assert.deepEqual(hit('stand'), [RAID_COUNTERS.low.damage, RAID_COUNTERS.low.stunTicks]);
+  assert.deepEqual(hit('jump'), [0, 0]);
+  assert.deepEqual(hit('side'), [0, 0]);
 });
 test('PvP earns rage and a knockout, then the defeated runner rejoins behind the wagon', () => {
   const { match, send } = battle(['rend', 'bastion', 'longshot', 'jade']);

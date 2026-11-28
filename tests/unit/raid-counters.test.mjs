@@ -10,6 +10,7 @@ import {
 } from '../../src/game/raid/raid-boss.ts';
 import {
   RaidMatch,
+  RAID_HZ,
   ROUND_TICKS,
   canUseRaidSkill,
   raidRunnerPositionAfter,
@@ -74,7 +75,7 @@ test('lightning pillars leave a safe flank and can hit airborne runners after th
       tick,
       runners,
       () => 2.5,
-      (slot, damage) => hits.push([slot, damage]),
+      (slot, damage, stunTicks) => hits.push([slot, damage, stunTicks]),
     );
     if (tick === 204) {
       assert.equal(boss.counter.kind, 'pillar');
@@ -88,8 +89,8 @@ test('lightning pillars leave a safe flank and can hit airborne runners after th
     if (tick < 204 + RAID_COUNTERS.pillar.windup) assert.deepEqual(hits, []);
   }
   assert.deepEqual(hits, [
-    [0, RAID_COUNTERS.pillar.damage],
-    [2, RAID_COUNTERS.pillar.damage],
+    [0, RAID_COUNTERS.pillar.damage, RAID_COUNTERS.pillar.stunTicks],
+    [2, RAID_COUNTERS.pillar.damage, RAID_COUNTERS.pillar.stunTicks],
   ]);
   assert.equal(boss.counter, null);
 });
@@ -212,6 +213,84 @@ test('late discharges progress row by row and reverse horizontally at both edges
   }
 });
 
+function beforeFirstLowImpact(hero) {
+  const match = new RaidMatch(hero);
+  const [runner] = match.runners;
+  for (const r of match.runners)
+    Object.assign(r, {
+      x: r.slot ? 6 : 0,
+      z: RAID_FRONT_Z,
+      basic: 1000,
+      brake: 0.4,
+      appliedBrake: 0.4,
+    });
+  while (!match.hazard) match.step();
+  const impactTick = match.hazard.startedAt + RAID_COUNTERS.low.windup;
+  while (match.tick < impactTick - 1) match.step();
+  assert.equal(runner.stunned, 0);
+  return { match, runner, hp: runner.hp };
+}
+
+test('one electric contact deals damage and stuns for exactly the configured ticks before held movement resumes', () => {
+  const { match, runner, hp } = beforeFirstLowImpact('hammer');
+  const { damage, stunTicks } = RAID_COUNTERS.low;
+  match.step();
+  assert.equal(runner.hp, hp - damage);
+  assert.equal(runner.stunned, 0.6 * RAID_HZ);
+  assert.ok(match.move(runner.slot, 1, 0));
+  const x = runner.x;
+  for (let remaining = stunTicks; remaining > 0; remaining--) {
+    assert.equal(runner.stunned, remaining);
+    assert.equal(match.cast(runner.slot, 0), false);
+    assert.equal(match.jump(runner.slot), false);
+    match.step();
+    assert.equal(runner.x, x);
+    assert.equal(runner.hp, hp - damage);
+  }
+  assert.equal(runner.stunned, 0);
+  assert.ok(match.cast(runner.slot, 0));
+  match.step();
+  assert.ok(runner.x > x);
+});
+
+test('a counter blocks the electric hit, Whirlwind resists its stun and a damage barrier only absorbs its damage', () => {
+  const guarded = beforeFirstLowImpact('rildin');
+  assert.ok(guarded.match.cast(0, 1));
+  guarded.match.step();
+  assert.equal(guarded.runner.hp, guarded.hp);
+  assert.equal(guarded.runner.stunned, 0);
+  assert.equal(guarded.runner.heroView.guardUntil, 0);
+
+  const spinning = beforeFirstLowImpact('hammer');
+  assert.ok(spinning.match.cast(0, 2));
+  spinning.match.step();
+  assert.equal(spinning.runner.hp, spinning.hp - RAID_COUNTERS.low.damage);
+  assert.equal(spinning.runner.stunned, 0);
+  assert.ok(spinning.runner.spinTicks > 0);
+
+  const protectedRunner = beforeFirstLowImpact('hammer');
+  protectedRunner.runner.barrier = {
+    amount: RAID_COUNTERS.low.damage,
+    until: protectedRunner.match.tick + 2,
+  };
+  protectedRunner.match.step();
+  assert.equal(protectedRunner.runner.barrier, null);
+  assert.equal(protectedRunner.runner.hp, protectedRunner.hp);
+  assert.equal(protectedRunner.runner.stunned, RAID_COUNTERS.low.stunTicks);
+});
+
+test('respawn protection halves electric damage and a shorter discharge cannot replace a longer stun', () => {
+  const { damage, stunTicks } = RAID_COUNTERS.low;
+  for (const previousStun of [0, stunTicks + 8]) {
+    const { match, runner, hp } = beforeFirstLowImpact('hammer');
+    runner.shield = 45;
+    runner.stunned = previousStun;
+    match.step();
+    assert.equal(runner.hp, hp - Math.ceil(damage / 2));
+    assert.equal(runner.stunned, Math.max(previousStun - 1, stunTicks));
+  }
+});
+
 test('stagger holds steering and basic attacks, denies jumps and casts, then restores held movement while a subsequent stun bypasses stagger recovery', () => {
   const match = new RaidMatch(['bastion', 'theresa', 'rime', 'jade']);
   const [bastion, theresa, victim] = match.runners;
@@ -264,7 +343,7 @@ test('frost slows opponents without blocking casts; a shorter frost hit preserve
   assert.equal(victim.slowed, 0);
 });
 
-test('four-player replay reproduces both discharges, late zigzags and PvP stagger from accepted input', () => {
+test('four-player replay reproduces contact stuns from both discharges and late zigzags alongside PvP stagger', () => {
   const seats = ['bastion', 'rime', 'jade', 'hammer'].map((hero, i) => ({ hero, actor: i + 1 }));
   const host = new RaidRound(seats),
     guest = new RaidRound(seats);
@@ -277,8 +356,14 @@ test('four-player replay reproduces both discharges, late zigzags and PvP stagge
     assert.deepEqual(guest.match.hazard, host.match.hazard);
     assert.deepEqual(guest.match.runners, host.match.runners);
     const hazard = guest.match.hazard;
-    if (hazard?.cells.some((c) => c.phase === 'impact'))
+    if (!hazard) continue;
+    for (const hit of guest.match.healthChanges) {
+      if (hit.tick !== guest.match.tick || hit.from !== null || hit.amount >= 0) continue;
+      const victim = guest.match.runners[hit.target];
+      if (victim.respawn) continue;
+      assert.equal(victim.stunned, 0.6 * RAID_HZ);
       impacts.add(hazard.kind + (hazard.zigzag ? '-zigzag' : ''));
+    }
   }
   assert.deepEqual(impacts, new Set(['low', 'pillar', 'low-zigzag', 'pillar-zigzag']));
 });

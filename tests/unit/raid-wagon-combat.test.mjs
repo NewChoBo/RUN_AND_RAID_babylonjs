@@ -75,10 +75,10 @@ test('a projectile clips the right wheel of the shifted wagon and a parallel sho
     [0.4, false],
   ]) {
     const match = practice('flare');
-    while (match.tick < 1200 && wagonCenter(match.tick).x < 1) match.step();
+    const runner = match.runners[0];
+    while (match.tick < 1200 && (wagonCenter(match.tick).x < 1 || runner.stunned)) match.step();
     const center = wagonCenter(match.tick);
     assert.ok(center.x >= 1);
-    const runner = match.runners[0];
     Object.assign(runner, { x: center.x + WAGON_BODY.halfWidth + offset, z: 7 });
     assert.ok(match.cast(0, 0, { dx: 0, dz: 1 }));
     while (match.projectiles.length) match.step();

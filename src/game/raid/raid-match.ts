@@ -1,5 +1,5 @@
 import { normalizeRaidRageLoadout, type RaidRageLoadout } from '../../content/raid/rage.ts';
-import { actionLocked, activeSlow, advanceSlows } from './raid-control.ts';
+import { actionLocked, activeSlow, advanceSlows, stun } from './raid-control.ts';
 import { advanceRaidAir, JET_CAPACITY, startRaidJump } from './air-movement.ts';
 import { triggerAttack } from './skills/skill-execution.ts';
 import { measureSkill } from './skills/skill-range.ts';
@@ -176,8 +176,8 @@ export class RaidMatch implements RaidView {
   }
   #result: RaidView['result'] = null;
   readonly #boss = new RaidBoss();
-  readonly #bossHit = (slot: number, amount: number) => {
-    this.#hits.enqueue({ from: null, target: slot, amount });
+  readonly #bossHit = (slot: number, amount: number, stunTicks: number) => {
+    this.#hits.enqueue({ from: null, target: slot, amount, rule: { control: [stun(stunTicks)] } });
   };
   readonly #hits: RaidHitResolution;
   readonly #projectiles = new RaidProjectiles();

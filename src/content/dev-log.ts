@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T20:12+09:00',
+    tag: 'arena',
+    title: '황록색으로 다가오는 지그재그 번개',
+    body: '직선 번개는 청백색으로, 옆 칸으로 꺾이는 번개는 첫 예고부터 황록색으로 보입니다. 낮은 전기는 점프로 넘고 기둥은 옆 칸으로 피하세요. 맞으면 머리 위에 별이 돌고 0.6초 동안 기절합니다.',
+  },
+  {
     updatedAt: '2026-11-28T20:03+09:00',
     tag: 'controls',
     title: '평타 표적 자동 선택',

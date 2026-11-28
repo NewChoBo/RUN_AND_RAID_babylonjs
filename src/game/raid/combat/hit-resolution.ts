@@ -156,35 +156,35 @@ export class RaidHitResolution {
       if (attacker && hit.designated && damage > 0) attacker.lastStrike = victim.slot;
       chargeRageFromDamage(victim, damage);
       const contributors = this.#contributors[victim.slot]!;
-      if (attacker) {
-        contributors.set(attacker.slot, tick);
-        if (hit.rule && !this.contexts[victim.slot]!.controlImmune()) {
-          if (hit.rule.blindTicks)
-            victim.blindUntil = Math.max(victim.blindUntil, tick + hit.rule.blindTicks);
-          if (hit.rule.control) applyCrowdControl(victim, hit.rule.control);
-          if (hit.rule.tauntTicks)
-            victim.taunt = { from: attacker.slot, until: tick + hit.rule.tauntTicks };
-          if (hit.rule.launchTicks || hit.rule.displacement) {
-            victim.dash = victim.leap = null;
-            if (hit.rule.launchTicks) {
-              victim.air = null;
-              victim.jumping = victim.launchDuration = hit.rule.launchTicks;
-            } else {
-              const origin = hit.rule.displacementOrigin ?? attacker;
-              const dx = victim.x - origin.x;
-              const dz = victim.z - origin.z;
-              const separation = Math.hypot(dx, dz);
-              const push = hit.rule.displacement === 'push';
-              const reach = push ? separation + 2.5 : Math.min(1, separation);
-              const to = limitRaidPlacement({
-                x: origin.x + (separation ? dx / separation : 0) * reach,
-                z: origin.z + (separation ? dz / separation : 1) * reach,
-              });
-              victim.x = to.x;
-              victim.z = to.z;
-            }
+      if (hit.rule && !this.contexts[victim.slot]!.controlImmune()) {
+        if (hit.rule.blindTicks)
+          victim.blindUntil = Math.max(victim.blindUntil, tick + hit.rule.blindTicks);
+        if (hit.rule.control) applyCrowdControl(victim, hit.rule.control);
+        if (attacker && hit.rule.tauntTicks)
+          victim.taunt = { from: attacker.slot, until: tick + hit.rule.tauntTicks };
+        if (attacker && (hit.rule.launchTicks || hit.rule.displacement)) {
+          victim.dash = victim.leap = null;
+          if (hit.rule.launchTicks) {
+            victim.air = null;
+            victim.jumping = victim.launchDuration = hit.rule.launchTicks;
+          } else {
+            const origin = hit.rule.displacementOrigin ?? attacker;
+            const dx = victim.x - origin.x;
+            const dz = victim.z - origin.z;
+            const separation = Math.hypot(dx, dz);
+            const push = hit.rule.displacement === 'push';
+            const reach = push ? separation + 2.5 : Math.min(1, separation);
+            const to = limitRaidPlacement({
+              x: origin.x + (separation ? dx / separation : 0) * reach,
+              z: origin.z + (separation ? dz / separation : 1) * reach,
+            });
+            victim.x = to.x;
+            victim.z = to.z;
           }
         }
+      }
+      if (attacker) {
+        contributors.set(attacker.slot, tick);
         outgoing?.onDamageDealt?.(this.contexts[attacker.slot]!, hit, victim, damage);
       }
       if (victim.hp === 0) {

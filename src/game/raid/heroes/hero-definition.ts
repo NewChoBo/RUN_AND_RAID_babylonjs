@@ -88,7 +88,7 @@ export interface Hit {
   amount: number;
   skill?: Skill;
   designated?: boolean;
-  rule?: HitRule;
+  rule?: Omit<HitRule, 'powerScale'>;
 }
 /** Synchronous participant hooks. The defender can consume a hit before attacker modifiers
  * run. Damage-dealt receives the final amount on an opposing runner, after shields. */

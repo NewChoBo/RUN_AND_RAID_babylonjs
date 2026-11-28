@@ -1,4 +1,11 @@
-import { Constants, MeshBuilder, ShaderMaterial, TransformNode, type Scene } from '@babylonjs/core';
+import {
+  Color3,
+  Constants,
+  MeshBuilder,
+  ShaderMaterial,
+  TransformNode,
+  type Scene,
+} from '@babylonjs/core';
 import {
   RAID_COUNTERS,
   RAID_ELECTRIC_GRID,
@@ -6,7 +13,9 @@ import {
 } from '../../../game/raid/raid-boss.ts';
 import { raidRoadTravel } from '../../../game/raid/runner-motion.ts';
 
-// The original footage shows a pale blue pool beneath each low arc and each narrow, forked pillar.
+const straight = { glow: new Color3(0.12, 0.48, 1), core: new Color3(0.78, 0.96, 1) };
+const zigzag = { glow: new Color3(0.4, 0.83, 0.07), core: new Color3(1, 1, 0.6) };
+
 const electricShader = {
   vertexSource: `
     precision highp float;
@@ -25,6 +34,7 @@ const electricShader = {
     varying vec2 coord;
     varying float upright;
     uniform float age, seed, strength;
+    uniform vec3 glowColor, coreColor;
 
     float hash(float x) { return fract(sin(x * 12.9898 + seed) * 4375.17); }
     // Piecewise linear segments keep the discharge angular even when it spans only a few pixels.
@@ -54,10 +64,9 @@ const electricShader = {
       }
       float glow = exp(-9.0 * d), core = exp(-42.0 * d);
       float discharge = smoothstep(0.60, 0.92, strength);
-      // The pale warning pool remains legible before the full white fork ignites on contact.
-      vec3 blue = vec3(0.12, 0.48, 1.0) * (pool + glow * mix(0.35, 1.0, discharge));
-      vec3 white = vec3(0.78, 0.96, 1.0) * (core * mix(0.23, 1.0, discharge) + 0.28 * pool);
-      gl_FragColor = vec4((blue + white) * fade, strength);
+      vec3 glowLight = glowColor * (pool + glow * mix(0.35, 1.0, discharge));
+      vec3 coreLight = coreColor * (core * mix(0.23, 1.0, discharge) + 0.28 * pool);
+      gl_FragColor = vec4((glowLight + coreLight) * fade, strength);
     }`,
 };
 
@@ -66,7 +75,7 @@ function electricTile(scene: Scene, index: number) {
   const root = new TransformNode('wagon electric cell ' + index, scene);
   const material = new ShaderMaterial('wagon electricity ' + index, scene, electricShader, {
     attributes: ['position', 'normal', 'uv'],
-    uniforms: ['worldViewProjection', 'age', 'seed', 'strength'],
+    uniforms: ['worldViewProjection', 'age', 'seed', 'strength', 'glowColor', 'coreColor'],
     needAlphaBlending: true,
   });
   material.backFaceCulling = false;
@@ -99,6 +108,7 @@ export function createRaidCounterVisual(scene: Scene) {
     for (let i = count; i < tiles.length; i++) tiles[i]!.root.setEnabled(false);
     if (!counter) return;
     const timing = RAID_COUNTERS[counter.kind];
+    const palette = counter.zigzag ? zigzag : straight;
     for (const [i, cell] of counter.cells.entries()) {
       const tile = (tiles[i] ??= electricTile(scene, i));
       tile.root.setEnabled(true);
@@ -106,7 +116,12 @@ export function createRaidCounterVisual(scene: Scene) {
       const strike = cell.phase === 'impact';
       tile.pillar.setEnabled(strike && counter.kind === 'pillar');
       const elapsed = (strike ? timing.active : timing.windup) - cell.ticks + subtick;
-      const strength = strike ? 0.94 : 0.31 + 0.29 * Math.min(1, elapsed / timing.windup);
+      // The final two impact ticks leave a softer arc on the same hazardous cell.
+      const strength = strike
+        ? 0.72 + 0.22 * Math.min(1, (cell.ticks - subtick) / 2)
+        : 0.31 + 0.29 * Math.min(1, elapsed / timing.windup);
+      tile.material.setColor3('glowColor', palette.glow);
+      tile.material.setColor3('coreColor', palette.core);
       tile.material.setFloat('strength', strength);
       tile.material.setFloat('age', elapsed + (strike ? timing.windup : 0));
       tile.material.setFloat('seed', cell.row * 5 + cell.column * 13);
