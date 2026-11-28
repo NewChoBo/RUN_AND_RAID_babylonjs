@@ -20,6 +20,7 @@ export function heroModelSource(hero: RaidHero, outfit?: string) {
   if (original) {
     return {
       url: original.model,
+      outfitId: original.id,
       authored: true,
       loop: original.clips?.includes('run')
         ? 'run'

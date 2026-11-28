@@ -1,7 +1,13 @@
 import { healthMeter, healthMeterPainter } from '../../../ui/raid-health-meter.ts';
 import { heroKit } from '../../../game/raid/heroes/hero-id.ts';
-import { appearance, RAID_MODEL_SCALE, RAID_RUNNER_SCALE } from './hero-appearance.ts';
+import {
+  appearance,
+  RAID_MODEL_SCALE,
+  RAID_RIG_SCALE,
+  RAID_RUNNER_SCALE,
+} from './hero-appearance.ts';
 import { heroModelSource } from './hero-model-source.ts';
+import { placeSourceModel } from './source-model-size.ts';
 import { equipRaidGear } from './raid-equipment.ts';
 import {
   Color3,
@@ -11,7 +17,6 @@ import {
   MeshBuilder,
   type StandardMaterial,
   TransformNode,
-  type Vector3,
   type Scene,
 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
@@ -60,20 +65,7 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
       : undefined;
     model.addAllToScene();
     const root = model.meshes[0]!;
-    let modelSize: Vector3 | undefined;
-    if (source.authored) {
-      if (hero === 'magnus') {
-        // All three skins share the source rig's units. Use Kaiken's calibrated
-        // 1.93-unit reference instead of fitting each wide shield span into a cube.
-        root.scaling.scaleInPlace(2 / 1.93);
-      } else {
-        root.normalizeToUnitCube(true);
-        root.scaling.scaleInPlace(2);
-      }
-      const bounds = root.getHierarchyBoundingVectors(true);
-      root.position.y -= bounds.min.y;
-      modelSize = bounds.max.subtract(bounds.min);
-    }
+    const modelSize = source.authored ? placeSourceModel(root, source.outfitId) : undefined;
     root.parent = rig;
     if (!source.authored) {
       const meshCount = scene.meshes.length;
@@ -110,7 +102,7 @@ export function createRaidActor(
   body.scaling.setAll(RAID_RUNNER_SCALE);
   const rig = new TransformNode(hero + ' facing', scene);
   rig.parent = body;
-  rig.scaling.setAll((art.scale ?? 0.8) * RAID_MODEL_SCALE);
+  rig.scaling.setAll(RAID_RIG_SCALE);
   // The moving hand, cape and weapon do not change the touch target's size.
   const capsuleHeight = 1.86;
   const hit = MeshBuilder.CreateCapsule(
@@ -137,6 +129,11 @@ export function createRaidActor(
     playback = new RaidActionPlayback();
     greatsword = undefined;
     hit.visibility = 1;
+    hit.scaling.setAll(1);
+    hit.position.y = capsuleHeight / 2;
+    ward.parent = body;
+    ward.position.y = 0.99;
+    ward.scaling.set(1, 1.39, 1);
     bar.position.y = defaultBarHeight;
     requested = outfit;
     loading = true;
@@ -151,13 +148,15 @@ export function createRaidActor(
         const size = loaded.modelSize;
         if (size) {
           const height = size.y * rig.scaling.y;
-          bar.position.y = Math.max(defaultBarHeight, height * RAID_RUNNER_SCALE + 0.26);
-          if (hero === 'magnus') {
-            hit.scaling.setAll(height / capsuleHeight);
-            hit.position.y = height / 2;
-            ward.position.y = size.y / 2;
-            ward.scaling.copyFrom(size).scaleInPlace(1.15 / wardDiameter);
-          }
+          bar.position.y = height * RAID_RUNNER_SCALE + 0.26;
+          const touchHeight = Math.max(capsuleHeight, height);
+          hit.scaling.setAll(touchHeight / capsuleHeight);
+          hit.position.y = touchHeight / 2;
+          ward.parent = rig;
+          ward.position.y = size.y / 2;
+          ward.scaling
+            .set(Math.max(size.x, size.y * 0.6), size.y, Math.max(size.z, size.y * 0.6))
+            .scaleInPlace(1.15 / wardDiameter);
         } else bar.position.y = defaultBarHeight * RAID_MODEL_SCALE;
         loading = false;
         if (art.empoweredMesh)
@@ -225,7 +224,7 @@ export function createRaidActor(
     { diameter: wardDiameter, segments: 14 },
     scene,
   );
-  ward.parent = hero === 'magnus' ? rig : body;
+  ward.parent = body;
   ward.position.y = 0.99;
   ward.scaling.y = 1.39;
   const shield = raidMaterial(scene, hero + ' ward glow', raidColors.jade, 0.8);

@@ -1,4 +1,5 @@
 import { EngineStore, LoadAssetContainerAsync } from '@babylonjs/core';
+import { placeSourceModel } from '../../src/platform/babylon/raid/source-model-size.ts';
 
 // Run from the browser console after starting a local Vite practice match.
 export async function previewStaticHero(hero, sourcePath) {
@@ -9,12 +10,11 @@ export async function previewStaticHero(hero, sourcePath) {
   const entry = catalog.files.find((file) => file.path === sourcePath && file.group === hero);
   if (entry?.state !== 'static' || !entry.model) throw Error('해당 영웅의 정적 GLB가 필요합니다.');
   const model = await LoadAssetContainerAsync('/player-assets/' + entry.model, scene);
-  const original = rig.getChildren();
+  const original = rig.getChildren().filter((child) => child.name === '__root__');
   const root = model.meshes[0];
   model.addAllToScene();
-  root.normalizeToUnitCube(true);
-  root.scaling.scaleInPlace(2);
-  root.position.y -= root.getHierarchyBoundingVectors().min.y;
+  const isBaseModel = sourcePath.toLowerCase() === hero + '/' + hero + '#default.max';
+  placeSourceModel(root, isBaseModel ? hero + '/default' : undefined);
   root.parent = rig;
   for (const child of original) child.setEnabled(false);
   return {

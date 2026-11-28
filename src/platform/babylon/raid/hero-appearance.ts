@@ -5,12 +5,12 @@ import type { Skill } from '../../../game/raid/raid-view.ts';
 export const RAID_RUNNER_SCALE = 0.75;
 // Shared visual multiplier applied to the model rig after its base scale.
 export const RAID_MODEL_SCALE = 1.6;
+export const RAID_RIG_SCALE = 0.8 * RAID_MODEL_SCALE;
 
 export interface HeroAppearance {
   cape: string;
   sprite: string;
   equipment?: 'warhammer' | 'staff' | 'rapier' | 'saber' | 'quiver' | 'shieldBlade' | 'crystal';
-  scale?: number;
   barHeight?: number;
   empoweredMesh?: string;
   spinClip?: 'field' | 'fury';
@@ -46,12 +46,11 @@ export const appearance: Record<HeroKit, HeroAppearance> = {
     cape: '#a64028',
     sprite: 'scorch_01',
     equipment: 'warhammer',
-    scale: 0.84,
     spinClip: 'field',
     landingChop: true,
     particles: 'heavy',
   },
-  abyss: { cape: '#693bad', sprite: 'twirl_01', scale: 0.73, barHeight: 2.48, particles: 'vortex' },
+  abyss: { cape: '#693bad', sprite: 'twirl_01', barHeight: 2.48, particles: 'vortex' },
   longshot: {
     cape: '#a57629',
     sprite: 'spark_05',
