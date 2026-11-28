@@ -53,29 +53,18 @@ export class RaidAimPad {
   readonly #feedback = document.createElement('strong');
   readonly #metrics = document.createElement('span');
   readonly #cursor = document.createElement('i');
-  readonly #cancel = document.createElement('button');
   readonly #actions: RaidAimActions;
+  readonly #onToggle: (open: boolean) => void;
   #slot: Skill | null = null;
   #name = '';
   #input: RaidAimInput = { clientX: 0, clientY: 0 };
   #contact: { id: number; x: number; y: number; gain: number } | null = null;
 
-  constructor(root: HTMLElement, actions: RaidAimActions) {
+  constructor(root: HTMLElement, actions: RaidAimActions, onToggle: (open: boolean) => void) {
     this.#actions = actions;
+    this.#onToggle = onToggle;
     this.#layer.className = 'raid-aim';
     this.#layer.hidden = true;
-    const cancel = this.#cancel;
-    cancel.className = 'raid-aim-cancel';
-    cancel.textContent = t('cancelAim');
-    // Touch browsers may retarget the opening tap's click to Cancel underneath it.
-    cancel.onclick = (e) => {
-      if (e.detail === 0) this.close();
-    };
-    // A second thumb does not produce a compatibility click while steering is held.
-    cancel.onpointerup = (e) => {
-      if (e.button === 0 && document.elementFromPoint(e.clientX, e.clientY) === cancel)
-        this.close();
-    };
     this.#surface.className = 'raid-aim-pad';
     const readout = document.createElement('span');
     readout.className = 'raid-aim-readout';
@@ -84,11 +73,11 @@ export class RaidAimPad {
     this.#stick.hidden = true;
     this.#stick.setAttribute('aria-hidden', 'true');
     this.#surface.append(readout, this.#stick);
-    this.#surface.type = cancel.type = 'button';
+    this.#surface.type = 'button';
     this.#cursor.className = 'raid-aim-cursor';
     this.#cursor.style.setProperty('--aim-diameter', 2 * RAID_AIM_RADIUS + 'px');
     this.#cursor.setAttribute('aria-hidden', 'true');
-    this.#layer.append(this.#surface, this.#cursor, cancel);
+    this.#layer.append(this.#surface, this.#cursor);
     root.append(this.#layer);
     this.#surface.onpointerdown = (e) => this.#start(e);
     this.#surface.onpointermove = (e) => this.#move(e);
@@ -96,7 +85,11 @@ export class RaidAimPad {
       const contact = this.#contact;
       if (contact?.id !== e.pointerId) return;
       this.#move(e);
-      if (this.#slot !== null && !this.#overCancel(e)) this.#actions.drop(this.#slot, this.#input);
+      if (
+        this.#slot !== null &&
+        this.#surface.contains(document.elementFromPoint(e.clientX, e.clientY))
+      )
+        this.#actions.drop(this.#slot, this.#input);
       this.close();
     };
     this.#surface.onpointercancel = this.#surface.onlostpointercapture = (e) => {
@@ -114,6 +107,7 @@ export class RaidAimPad {
     this.#name = name;
     this.#layer.dataset.kind = kind;
     this.#layer.hidden = false;
+    this.#onToggle(true);
     const bounds = this.#layer.getBoundingClientRect();
     this.#input =
       kind === 'direction'
@@ -146,14 +140,9 @@ export class RaidAimPad {
     }
   }
 
-  #overCancel(e: PointerEvent) {
-    return document.elementFromPoint(e.clientX, e.clientY) === this.#cancel;
-  }
-
   #move(e: PointerEvent) {
     const c = this.#contact;
     if (!c || c.id !== e.pointerId) return;
-    this.#cancel.classList.toggle('armed', this.#overCancel(e));
     if ('dx' in this.#input) {
       // Keep the initiating contact as the origin, even if the thumb leaves the right half.
       const width = this.#stick.offsetWidth;
@@ -218,9 +207,9 @@ export class RaidAimPad {
     this.#contact = null;
     if (id !== undefined && this.#surface.hasPointerCapture(id))
       this.#surface.releasePointerCapture(id);
-    this.#cancel.classList.remove('armed');
     this.#stick.hidden = true;
     this.#layer.hidden = true;
+    this.#onToggle(false);
     this.#actions.clearPreview();
   }
 }

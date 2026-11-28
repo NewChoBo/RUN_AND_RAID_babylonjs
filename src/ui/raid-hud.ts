@@ -120,37 +120,46 @@ export function createRaidHud(
   fuel.max = JET_CAPACITY;
   fuel.hidden = true;
   fuel.setAttribute('aria-label', t('jetFuel'));
-  let heldJet: number | null = null;
+  let jumpPointer: number | null = null;
+  let jetHeld = false;
   // A second thumb does not always produce a compatibility click while steering.
   jump.onpointerdown = (e) => {
-    if (e.button !== 0 || heldJet !== null) return;
+    if (e.button !== 0 || jump.hidden || jumpPointer !== null) return;
+    jumpPointer = e.pointerId;
     jump.setPointerCapture(e.pointerId);
     if (!fuel.hidden) {
-      heldJet = e.pointerId;
+      jetHeld = true;
       actions.jump(true);
     }
   };
-  function releaseJet(e: PointerEvent) {
-    if (heldJet !== e.pointerId) return false;
-    heldJet = null;
-    actions.jump(false);
-    return true;
+  function releaseJump() {
+    const id = jumpPointer;
+    jumpPointer = null;
+    if (id !== null && jump.hasPointerCapture(id)) jump.releasePointerCapture(id);
+    if (jetHeld) {
+      jetHeld = false;
+      actions.jump(false);
+    }
   }
-  jump.onpointercancel = jump.onlostpointercapture = releaseJet;
+  function setAiming(active: boolean) {
+    jump.hidden = active;
+    if (active && jumpPointer !== null) releaseJump();
+  }
+  jump.onpointercancel = jump.onlostpointercapture = (e) => {
+    if (jumpPointer === e.pointerId) releaseJump();
+  };
   jump.onpointerup = (e) => {
-    if (releaseJet(e)) return;
-    if (
-      e.button === 0 &&
-      jump.hasPointerCapture(e.pointerId) &&
-      jump.contains(document.elementFromPoint(e.clientX, e.clientY))
-    )
-      actions.jump();
+    if (jumpPointer !== e.pointerId) return;
+    const tapped =
+      !jetHeld && e.button === 0 && jump.contains(document.elementFromPoint(e.clientX, e.clientY));
+    releaseJump();
+    if (tapped) actions.jump();
   };
   jump.onclick = (e) => {
-    if (e.detail === 0) actions.jump();
+    if (e.detail === 0 && !jump.hidden) actions.jump();
   };
   jump.className = 'raid-jump';
-  const aimPad = new RaidAimPad(root, actions);
+  const aimPad = new RaidAimPad(root, actions, setAiming);
   const skills = createSkillRack(deck, aimPad, actions);
   const menu = createRaidMenu(root, actions, settings);
   const result = createRaidResult(actions);
@@ -160,7 +169,8 @@ export function createRaidHud(
     stick.pad.hidden = aiming !== null;
     const runner = view.runners[slot]!;
     updateScore(view, runner);
-    jump.disabled = heldJet === null && !canPressJump(runner);
+    setAiming(aiming !== null || aimPad.skill !== null);
+    jump.disabled = !jetHeld && !canPressJump(runner);
     fuel.hidden = runner.jetFuel === undefined;
     const nextLabel = t(
       runner.jetFuel !== undefined ? 'jet' : runner.air && !runner.air.second ? 'airJump' : 'jump',
@@ -237,7 +247,8 @@ export function createRaidHud(
     online = false,
     outfits: readonly (string | undefined)[] = [],
   ) {
-    heldJet = null;
+    releaseJump();
+    jump.hidden = false;
     stick.reset();
     ping.close();
     aimPad.close();
@@ -263,7 +274,8 @@ export function createRaidHud(
     updateSkills: skills.update,
     drawCombatNumbers,
     reset() {
-      heldJet = null;
+      releaseJump();
+      jump.hidden = false;
       ping.close();
       menu.hide();
       result.hide();

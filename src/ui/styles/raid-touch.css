@@ -6,17 +6,6 @@
 .raid-hud:has(.raid-aim:not([hidden])) :is(.raid-skills, .raid-ping) {
   visibility: hidden;
 }
-.raid-hud:has(.raid-aim:not([hidden])) .raid-jump {
-  right: calc(var(--gutter) + var(--aim-cancel-width) + 6px);
-  bottom: calc(var(--base) + var(--pad-height) + 6px);
-  width: 52px;
-  height: 44px;
-  padding: 0 2px;
-  align-content: center;
-  background: #282725;
-  font-size: 11px;
-  z-index: 2;
-}
 .raid-hud:has(.raid-aim:not([hidden])) .raid-pause {
   z-index: 2;
 }
@@ -104,18 +93,6 @@
 .raid-aim.empty .raid-aim-pad strong {
   color: #ffe099;
 }
-.raid-hud .raid-aim-cancel {
-  position: absolute;
-  right: var(--gutter);
-  bottom: calc(var(--base) + var(--pad-height) + 6px);
-  width: var(--aim-cancel-width);
-  min-height: 44px;
-  padding-inline: 6px;
-}
-.raid-hud .raid-aim-cancel.armed {
-  border-color: #ffd3b2;
-  background: #70362c;
-}
 .raid-aim-cursor {
   position: fixed;
   transform: translate(-50%, -50%);
@@ -183,7 +160,6 @@ body.raid-mode .title-copy h1 {
   --base: calc(max(8px, var(--safe-bottom)) + var(--hud-padding, 0px));
   --hud-action-size: var(--ui-touch-target);
   --pad-height: clamp(72px, min(34dvh, calc(100dvh - var(--hud-top) - var(--base) - 94px)), 152px);
-  --aim-cancel-width: clamp(96px, 9vw, 128px);
   --default-disc: clamp(46px, 11.8dvh, 60px);
   --disc: clamp(
     44px,

@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T20:44+09:00',
+    tag: 'controls',
+    title: '조준 중 점프와 취소 버튼 정리',
+    body: '스킬을 조준하는 동안 점프 버튼이 숨겨집니다. 터치 조준은 패드 안에서 손을 떼면 시전하고, 밖에서 떼면 버튼 없이 취소합니다. 키보드에서는 Esc로 조준을 풀 수 있습니다.',
+  },
+  {
     updatedAt: '2026-11-28T20:38+09:00',
     tag: 'arena',
     title: '바닥 전격의 원형 복원',
