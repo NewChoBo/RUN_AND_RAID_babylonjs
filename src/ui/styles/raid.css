@@ -322,15 +322,12 @@ body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
 .raid-skills small:empty {
   display: none;
 }
-.raid-skills [data-skill='fury'] {
-  isolation: isolate;
-  overflow: hidden;
-}
 .raid-hud .raid-skills[data-rage] [data-skill='fury']:not([data-cooling])::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
+  border-radius: inherit;
   background: linear-gradient(
     to top,
     #b54b6b88 var(--rage-fill, 0%),

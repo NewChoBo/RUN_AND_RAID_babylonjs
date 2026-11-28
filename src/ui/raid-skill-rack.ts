@@ -43,11 +43,6 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
     const art = element('img', b);
     art.className = 'raid-skill-art';
     art.hidden = true;
-    const meta = element('span', b);
-    meta.className = 'raid-skill-meta';
-    meta.setAttribute('aria-hidden', 'true');
-    const glyph = element('i', meta);
-    const type = element('b', meta);
     const charge = element('small', b);
     const name = element('span', b, t(key));
     name.className = 'raid-skill-name';
@@ -88,20 +83,19 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
     b.onclick = (e) => {
       if (e.detail === 0 && !gesture) actions.skill(slot);
     };
-    return { slot, b, art, charge, name, glyph, type };
+    return { slot, b, art, charge, name };
   });
   function update(runner: RaidView['runners'][number], aiming: Skill | null) {
     displayedRunner = runner;
-    buttons.forEach(({ slot, b, art, charge, name, glyph, type }) => {
+    buttons.forEach(({ slot, b, art, charge, name }) => {
       setSkillIcon(
         art,
         runner.hero,
         battleIconIndex(runner.hero, slot, runner.heroView.shieldMode),
       );
       const status = raidSkillIndicator(runner, slot);
-      const instant = status.kind === 'pulse';
       const typeLabel = t(
-        instant
+        status.kind === 'pulse'
           ? 'typeInstant'
           : status.kind === 'direction'
             ? 'typeDirection'
@@ -110,10 +104,6 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
               : 'typeTarget',
       );
       if (b.dataset.kind !== status.kind) b.dataset.kind = status.kind;
-      if (type.textContent !== typeLabel) {
-        glyph.textContent = instant ? '✴' : '◎';
-        type.textContent = typeLabel;
-      }
       const skillName = t(`${heroKit(runner.hero)}${skillNames[slot]}`);
       let label = skillName;
       if (status.land) label = t('valletLand');

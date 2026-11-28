@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T19:06+09:00',
+    tag: 'controls',
+    title: '조준 스킬에 붙는 작은 조준선',
+    body: '대상이나 지점, 방향을 지정하는 스킬은 버튼 오른쪽 아래에 둥근 조준선이 붙습니다. 즉발 스킬은 그림만 표시합니다. 재사용 대기 중에도 조준선을 볼 수 있고, 남은 시간은 버튼 가운데에 표시됩니다.',
+  },
+  {
     updatedAt: '2026-11-28T18:57+09:00',
     tag: 'controls',
     title: '마차에 바짝 붙여 쓰는 도약공격',

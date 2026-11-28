@@ -186,7 +186,7 @@ export const raidText = defineMessages(
     mode: 'Run & Raid',
     rules: `Two teams chase one wagon. Destroy it first to win. After ${ROUND_MINUTES} minutes, the team that dealt more wagon damage wins.`,
     controls:
-      'Drag the left pad sideways to steer or pull it down to walk. Tap instant skills once. For aimed skills, aim and release. Drag an aimed skill off its button to reuse the previous target or aim. On a keyboard, press Shift + its number.',
+      'Drag the left pad sideways to steer or pull it down to walk. Tap a skill marked with a crosshair, then aim and release. Other skills cast with one tap. Drag an aimed skill off its button to reuse the previous target or aim. On a keyboard, press Shift + its number.',
     pingTeam: 'Team ping',
     pingHelp: 'Drag ! up to advance, down to fall back, or toward an enemy portrait to focus fire.',
     advance: 'Advance',
