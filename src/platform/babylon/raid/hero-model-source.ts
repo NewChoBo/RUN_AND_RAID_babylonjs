@@ -1,4 +1,5 @@
 import { battleOutfit } from '../../../content/raid/battle-outfits.ts';
+import { raidModelUrl } from '../../../content/raid/model-url.ts';
 import type { RaidHero } from '../../../game/raid/heroes/hero-id.ts';
 
 const installed = import.meta.glob<{ file: string }>('../../../content/raid/ready-heroes/*.json', {
@@ -19,7 +20,7 @@ export function heroModelSource(hero: RaidHero, outfit?: string) {
   }
   if (original) {
     return {
-      url: original.model,
+      url: raidModelUrl(original.model),
       outfitId: original.id,
       authored: true,
       loop: original.clips?.includes('run')
@@ -30,5 +31,10 @@ export function heroModelSource(hero: RaidHero, outfit?: string) {
       clips: original.clips,
     };
   }
-  return { url: './assets/raid/' + hero + '.glb', authored: false, loop: 'run', clips: undefined };
+  return {
+    url: raidModelUrl('./assets/raid/' + hero + '.glb'),
+    authored: false,
+    loop: 'run',
+    clips: undefined,
+  };
 }

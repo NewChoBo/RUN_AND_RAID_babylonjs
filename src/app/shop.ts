@@ -2,6 +2,7 @@ import { uiText } from '../content/locales/ui.ts';
 import { characterLabel, characterName, illustrations } from '../content/raid/gallery.ts';
 import { getLocale } from '../content/locales/locale.ts';
 import { outfitCatalog, outfitName } from '../content/raid/battle-outfits.ts';
+import { raidModelUrl } from '../content/raid/model-url.ts';
 import { raidOutfits } from '../content/raid/outfits.ts';
 import type { AssetContainer } from '@babylonjs/core';
 import type { createView } from '../platform/babylon/model-preview.ts';
@@ -86,7 +87,7 @@ async function select(item: GalleryItem) {
     if (id !== request) return;
     const v = (view ??= createView(canvas, () => !root.hidden && !canvas.hidden));
     v.engine.resize();
-    const loaded = await LoadAssetContainerAsync(item.url, v.scene, {
+    const loaded = await LoadAssetContainerAsync(raidModelUrl(item.url), v.scene, {
       pluginOptions: { gltf: { animationStartMode: 0 } },
     });
     if (id !== request) {
