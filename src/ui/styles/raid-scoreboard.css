@@ -1,0 +1,174 @@
+.raid-score {
+  --bar-height: clamp(14px, 4.2dvh, 24px);
+  position: absolute;
+  top: max(2px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  width: min(76vw, 1020px);
+  padding-bottom: clamp(23px, 6dvh, 37px);
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 1px 2px #090809,
+    1px 0 2px black;
+}
+.raid-team {
+  --team-ink: #79cfff;
+  --bar-fill: linear-gradient(#daf4ac, #7bbc44 39%, #477b20 55%, #65912e);
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 4px;
+  margin-top: 2px;
+}
+.raid-team.red {
+  --team-ink: #ff8b78;
+  --bar-fill: linear-gradient(#ffc2a8, #eb7059 39%, #b33327 55%, #c14632);
+  grid-template-columns: 1fr auto;
+}
+.raid-team > small:first-child {
+  color: #f9f3e3;
+  font-size: clamp(10px, 2.8dvh, 15px);
+}
+.raid-team.red > small:first-child {
+  grid-column: 2;
+}
+.raid-team progress {
+  grid-area: 1 / 2;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: var(--bar-height);
+  border: 2px ridge #aea797;
+  border-radius: 2px;
+  background: #292726;
+  overflow: hidden;
+}
+.raid-team.blue progress {
+  direction: rtl;
+}
+.raid-team.red progress {
+  grid-column: 1;
+}
+.raid-team progress::-webkit-progress-bar {
+  background: linear-gradient(#191816, #413c35);
+}
+.raid-team progress::-webkit-progress-value {
+  background: var(--bar-fill);
+}
+.raid-team progress::-moz-progress-bar {
+  background: var(--bar-fill);
+}
+.raid-team > strong {
+  grid-area: 1 / 2;
+  z-index: 1;
+  padding: 0 5px;
+  text-align: start;
+  font-size: clamp(9px, 2.4dvh, 13px);
+  color: #fff;
+  line-height: 1;
+}
+.raid-team.red > strong {
+  grid-column: 1;
+  text-align: end;
+}
+.raid-score time {
+  padding: 0 0.27em 0.12em;
+  color: #fffaf0;
+  font: 800 clamp(18px, 5dvh, 31px)/1 var(--font-ui);
+  background: linear-gradient(#38372fe0, #242321ad);
+  border-radius: 0 0 3px 3px;
+}
+.raid-kills {
+  position: absolute;
+  top: 100%;
+  right: 0.12em;
+  color: var(--team-ink);
+  font: 900 clamp(20px, 5.6dvh, 34px)/1 var(--font-ui);
+  -webkit-text-stroke: 2px #181719;
+  paint-order: stroke fill;
+}
+.red .raid-kills {
+  right: auto;
+  left: 0.12em;
+}
+.raid-personal-score,
+.raid-boss-bonus {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  padding: 0 4px;
+  background: #171612af;
+  border-radius: 2px;
+  font-size: clamp(10px, 2.5dvh, 14px);
+  color: #fff8dd;
+}
+.raid-team .raid-boss-bonus {
+  left: auto;
+  right: 2.25em;
+  color: #ffe39b;
+}
+.red .raid-boss-bonus {
+  right: auto;
+  left: 2.25em;
+}
+.raid-score :is(.raid-counter, .raid-callout) {
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 75%;
+  border-radius: 2px;
+}
+.raid-counter {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  padding: 0.2em 0.3em;
+  text-align: center;
+  background: #351d19ed;
+  color: #ffcf98;
+  font-size: clamp(10px, 2.7dvh, 14px);
+  line-height: 1.2;
+  pointer-events: none;
+}
+.raid-callout {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  padding: 2px 4px;
+  background: #1a2536e8;
+  color: #ffe18c;
+  text-align: center;
+  font-size: clamp(10px, 2.7dvh, 14px);
+  pointer-events: none;
+}
+.raid-counter:not([hidden]) + .raid-callout {
+  margin-top: 1.7em;
+}
+.raid-enemy-respawns {
+  position: absolute;
+  top: calc(var(--bar-height) + 5px);
+  right: 0;
+  width: max-content;
+  max-width: min(26vw, 190px);
+  box-sizing: border-box;
+  padding: 3px 5px;
+  border-right: 2px solid #ec7586;
+  border-radius: 3px;
+  background: #151a26ed;
+  font-size: clamp(10px, 2.6dvh, 13px);
+  text-align: right;
+}
+.raid-enemy-respawns strong {
+  color: #ffa8b4;
+}
+.raid-enemy-respawns ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

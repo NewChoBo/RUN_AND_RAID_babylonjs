@@ -1,6 +1,8 @@
 import './styles/touch-pad.css';
 
-type PadLayout = { shape: 'disc' } | { shape: 'semicircle'; surface: HTMLElement };
+type PadLayout =
+  | { shape: 'disc' }
+  | { shape: 'semicircle'; surface: HTMLElement; moveLabel: string; walkLabel: string };
 
 // Capture one thumb independently of any look or skill gesture on the other side.
 export function createTouchPad(
@@ -15,7 +17,11 @@ export function createTouchPad(
   pad.setAttribute('aria-label', label);
   const puck = document.createElement('i');
   const legend = document.createElement('span');
-  legend.textContent = layout.shape === 'semicircle' ? '▾' : '⌄';
+  if (layout.shape === 'semicircle') {
+    puck.textContent = layout.moveLabel;
+    puck.setAttribute('aria-hidden', 'true');
+  }
+  legend.textContent = layout.shape === 'semicircle' ? layout.walkLabel : '⌄';
   legend.setAttribute('aria-hidden', 'true');
   pad.append(puck, legend);
   const surface = layout.shape === 'semicircle' ? layout.surface : pad;
@@ -56,6 +62,10 @@ export function createTouchPad(
     pointer = null;
     if (id !== null && surface.hasPointerCapture(id)) surface.releasePointerCapture(id);
     puck.style.transform = '';
+    if (layout.shape === 'semicircle') {
+      pad.style.removeProperty('left');
+      pad.style.removeProperty('top');
+    }
     pad.classList.remove('held');
     axes(0, 0);
   }

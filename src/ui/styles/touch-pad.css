@@ -70,9 +70,28 @@
 .touch-pad[data-shape='semicircle'].held {
   visibility: visible;
 }
+.touch-pad[data-shape='semicircle']:not(.held) {
+  visibility: visible;
+  left: max(2.8vw, env(safe-area-inset-left));
+  bottom: max(4.5dvh, env(safe-area-inset-bottom));
+  transform: none;
+}
+.touch-pad[data-shape='semicircle'] {
+  border: 2px ridge #a8a395;
+  background: radial-gradient(ellipse at 50% 0%, #44433fbb, #22211fcc 76%);
+}
 .touch-pad[data-shape='semicircle'] i {
   top: 24%;
-  width: 18%;
+  width: 28%;
+  display: grid;
+  place-content: center;
+  border: 2px ridge #d7d0c0;
+  background: radial-gradient(ellipse at 45% 30%, #77756e, #292824 65%);
+}
+.touch-pad[data-shape='semicircle'] :is(i, span) {
+  color: #f2eee5;
+  text-transform: uppercase;
+  font: 800 clamp(9px, 2.4dvh, 13px)/1 var(--font-ui);
 }
 .touch-pad[data-shape='semicircle']::before,
 .touch-pad[data-shape='semicircle']::after {

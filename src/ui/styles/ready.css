@@ -121,8 +121,7 @@ body.raid-mode #game {
   border: 1px solid #998974;
   color: #fff4da;
 }
-#overlay button,
-.raid-panel button {
+#overlay button {
   border: 1px solid #a08e73;
   border-radius: 3px;
   color: #302820;

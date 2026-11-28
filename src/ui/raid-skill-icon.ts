@@ -4,17 +4,11 @@ import type { Skill } from '../game/raid/raid-match.ts';
 
 const sources: Partial<Record<RaidHero, readonly string[]>> = icons;
 
-// The restoration moved some abilities. Numbers are the cafe's filenames (0 is passive).
-const adaptedSlots: Partial<Record<RaidHero, readonly [number, number, number, number]>> = {
-  abyss: [3, 1, 2, 4],
-  vallet: [1, 3, 2, 4],
-};
-
 export function battleIconIndex(hero: RaidHero, slot: Skill, shieldMode = false) {
   hero = heroKit(hero);
   // The fourth button names the mode the player will enter.
   if (hero === 'magnus') return slot === 3 ? (shieldMode ? 4 : 8) : slot + (shieldMode ? 5 : 1);
-  return adaptedSlots[hero]?.[slot] ?? slot + 1;
+  return slot + 1;
 }
 
 export function setSkillIcon(image: HTMLImageElement, hero: RaidHero, index: number) {

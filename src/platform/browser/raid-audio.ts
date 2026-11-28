@@ -2,6 +2,7 @@ import { getLocale } from '../../content/locales/locale.ts';
 import { heroKit } from '../../game/raid/heroes/hero-id.ts';
 import { raidSkill } from '../../game/raid/heroes/hero-catalog.ts';
 import type { RaidAction, RaidView } from '../../game/raid/raid-view.ts';
+import { audioVolume, type AudioChannel } from './battle-settings.ts';
 
 const effects = [
   'hammer',
@@ -19,7 +20,6 @@ const effects = [
 ] as const;
 type Effect = (typeof effects)[number];
 type Voice = 'go' | 'advance' | 'retreat' | 'focus';
-type Channel = 'effects' | 'voice';
 // Each row follows basic attack, Q, W, E and R in the current playable kit.
 const sounds: Partial<
   Record<ReturnType<typeof heroKit>, readonly [Effect, Effect, Effect, Effect, Effect]>
@@ -42,23 +42,6 @@ const sounds: Partial<
   vallet: ['shot', 'shot', 'blade', 'shot', 'shot'],
   freesia: ['spark', 'spark', 'ward', 'ward', 'void'],
 };
-
-const disabled = new Set<Channel>();
-for (const channel of ['effects', 'voice'] as const) {
-  try {
-    if (localStorage.getItem('run-and-raid.audio.' + channel) === 'off') disabled.add(channel);
-  } catch {
-    /* Storage is optional in embedded browsers. */
-  }
-}
-export const audioEnabled = (channel: Channel) => !disabled.has(channel);
-export function setAudioEnabled(channel: Channel, enabled: boolean) {
-  if (enabled) disabled.delete(channel);
-  else disabled.add(channel);
-  try {
-    localStorage.setItem('run-and-raid.audio.' + channel, enabled ? 'on' : 'off');
-  } catch {}
-}
 
 /** Cue ownership stays with the match. The audio clock only plays short samples. */
 export function createRaidAudio() {
@@ -95,16 +78,16 @@ export function createRaidAudio() {
         .finally(() => loading.delete(name));
     }
   }
-  function play(name: string, channel: Channel, volume: number, speed = 1) {
+  function play(name: string, channel: AudioChannel, volume: number, speed = 1) {
     const buffer = buffers.get(name);
-    if (!audioEnabled(channel) || document.hidden || !buffer || context?.state !== 'running')
-      return;
+    const percent = audioVolume(channel);
+    if (!percent || document.hidden || !buffer || context?.state !== 'running') return;
     if (channel === 'voice') voice?.stop();
     else if (active.size >= 10) return;
     const source = context.createBufferSource();
     const gain = context.createGain();
     source.buffer = buffer;
-    gain.gain.value = volume;
+    gain.gain.value = (volume * percent) / 100;
     source.playbackRate.value = speed;
     source.connect(gain).connect(context.destination);
     active.add(source);

@@ -2,13 +2,14 @@ import { startupText } from '../content/locales/startup.ts';
 import { uiText } from '../content/locales/ui.ts';
 import { landscapeFrame } from '../platform/browser/game-navigation.ts';
 import { installLanguagePicker } from '../platform/browser/ui-language.ts';
-import { audioEnabled, setAudioEnabled } from '../platform/browser/raid-audio.ts';
+import { createBattleSettings } from './battle-settings.ts';
 
 const dialog = document.querySelector<HTMLDialogElement>('#game-settings')!;
 const toggle = dialog.querySelector<HTMLButtonElement>('#settings-fullscreen')!;
 const status = dialog.querySelector<HTMLElement>('#settings-status')!;
 const display = landscapeFrame()?.ownerDocument ?? document;
 let switching = false;
+let battleSettings: ReturnType<typeof createBattleSettings>;
 
 function updateDisplay() {
   const active = Boolean(display.fullscreenElement);
@@ -19,11 +20,13 @@ function updateDisplay() {
 }
 
 export function openSettings() {
+  battleSettings.refresh();
   status.textContent = '';
   dialog.querySelector<HTMLElement>('#settings-language-note')!.hidden =
     location.hash !== '#/ready';
   updateDisplay();
   dialog.showModal();
+  return dialog;
 }
 
 export function installSettings() {
@@ -31,11 +34,7 @@ export function installSettings() {
     '.lobby-toolbar [aria-controls="game-settings"]',
   )!.onclick = openSettings;
   installLanguagePicker(dialog.querySelector<HTMLSelectElement>('#settings-language')!);
-  for (const channel of ['effects', 'voice'] as const) {
-    const input = dialog.querySelector<HTMLInputElement>('#settings-' + channel)!;
-    input.checked = audioEnabled(channel);
-    input.onchange = () => setAudioEnabled(channel, input.checked);
-  }
+  battleSettings = createBattleSettings(dialog.querySelector('#settings-battle')!, 'settings');
   toggle.onclick = async () => {
     switching = toggle.disabled = true;
     status.textContent = '';

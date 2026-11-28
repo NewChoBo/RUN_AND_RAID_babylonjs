@@ -228,6 +228,8 @@ export const raidText = defineMessages(
     aimRadius: 'Radius {radius} m',
     cancelAim: 'Cancel aim',
     steer: 'Drag left or right to steer, down to brake',
+    movePad: 'Move',
+    walkPad: 'Walk',
     shield: 'Shield',
     hammerPulse: 'Crush',
     hammerBolt: 'Leaping attack',
@@ -270,6 +272,9 @@ export const raidText = defineMessages(
     jadeInfo:
       'Shield an ally with the orb. Discharge and fork lightning from its bearer, or chain it through allies and enemies.',
     blue: 'Your team',
+    allies: 'Allies',
+    enemies: 'Rivals',
+    wagonHealth: 'Wagon health remaining',
     red: 'Rivals',
     boss: 'Wagon damage',
     matchRecap: '{reason} · Match time {duration} · Lead changes {count}',

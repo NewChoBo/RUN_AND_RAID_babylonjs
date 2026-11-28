@@ -229,8 +229,7 @@ body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
     transform: translate(-50%, calc(-100% + var(--row)));
   }
 }
-.raid-hud button,
-.raid-panel button {
+.raid-hud button {
   pointer-events: auto;
   cursor: pointer;
   touch-action: none;
@@ -245,62 +244,9 @@ body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
   color: #afa9a0;
   background: #10161cd9;
 }
-.raid-score {
-  position: absolute;
-  top: max(12px, env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 1.2em;
-  background: #0a131aeb;
-  border-bottom: 2px solid #a98d61;
-  border-radius: 5px;
-  padding: 0.65em 1em;
-}
-.raid-counter {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  padding: 0.2em 0.3em;
-  text-align: center;
-  background: #351d19ed;
-  color: #ffcf98;
-  font-size: clamp(10px, 2.7dvh, 14px);
-  line-height: 1.2;
-  pointer-events: none;
-}
 .raid-condition {
   color: #ffcc8a;
   font-weight: 700;
-}
-.raid-team {
-  display: grid;
-  gap: 0.18em;
-  min-width: 8em;
-}
-.raid-team small {
-  color: #83e1d9;
-}
-.raid-team.red {
-  text-align: right;
-}
-.raid-team.red small {
-  color: #ffa5b3;
-}
-.raid-team progress {
-  display: block;
-  width: 100%;
-  height: 0.4em;
-  accent-color: #61dad0;
-}
-.raid-team.red progress {
-  accent-color: #ec7586;
-}
-.raid-score time {
-  font-size: 1.7em;
-  letter-spacing: 0.03em;
 }
 .raid-pause {
   position: absolute;
@@ -395,9 +341,6 @@ body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
   border-color: #ffe4b8;
   box-shadow: 0 0 8px #ffb38a99;
 }
-.raid-skill-size {
-  display: none;
-}
 .raid-vitals {
   background: #0b141be6;
   border-radius: 4px;
@@ -410,67 +353,6 @@ body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
 .raid-vitals button {
   font-size: 0.86em;
 }
-.raid-panel {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: #070d15bd;
-  color: #f3ebdb;
-}
-.raid-panel > div {
-  width: min(90vw, 30rem);
-  padding: 1.7rem;
-  border: 1px solid #ad9262;
-  background: #141e27;
-  box-shadow: 0 14px 55px #0008;
-}
-.raid-panel h2 {
-  font: 500 2rem/1.05 var(--font-display, serif);
-  margin: 0;
-  color: #edd3a0;
-}
-.raid-panel button {
-  margin-right: 0.5em;
-}
-.raid-panel {
-  overflow: auto;
-}
-.raid-panel table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 0.6em 0 1em;
-  font-variant-numeric: tabular-nums;
-}
-.raid-panel th,
-.raid-panel caption {
-  text-align: left;
-}
-.raid-panel td {
-  text-align: right;
-}
-.raid-panel tr {
-  border-bottom: 1px solid #97825f44;
-}
-.raid-panel :is(td, th) {
-  padding: 0.12em 0.35em;
-}
-.raid-panel thead th:not(:first-child) {
-  text-align: right;
-}
-.raid-panel tbody tr:first-child {
-  color: #a6eadf;
-  background: #1c343a;
-  font-weight: 700;
-}
-.raid-panel tbody + tbody tr:first-child {
-  color: #ffc0c6;
-  background: #392b35;
-}
-.raid-panel th[scope='row'] {
-  padding-left: 1em;
-  font-weight: 400;
-}
 .raid-skills button {
   touch-action: none;
 }
@@ -478,11 +360,6 @@ body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
   border-color: #f0cf88;
 }
 @media (max-height: 480px), (max-width: 700px) {
-  .raid-score {
-    top: 4px;
-    padding: 0.35em 0.6em;
-    gap: 0.7em;
-  }
   .raid-hud button {
     padding: 0.42em 0.5em;
   }

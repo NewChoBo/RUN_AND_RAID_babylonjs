@@ -224,6 +224,8 @@ export const korean = {
   aimRadius: '반경 {radius} m',
   cancelAim: '조준 취소',
   steer: '좌우로 밀어 방향 전환, 아래로 당겨 감속',
+  movePad: '이동',
+  walkPad: '감속',
   shield: '보호막',
   hammerPulse: '분쇄',
   hammerBolt: '도약 공격',
@@ -266,6 +268,9 @@ export const korean = {
   jadeInfo:
     '번개구로 아군을 보호합니다. 구체를 지닌 주자에게서 전격이 폭발하고, 연쇄 번개는 아군을 거쳐 적에게 닿습니다.',
   blue: '우리 팀',
+  allies: '아군',
+  enemies: '적군',
+  wagonHealth: '마차 남은 체력',
   red: '상대 팀',
   boss: '마차 피해',
   matchRecap: '{reason} · 경기 시간 {duration} · 선두 교체 {count}회',

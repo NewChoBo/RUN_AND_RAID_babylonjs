@@ -1,0 +1,130 @@
+.battle-settings {
+  display: grid;
+  gap: 3px;
+  color: inherit;
+  font: 600 clamp(12px, 3dvh, 16px)/1.15 var(--font-ui);
+}
+.battle-volume {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+.battle-volume > span,
+.raid-skill-size > span:last-child {
+  color: #ded8c8;
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+}
+.battle-volume > div {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.battle-speaker {
+  position: relative;
+  display: grid;
+  width: 29px;
+  height: 28px;
+  place-items: center;
+  cursor: pointer;
+}
+.battle-speaker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.battle-speaker input:focus-visible + span {
+  outline: 2px solid #ffe4a3;
+}
+.battle-speaker span {
+  display: grid;
+  pointer-events: none;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+.battle-speaker span::before {
+  content: '';
+  width: 18px;
+  height: 16px;
+  background: #c4b9a6;
+  clip-path: polygon(0 35%, 30% 35%, 72% 0, 72% 100%, 30% 65%, 0 65%);
+}
+.battle-speaker input:not(:checked) + span::after {
+  content: '×';
+  position: absolute;
+  right: 0;
+  color: #ffad92;
+}
+.battle-volume input[type='range'],
+.raid-skill-size input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  height: 28px;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+:is(.battle-volume, .raid-skill-size) input[type='range']::-webkit-slider-runnable-track {
+  height: 8px;
+  border: 1px solid #887e71;
+  border-radius: 2px;
+  background: #302e2a;
+  box-shadow: inset 0 2px 2px #171612;
+}
+:is(.battle-volume, .raid-skill-size) input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 19px;
+  height: 19px;
+  margin-top: -6px;
+  border-radius: 50%;
+  border: 1px solid #332e29;
+  background: linear-gradient(#fcfaf4, #b6b1a6 50%, #777268);
+  box-shadow:
+    inset 0 0 0 1px #d7d1c8,
+    0 1px 2px #15120f;
+}
+:is(.battle-volume, .raid-skill-size) input[type='range']::-moz-range-track {
+  height: 7px;
+  background: #302e2a;
+  border: 1px solid #887e71;
+}
+:is(.battle-volume, .raid-skill-size) input[type='range']::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #d5d0c5;
+}
+.battle-quality {
+  display: grid;
+  grid-template-columns: 1fr auto minmax(3.6em, auto) auto;
+  align-items: center;
+}
+.battle-quality output {
+  text-align: center;
+}
+.battle-quality button {
+  padding: 0;
+  width: 35px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: #e3d6bd;
+  font: inherit;
+  cursor: pointer;
+  text-shadow: 0 1px 2px #000;
+}
+.battle-quality button:disabled {
+  color: #918779;
+  cursor: default;
+}
+#settings-battle {
+  margin-block: 0.5rem;
+}
