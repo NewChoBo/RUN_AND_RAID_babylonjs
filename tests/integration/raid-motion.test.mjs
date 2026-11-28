@@ -11,6 +11,40 @@ import {
 import { ModelMotion } from '../../src/platform/babylon/actors/model-motion.ts';
 import { RaidActionPlayback } from '../../src/platform/babylon/raid/raid-action-playback.ts';
 
+test('starting-line models loop their own idle or hold their first pose until the race starts', (t) => {
+  const engine = new NullEngine();
+  t.after(() => engine.dispose());
+  const scene = new Scene(engine);
+  const node = new TransformNode('wing', scene);
+  function take(name, start) {
+    const group = new AnimationGroup(name, scene);
+    const animation = new Animation(name, 'position', 30, Animation.ANIMATIONTYPE_VECTOR3);
+    animation.setKeys([
+      { frame: 0, value: new Vector3(start, 0, 0) },
+      { frame: 60, value: new Vector3(start + 12, 0, 0) },
+    ]);
+    group.addTargetedAnimation(animation, node);
+    return group;
+  }
+  const idle = take('idle', 1);
+  const run = take('run', 10);
+  const runner = new ModelMotion([idle, run], ['idle', 'run']);
+  runner.gait('run', 1, 1);
+  runner.idle(0);
+  assert.equal(node.position.x, 1);
+  runner.idle(2.5);
+  assert.equal(node.position.x, 4);
+
+  const bird = new ModelMotion([run], ['run']);
+  bird.gait('run', 1, 1);
+  for (const seconds of [0, 0.5, 2.9]) {
+    bird.idle(seconds);
+    assert.equal(node.position.x, 10);
+  }
+  bird.gait('run', 0.5, 1);
+  assert.equal(node.position.x, 13);
+});
+
 test('a take samples its authored time and clamps at its last key', (t) => {
   const engine = new NullEngine();
   t.after(() => engine.dispose());

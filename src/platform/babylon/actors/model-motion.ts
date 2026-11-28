@@ -57,6 +57,11 @@ export class ModelMotion {
   duration(name: string) {
     return this.clips.get(name)?.seconds ?? 0;
   }
+  idle(seconds: number) {
+    const clip = this.clips.get('idle');
+    if (clip) this.sample(clip, (seconds % clip.seconds) / clip.seconds, 0, false);
+    else this.seek('run', 0, 0, false);
+  }
   once(name: string, elapsedSeconds: number, dt: number) {
     const clip = this.clips.get(name);
     if (clip) this.sample(clip, Math.min(1, Math.max(0, elapsedSeconds / clip.seconds)), dt);
@@ -90,10 +95,10 @@ export class ModelMotion {
     const transition = 0.1;
     const changing = this.playing !== clip;
     if (changing) {
-      this.blendTime = this.playing && blend ? 0 : transition;
+      this.blendTime = this.playing ? 0 : transition;
       this.playing = clip;
     }
-    this.blendTime = Math.min(transition, this.blendTime + dt);
+    this.blendTime = blend ? Math.min(transition, this.blendTime + dt) : transition;
     const weight = this.blendTime / transition;
     const frame = clip.group.from + (clip.group.to - clip.group.from) * fraction;
     for (const track of clip.tracks) {

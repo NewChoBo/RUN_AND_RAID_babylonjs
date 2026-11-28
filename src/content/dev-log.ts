@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T18:32+09:00',
+    tag: 'controls',
+    title: '출발 신호까지 정면에서 대기',
+    body: '카운트다운 중에는 스틱을 움직이거나 이동 키를 눌러도 주자가 정면에서 대기합니다. 출발 신호가 울리면 그때 누르고 있는 방향으로 달립니다. 미리 손을 떼면 정면으로 출발합니다.',
+  },
+  {
     updatedAt: '2026-11-28T18:21+09:00',
     tag: 'runner',
     title: '원작과 같은 5분 추격전',

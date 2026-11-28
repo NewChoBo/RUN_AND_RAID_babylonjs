@@ -302,7 +302,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
     subtick: number,
     slot = 0,
     outfits: readonly (string | undefined)[] = [],
-    startPose?: { seconds: number; side: number },
+    waitingSeconds?: number,
   ) {
     const player = view.runners[slot]!;
     const localTeam = player.team;
@@ -357,8 +357,7 @@ async function createRaidCourse(engine: AbstractEngine, canvas: HTMLCanvasElemen
           subtick,
           dt,
           localTeam,
-          startPose?.seconds,
-          r.slot === slot ? startPose?.side : 0,
+          waitingSeconds,
         );
     effects(view, subtick, outfits);
     const jade = view.runners.find((r) => r.hero === 'jade' && !r.respawn);

@@ -23,12 +23,9 @@ export function raidActiveAction(actions: readonly RaidAction[], slot: number, t
   return active;
 }
 
-/** Gameplay and the rig share this heading in radians, measured from forward (+Z). */
-export const raidSteeringFacing = (side: number) => side * 0.25;
-
 export function raidFacing(r: RaidRunner, active?: RaidAction) {
   const motion = r.leap ?? r.dash ?? active;
   if (motion && (motion.from.x !== motion.to.x || motion.from.z !== motion.to.z))
     return Math.atan2(motion.to.x - motion.from.x, motion.to.z - motion.from.z);
-  return raidSteeringFacing(r.side);
+  return r.side * 0.25;
 }

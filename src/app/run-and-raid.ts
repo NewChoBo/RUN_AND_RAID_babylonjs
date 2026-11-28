@@ -624,9 +624,7 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     if (!playableViewport.matches) pause();
   });
   function renderCourse(dt: number, subtick: number, waitingSeconds?: number) {
-    const startPose =
-      waitingSeconds === undefined ? undefined : { seconds: waitingSeconds, side: steering().side };
-    course.render(match, dt, subtick, slot, matchOutfits, startPose);
+    course.render(match, dt, subtick, slot, matchOutfits, waitingSeconds);
     hud.drawCombatNumbers(
       match.healthChanges,
       match.tick + subtick,
@@ -640,6 +638,8 @@ export function prepareRaid(showStartupError: (error: unknown) => void) {
     let elapsed = now - previous;
     previous = now;
     if (state === 'countdown') {
+      // The host's first tick can reach a peer before its local countdown expires.
+      if (round && match.tick > 0) countdownMs = 0;
       const waiting = Math.min(countdownMs, elapsed);
       countdownMs -= waiting;
       if (countdownMs > 0) {

@@ -27,11 +27,7 @@ import {
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
 import { raidColors, raidMaterial } from './raid-material.ts';
 import { ModelMotion } from '../actors/model-motion.ts';
-import {
-  raidActiveAction,
-  raidFacing,
-  raidSteeringFacing,
-} from '../../../game/raid/raid-facing.ts';
+import { raidActiveAction, raidFacing } from '../../../game/raid/raid-facing.ts';
 import { RAID_JUMP_TICKS } from '../../../game/raid/runner-motion.ts';
 import { RaidActionPlayback } from './raid-action-playback.ts';
 import {
@@ -294,7 +290,6 @@ export function createRaidActor(
     dt: number,
     localTeam = 0,
     waitingSeconds?: number,
-    startSide = 0,
   ) {
     const now = tick + subtick;
     if (orb) {
@@ -336,10 +331,8 @@ export function createRaidActor(
     if (greatsword) greatsword.scaling.setAll((r.heroView.empoweredUntil ?? 0) > tick ? 1.45 : 1);
     if (waitingSeconds !== undefined) {
       bladeTrail?.hide();
-      rig.rotation.y = raidSteeringFacing(startSide);
-      if (motion?.has('idle')) motion.loop('idle', waitingSeconds, dt);
-      else if (hero === 'bird') motion?.loop('run', waitingSeconds, dt);
-      else motion?.seek('run', 0, dt);
+      rig.rotation.y = 0;
+      motion?.idle(waitingSeconds);
       return;
     }
     if (r.respawn) {
