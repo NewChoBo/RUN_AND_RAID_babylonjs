@@ -1,4 +1,5 @@
-import { characterArt } from '../content/raid/gallery.ts';
+import { setButtonIcon } from './icons.ts';
+import { addPickFace } from './raid-pick-face.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
 import { enemySlots, type RaidPing, type RaidView, type Team } from '../game/raid/raid-view.ts';
 
@@ -34,13 +35,12 @@ export function createRaidPing(parent: HTMLElement, send: (intent: RaidPing) => 
     button.dataset.ping = intent;
     button.setAttribute('aria-label', t(intent));
     button.title = t(intent);
-    const portrait = document.createElement('img');
+    const portrait = document.createElement('span');
     if (intent === 'enemy1' || intent === 'enemy2') {
-      portrait.alt = '';
-      portrait.draggable = false;
-      portrait.referrerPolicy = 'no-referrer';
+      portrait.className = 'raid-ping-face';
+      portrait.setAttribute('aria-hidden', 'true');
       button.append(portrait);
-    } else button.textContent = intent === 'advance' ? '⬆' : '⬇';
+    } else setButtonIcon(button, intent === 'advance' ? 'up' : 'down', t(intent));
     button.onclick = () => {
       if (contact || choices.hidden || button.disabled) return;
       send(intent);
@@ -135,16 +135,8 @@ export function createRaidPing(parent: HTMLElement, send: (intent: RaidPing) => 
         button.disabled = enemy.respawn > 0;
         if (portrait.dataset.hero === enemy.hero) continue;
         portrait.dataset.hero = enemy.hero;
-        const fallback = './assets/raid/portraits/' + enemy.hero + '.webp';
-        const art = characterArt(enemy.hero);
-        portrait.onerror =
-          art === fallback
-            ? null
-            : () => {
-                portrait.onerror = null;
-                portrait.src = fallback;
-              };
-        portrait.src = art;
+        portrait.replaceChildren();
+        addPickFace(portrait, enemy.hero);
         button.title = t(intent) + ' · ' + t(enemy.hero);
         button.setAttribute('aria-label', button.title);
       }

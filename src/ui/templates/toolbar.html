@@ -1,52 +1,64 @@
 <header class="lobby-toolbar">
   <nav data-i18n-aria="lobbyNav" aria-label="로비 메뉴">
     <button data-i18n="lobby" class="current" aria-current="page" data-home>
-      <svg><use href="#home" /></svg>로비
+      <svg aria-hidden="true" focusable="false"><use href="#home" /></svg>로비
     </button>
     <button data-i18n="shop" data-shop>
-      <svg><use href="#shop" /></svg>상점</button
+      <svg aria-hidden="true" focusable="false"><use href="#shop" /></svg>상점</button
     ><button data-i18n="gear" data-wip>
-      <svg><use href="#gear" /></svg>장비</button
+      <svg aria-hidden="true" focusable="false"><use href="#gear" /></svg>장비</button
     ><button data-i18n="profile" data-wip>
-      <svg><use href="#person" /></svg>내정보</button
+      <svg aria-hidden="true" focusable="false"><use href="#person" /></svg>내정보</button
     ><button data-i18n="rankings" data-wip>
-      <svg><use href="#cup" /></svg>랭킹
+      <svg aria-hidden="true" focusable="false"><use href="#cup" /></svg>랭킹
     </button>
   </nav>
   <a data-i18n="play" class="play" href="#/ready" aria-haspopup="dialog">게임시작</a>
   <div class="toolbar-utilities">
-    <div data-i18n-aria="currency" class="wallet" role="group" aria-label="재화">
-      <button data-i18n-aria="gold" data-wip aria-label="골드 23,873, 충전">
+    <button
+      type="button"
+      data-i18n-aria="currency"
+      class="wallet"
+      data-wip
+      aria-label="재화, 골드 23,873, 블루다이스 0, 충전"
+    >
+      <span class="wallet-row">
         <span class="wallet-icon gold-coin" aria-hidden="true"></span>
         <span class="wallet-balance">23,873</span>
-        <b aria-hidden="true">+</b>
-      </button>
-      <button data-i18n-aria="blueDice" data-wip aria-label="블루다이스 0">
+        <b aria-hidden="true"
+          ><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#ui-plus" /></svg
+        ></b>
+      </span>
+      <span class="wallet-row">
         <span class="wallet-icon blue-die" aria-hidden="true"></span>
         <span class="wallet-balance">0</span>
-      </button>
-    </div>
+      </span>
+    </button>
     <button data-i18n="alerts" class="alerts" data-wip>
-      <svg><use href="#chat" /></svg>알림</button
+      <svg aria-hidden="true" focusable="false"><use href="#chat" /></svg>알림</button
     ><button data-i18n="friends" data-wip>
-      <svg><use href="#friends" /></svg>친구목록
+      <svg aria-hidden="true" focusable="false"><use href="#friends" /></svg>친구목록
     </button>
     <div class="tools">
       <button
+        class="ui-icon-button"
         data-i18n-aria="settings"
         aria-label="설정"
         aria-haspopup="dialog"
         aria-controls="game-settings"
       >
-        ⚙</button
+        <svg class="ui-icon" aria-hidden="true" focusable="false">
+          <use href="#ui-settings" />
+        </svg></button
       ><button
+        class="ui-icon-button"
         data-i18n-aria="chat"
         data-room-chat
         disabled
         aria-haspopup="dialog"
         aria-label="채팅"
       >
-        •••
+        <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#ui-chat" /></svg>
       </button>
     </div>
   </div>

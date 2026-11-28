@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T19:49+09:00',
+    tag: 'controls',
+    title: '픽창에서도 제자리에 있는 설정 버튼',
+    body: '설정 톱니가 로비와 대기실 오른쪽 끝에 머뭅니다. 가로 스마트폰에서 채팅·스킬 등급·닫기 버튼을 누르기 편하게 했고, 노치가 있는 화면에서 이동 패드와 점프 버튼이 과하게 안쪽으로 밀리던 문제를 고쳤습니다. 경기 점수판에는 처치·사망·도움 아이콘을 추가했습니다.',
+  },
+  {
     updatedAt: '2026-11-28T19:32+09:00',
     tag: 'runner',
     title: '쓰러진 적에게서 날아오는 회복의 빛',

@@ -8,7 +8,12 @@
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   grid-template-rows: auto minmax(clamp(23px, 6dvh, 37px), auto);
   align-items: start;
-  width: min(76vw, 760px, calc(100% - 2 * max(var(--hud-left), var(--gutter)) - 88px));
+  /* Keep the clock centred and reserve the settings target plus a focus gap on both ends. */
+  width: min(
+    76vw,
+    760px,
+    calc(100% - 2 * (max(var(--hud-left), var(--gutter)) + var(--hud-action-size) + 4px))
+  );
   font-variant-numeric: tabular-nums;
   text-shadow:
     0 1px 2px #090809,
@@ -96,14 +101,22 @@
   left: 0.12em;
 }
 .raid-personal-score {
+  --ui-icon-size: 1.1em;
   position: absolute;
   top: calc(100% + 2px);
   left: 0;
+  display: flex;
+  gap: 0.52em;
   padding: 0 4px;
   background: #171612af;
   border-radius: 2px;
   font-size: clamp(10px, 2.5dvh, 14px);
   color: #fff8dd;
+}
+.raid-personal-score > span {
+  display: flex;
+  align-items: center;
+  gap: 0.15em;
 }
 .raid-team .raid-boss-bonus {
   grid-area: 1 / 2;

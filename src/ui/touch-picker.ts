@@ -1,4 +1,5 @@
 import { uiText } from '../content/locales/ui.ts';
+import { setButtonIcon } from './icons.ts';
 export type TouchChoice = { value: string; label: string; image?: string; group?: string };
 
 export function choiceCard(choice: TouchChoice, active: boolean, choose: () => void) {
@@ -25,13 +26,15 @@ export function touchPicker(
   onPick: (value: string) => void,
 ) {
   const dialog = document.createElement('dialog');
-  dialog.className = 'touch-picker';
+  dialog.className = 'ui-dialog touch-picker';
   dialog.setAttribute('aria-label', title);
   const header = document.createElement('header');
-  const heading = document.createElement('strong');
+  header.className = 'ui-dialog-header';
+  const heading = document.createElement('h2');
   heading.textContent = title;
   const close = document.createElement('button');
-  close.textContent = uiText('close');
+  close.type = 'button';
+  setButtonIcon(close, 'close', uiText('close'));
   close.onclick = () => dialog.close();
   header.append(heading, close);
   const body = document.createElement('div');

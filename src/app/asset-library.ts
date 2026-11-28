@@ -133,6 +133,7 @@ async function start() {
   filter.addEventListener('input', list);
   entries.addEventListener('change', () => void choose());
   list();
+  group.disabled = filter.disabled = entries.disabled = false;
 }
 void start().catch(() => {
   el('name').textContent = uiText('prepareAssets');

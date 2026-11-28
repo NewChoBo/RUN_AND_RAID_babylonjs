@@ -1,0 +1,37 @@
+.ui-dialog {
+  width: min(30rem, calc(100% - 24px));
+  max-height: calc(100dvh - 16px);
+  padding: 0;
+  overflow: auto;
+  color: #f8f0de;
+  background: #302c29;
+  border: 2px ridge #b6a589;
+  border-radius: 6px;
+  box-shadow: 0 12px 40px #0008;
+}
+.ui-dialog::backdrop {
+  background: #100e0bb8;
+}
+.ui-dialog-header {
+  display: grid;
+  grid-template-columns: var(--ui-touch-target) minmax(0, 1fr) var(--ui-touch-target);
+  flex: none;
+  align-items: center;
+  color: #352d23;
+  background: linear-gradient(#fff5df, #c7b99e);
+}
+.ui-dialog-header > h2 {
+  grid-column: 2;
+  margin: 0;
+  font-size: clamp(1.05rem, 2.8vw, 1.4rem);
+  text-align: center;
+}
+.ui-dialog-header .ui-icon-button {
+  --ui-icon-size: 1.35rem;
+  width: var(--ui-touch-target);
+  height: var(--ui-touch-target);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+}

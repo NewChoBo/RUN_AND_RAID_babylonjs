@@ -248,11 +248,6 @@ body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
   color: #ffcc8a;
   font-weight: 700;
 }
-.raid-pause {
-  position: absolute;
-  right: 2%;
-  top: 3%;
-}
 .raid-hint {
   background: #181c26eb;
   color: #ffe6ab;
@@ -293,7 +288,7 @@ body.raid-mode:has(.raid-hud:not([hidden]) .raid-respawn:not([hidden])) #game {
   background: radial-gradient(ellipse, #111a25cc 10%, transparent 72%);
   text-shadow: 0 2px 5px #0d141d;
 }
-.raid-deck[inert] :is(.raid-skills, .raid-jump, .raid-vitals button) {
+.raid-deck[inert] :is(.raid-skills, .raid-jump, .raid-vitals button, .raid-ping) {
   opacity: 0.45;
 }
 .raid-skills button:active {

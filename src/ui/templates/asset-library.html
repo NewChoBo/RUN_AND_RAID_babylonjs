@@ -1,19 +1,25 @@
 <section data-i18n-aria="assets" id="library" aria-label="원작 에셋" hidden>
   <header>
-    <a data-i18n="backToArena" href="#/ready">← 경기장</a>
+    <a href="#/ready"
+      ><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#ui-back" /></svg
+      ><span data-i18n="backToArena">경기장</span></a
+    >
     <h1 data-i18n="assets">원작 에셋</h1>
     <span id="count"></span>
   </header>
   <div class="library-layout">
     <aside>
-      <label data-i18n="assetGroup">캐릭터·폴더<select id="group"></select></label
+      <label data-i18n="assetGroup">캐릭터·폴더<select id="group" disabled></select></label
       ><label data-i18n="fileSearch"
         >파일 검색<input
           data-i18n-placeholder="searchExample"
           id="filter"
           type="search"
+          disabled
           placeholder="예: skill4start" /></label
-      ><label data-i18n="sourceFile">원본 파일<select id="entries" size="14"></select></label>
+      ><label data-i18n="sourceFile"
+        >원본 파일<select id="entries" size="14" disabled></select
+      ></label>
     </aside>
     <section>
       <h2 data-i18n="loadingAsset" id="name">에셋 불러오는 중</h2>

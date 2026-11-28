@@ -8,6 +8,7 @@ import {
   setGraphicsQuality,
 } from '../platform/browser/battle-settings.ts';
 import { button, element } from './elements.ts';
+import { setButtonIcon, uiIcon } from './icons.ts';
 import './styles/battle-settings.css';
 
 /** Both settings windows edit the same preferences. Refresh when a window is opened. */
@@ -26,8 +27,7 @@ export function createBattleSettings(parent: HTMLElement, prefix: string) {
   enabled.type = 'checkbox';
   enabled.id = prefix + '-effects';
   enabled.setAttribute('aria-label', t('battleSounds'));
-  const glyph = element('span', muteLabel);
-  glyph.setAttribute('aria-hidden', 'true');
+  muteLabel.append(uiIcon('sound'), uiIcon('muted'));
   const slider = element('input', track);
   slider.type = 'range';
   slider.id = enabled.id + '-volume';
@@ -54,11 +54,11 @@ export function createBattleSettings(parent: HTMLElement, prefix: string) {
     if (graphicsLevels[index]) setGraphicsQuality(graphicsLevels[index]);
     refresh();
   }
-  const less = button(quality, '◀', () => change(-1));
-  less.setAttribute('aria-label', t('lowerGraphics'));
+  const less = button(quality, '', () => change(-1));
+  setButtonIcon(less, 'previous', t('lowerGraphics'));
   const level = element('output', quality);
-  const more = button(quality, '▶', () => change(1));
-  more.setAttribute('aria-label', t('raiseGraphics'));
+  const more = button(quality, '', () => change(1));
+  setButtonIcon(more, 'next', t('raiseGraphics'));
   function refresh() {
     const percent = audioVolume();
     enabled.checked = percent > 0;

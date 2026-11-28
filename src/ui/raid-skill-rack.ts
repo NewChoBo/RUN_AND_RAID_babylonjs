@@ -39,7 +39,6 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
     const slot = i as Skill;
     const b = button(rack, '');
     b.dataset.skill = key;
-    b.setAttribute('aria-keyshortcuts', String(i + 1));
     const art = element('img', b);
     art.className = 'raid-skill-art';
     art.hidden = true;
@@ -103,7 +102,14 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
               ? 'typeGround'
               : 'typeTarget',
       );
-      if (b.dataset.kind !== status.kind) b.dataset.kind = status.kind;
+      if (b.dataset.kind !== status.kind) {
+        b.dataset.kind = status.kind;
+        const digit = String(slot + 1);
+        b.setAttribute(
+          'aria-keyshortcuts',
+          status.kind === 'pulse' ? digit : digit + ' Shift+' + digit,
+        );
+      }
       const skillName = t(`${heroKit(runner.hero)}${skillNames[slot]}`);
       let label = skillName;
       if (status.land) label = t('valletLand');
@@ -136,6 +142,9 @@ export function createSkillRack(deck: HTMLElement, aimPad: RaidAimPad, actions: 
       const accessible = detail ? title + ' · ' + detail : title;
       if (b.getAttribute('aria-label') !== accessible) b.setAttribute('aria-label', accessible);
       b.classList.toggle('armed', slot === aiming);
+      const pressed =
+        status.kind === 'pulse' ? null : String(slot === aiming || aimPad.skill === slot);
+      if (b.ariaPressed !== pressed) b.ariaPressed = pressed;
     });
   }
   return { update, endGesture };

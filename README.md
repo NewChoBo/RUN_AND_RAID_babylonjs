@@ -33,7 +33,7 @@ npm run build
 
 표시 언어는 **설정 → 언어**에서 한국어와 English 중 선택합니다. 첫 방문은 한국어이며, 선택은 이 브라우저에 저장됩니다. 대기실과 경기에서 선택한 언어는 로비로 돌아갈 때 적용됩니다. 메뉴와 경기 안내에 사용하는 번역은 `src/content/locales/`에서 관리합니다. 개발일지 글과 원작 작품 제목은 원문으로 표시합니다.
 
-로비 홈, 상점, 경기 대기실, 원작 에셋 화면의 마크업은 `src/ui/templates/`에 있습니다. 공통 상단 메뉴는 `toolbar.html`, 메뉴 아이콘은 `toolbar-icons.html`에서 수정합니다. 화면 동작은 `src/app/`, 스타일은 `src/ui/styles/`, 화면 전환은 `src/routes.ts`에서 관리합니다.
+로비 홈, 상점, 경기 대기실, 원작 에셋 화면의 마크업은 `src/ui/templates/`에 있습니다. 공통 상단 메뉴는 `toolbar.html`에 있고, 로비와 전투에서 함께 쓰는 아이콘은 `ui-icons.html`에 있습니다. 동적 버튼에는 `src/ui/icons.ts`의 `setButtonIcon`으로 아이콘과 현재 언어의 이름을 함께 지정합니다. 화면 동작은 `src/app/`, 스타일은 `src/ui/styles/`, 화면 전환은 `src/routes.ts`에서 관리합니다. [화면별 UI 점검과 공통 컴포넌트](docs/UI-AUDIT.md)
 
 `index.html`에는 시작 화면, 게임 캔버스, 공통 대화상자와 각 템플릿의 위치가 있습니다. 예를 들어 `<!-- ui: shop -->` 위치에 Vite가 `shop.html`을 넣습니다. 개발 서버와 배포 빌드 모두 완성된 HTML을 브라우저에 전달하며, 템플릿 안의 이미지 경로는 `index.html` 기준으로 작성합니다.
 

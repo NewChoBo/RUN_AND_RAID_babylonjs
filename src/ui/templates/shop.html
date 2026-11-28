@@ -1,17 +1,25 @@
 <section data-i18n-aria="shopGallery" id="shop-gallery" aria-label="상점 감상실" hidden>
   <header>
     <h1 data-i18n="shop">상점</h1>
-    <div data-i18n-aria="galleryMode" aria-label="감상 종류">
-      <button data-i18n="illustrations" type="button" data-mode="art" aria-pressed="true">
+    <div data-i18n-aria="galleryMode" role="group" aria-label="감상 종류">
+      <button data-i18n="illustrations" type="button" data-mode="art" aria-pressed="true" disabled>
         일러스트</button
-      ><button data-i18n="characterModels" type="button" data-mode="model" aria-pressed="false">
+      ><button
+        data-i18n="characterModels"
+        type="button"
+        data-mode="model"
+        aria-pressed="false"
+        disabled
+      >
         캐릭터 모델
       </button>
     </div>
   </header>
   <div class="gallery-body">
     <aside>
-      <button data-i18n="chooseCharacter" type="button" id="gallery-hero">캐릭터 선택</button>
+      <button data-i18n="chooseCharacter" type="button" id="gallery-hero" disabled>
+        캐릭터 선택
+      </button>
       <div
         data-i18n-aria="artAndOutfits"
         id="gallery-item"

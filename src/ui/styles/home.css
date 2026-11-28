@@ -9,8 +9,7 @@
 body {
   margin: 0;
   height: 100dvh;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
 }
 .lobby {
   height: 100%;
@@ -21,12 +20,6 @@ body {
   grid-template-rows: var(--toolbar-height) min(46%, 290px) minmax(0, 1fr);
   --unit: min(1cqw, 1.6cqh, 8.5px);
   background: #221f1b;
-}
-.symbols {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
 }
 button,
 a {
@@ -63,7 +56,7 @@ a:focus-visible {
 }
 .toolbar-utilities {
   justify-self: end;
-  grid-template-columns: min(43%, 180px) repeat(2, minmax(0, 1fr)) minmax(0, 0.5fr);
+  grid-template-columns: min(43%, 180px) repeat(2, minmax(0, 1fr)) clamp(32px, 5.3cqw, 56px);
   gap: min(0.45cqw, 4px);
 }
 .lobby-toolbar button,
@@ -87,7 +80,7 @@ a:focus-visible {
   padding: 0;
   white-space: nowrap;
 }
-.lobby-toolbar button svg {
+.lobby-toolbar button > svg:not(.ui-icon) {
   height: calc(4.6 * var(--unit));
   width: calc(5.4 * var(--unit));
   max-height: 59%;
@@ -95,7 +88,7 @@ a:focus-visible {
   fill: currentColor;
 }
 .lobby-toolbar .current,
-.tools button:last-child {
+.tools [data-room-chat]:enabled {
   background: linear-gradient(140deg, #1bd700, #128a00);
   color: #064600;
 }
@@ -110,7 +103,7 @@ a:focus-visible {
   border-color: #7c260b;
   background: linear-gradient(#ff3300, #c51b00 56%, #9d1600);
 }
-.wallet,
+.lobby-toolbar .wallet,
 .tools {
   min-height: 0;
   display: grid;
@@ -118,14 +111,17 @@ a:focus-visible {
   gap: 0.4cqh;
   min-width: 0;
 }
-.wallet {
+.lobby-toolbar .wallet {
+  align-items: stretch;
+  justify-content: stretch;
   padding: clamp(2px, 0.45cqw, 4px);
   gap: 2px;
   background: #d3c5a5;
   border-radius: 6px;
 }
-.wallet button {
+.wallet-row {
   display: grid;
+  align-items: center;
   grid-template-columns: 1em minmax(0, 1fr) 1em;
   gap: 0.25em;
   padding-inline: 0.35em;
@@ -159,6 +155,9 @@ a:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 .wallet b {
+  --ui-icon-size: 0.85em;
+  display: grid;
+  place-items: center;
   border-radius: 2px;
   color: #392e21;
   background: #e7d8bd;
@@ -167,9 +166,47 @@ a:focus-visible {
 }
 .lobby-toolbar .alerts {
   background: linear-gradient(#71654c, #56472c);
+  color: #fff4dc;
 }
-.tools button {
-  font-size: calc(2.7 * var(--unit));
+.tools {
+  --ui-icon-size: clamp(17px, 3.6cqh, 24px);
+}
+.tools button:disabled {
+  cursor: default;
+  color: #625d52;
+  background: #c4b9a3;
+}
+@media (pointer: coarse) and (max-height: 550px) {
+  .toolbar-utilities {
+    grid-template-columns: minmax(65px, 1.35fr) repeat(2, minmax(0, 1fr)) auto;
+  }
+  .tools {
+    grid-template: 1fr / repeat(2, var(--ui-touch-target));
+    gap: 2px;
+  }
+  .tools [aria-controls='game-settings'] {
+    order: 1;
+  }
+  .tools button {
+    min-height: var(--ui-touch-target);
+  }
+}
+@media (pointer: coarse) and (min-height: 551px) {
+  .lobby {
+    --toolbar-height: calc(2 * var(--ui-touch-target) + 12px);
+  }
+  .lobby-toolbar {
+    padding-block: 3px;
+  }
+  .toolbar-utilities {
+    grid-template-columns: min(43%, 180px) repeat(2, minmax(0, 1fr)) clamp(44px, 5.3cqw, 56px);
+  }
+  .tools {
+    gap: 3px;
+  }
+  .tools button {
+    min-height: var(--ui-touch-target);
+  }
 }
 .banner {
   position: relative;

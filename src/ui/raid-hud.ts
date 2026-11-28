@@ -1,4 +1,5 @@
 import { button, element } from './elements.ts';
+import { setButtonIcon } from './icons.ts';
 import { createRaidScoreboard } from './raid-scoreboard.ts';
 import { createRaidMenu } from './raid-menu.ts';
 import type { RaidHudSettings } from '../platform/browser/preferences.ts';
@@ -9,6 +10,7 @@ import { activeSlow } from '../game/raid/raid-control.ts';
 import { canPressJump, JET_CAPACITY } from '../game/raid/air-movement.ts';
 import { raidRageDamageToFull } from '../content/raid/rage.ts';
 import { raidText as t } from '../content/locales/run-and-raid.ts';
+import { uiText } from '../content/locales/ui.ts';
 import { RAID_HZ, type RaidView, type Skill } from '../game/raid/raid-match.ts';
 import { createRaidPing } from './raid-ping.ts';
 import type { RaidPing } from '../game/raid/raid-view.ts';
@@ -68,11 +70,12 @@ export function createRaidHud(
   root.hidden = true;
   const drawCombatNumbers = createRaidCombatNumbers(root);
   const { update: updateScore, hint } = createRaidScoreboard(root);
-  const pauseButton = hudButton(root, '⚙︎', actions.pause);
+  const pauseButton = hudButton(root, '', actions.pause);
   pauseButton.className = 'raid-pause';
-  pauseButton.setAttribute('aria-label', t('pause'));
+  setButtonIcon(pauseButton, 'settings', uiText('settings'));
   pauseButton.setAttribute('aria-haspopup', 'dialog');
-  pauseButton.title = t('pause');
+  pauseButton.setAttribute('aria-controls', 'raid-match-settings');
+  pauseButton.setAttribute('aria-keyshortcuts', 'Escape');
   let feedbackUntil = 0;
   const respawn = element('div', root);
   respawn.className = 'raid-respawn';
@@ -229,6 +232,7 @@ export function createRaidHud(
           ? 'wagon'
           : view.runners[runner.target]!.hero;
     lock.textContent = t('target') + ' · ' + t(target);
+    lock.disabled = !!runner.respawn || !!view.result;
     skills.update(runner, aiming);
     if (runner.respawn) {
       const remaining = t('respawn', { seconds: Math.ceil(runner.respawn / RAID_HZ) });

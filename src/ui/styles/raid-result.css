@@ -11,8 +11,8 @@ dialog.raid-result[open] {
   height: 100%;
   max-height: none;
   margin: 0;
-  padding: max(6px, env(safe-area-inset-top)) max(9px, env(safe-area-inset-right))
-    max(6px, env(safe-area-inset-bottom)) max(9px, env(safe-area-inset-left));
+  padding: max(6px, var(--safe-top)) max(9px, var(--safe-right)) max(6px, var(--safe-bottom))
+    max(9px, var(--safe-left));
   overflow: hidden;
   border: 0;
   background: transparent;

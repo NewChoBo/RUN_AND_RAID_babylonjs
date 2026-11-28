@@ -23,7 +23,7 @@ export const raidText = defineMessages(
     adaptedSkill: 'Adapted for this game',
     originalGuide: 'Original skills (Korean)',
     originalPassive: 'Passive · {name}',
-    originalCafe: 'Open original guide ↗',
+    originalCafe: 'Open original guide',
     magnusCharge: 'Shield Charge',
     magnusTaunt: 'Taunt',
     magnusCry: 'Battle Cry',

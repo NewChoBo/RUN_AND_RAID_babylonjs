@@ -7,6 +7,7 @@ import {
   type RaidView,
 } from '../game/raid/raid-match.ts';
 import { element } from './elements.ts';
+import { uiIcon } from './icons.ts';
 
 import { activeTeamCall, type RaidRunner, type Team } from '../game/raid/raid-view.ts';
 export function matchClock(seconds: number) {
@@ -49,8 +50,15 @@ export function createRaidScoreboard(root: HTMLElement) {
   const clock = element('time', score);
   clock.setAttribute('aria-label', t('time'));
   const red = team('red');
-  const personal = element('small', blue.group);
+  const personal = element('div', blue.group);
   personal.className = 'raid-personal-score';
+  personal.setAttribute('role', 'group');
+  const personalValues = (['kill', 'death', 'assist'] as const).map((icon) => {
+    const stat = element('span', personal);
+    stat.setAttribute('aria-hidden', 'true');
+    stat.append(uiIcon(icon));
+    return element('span', stat);
+  });
   const enemyRespawns = element('div', score);
   enemyRespawns.className = 'raid-enemy-respawns';
   enemyRespawns.hidden = true;
@@ -91,8 +99,12 @@ export function createRaidScoreboard(root: HTMLElement) {
     warning.hidden = !counterText || !!view.result;
     const seconds = Math.ceil((ROUND_TICKS - view.tick) / RAID_HZ);
     clock.textContent = matchClock(seconds);
-    personal.textContent = [runner.kills, runner.deaths, runner.assists].join(' / ');
-    personal.setAttribute('aria-label', t('kda') + ' ' + personal.textContent);
+    const stats = [runner.kills, runner.deaths, runner.assists];
+    personalValues.forEach((value, i) => {
+      const count = String(stats[i]);
+      if (value.textContent !== count) value.textContent = count;
+    });
+    personal.setAttribute('aria-label', t('kda') + ' ' + stats.join(' / '));
     [blue, red].forEach((side, i) => {
       const teamId = i ^ runner.team;
       const dmg = Math.min(WAGON_HP, view.damage[teamId]!);

@@ -76,9 +76,9 @@ export function createRaidResult(actions: { retry(): void; leave(): void }) {
 
     const format = new Intl.NumberFormat(getLocale());
     for (const group of Array.from(table.tBodies)) group.remove();
-    for (const team of [0, 1] as const) {
+    for (const team of [player.team, player.team ^ 1]) {
       const group = table.createTBody();
-      group.dataset.team = team === 0 ? 'blue' : 'red';
+      group.dataset.team = team === player.team ? 'blue' : 'red';
       const members = view.runners.filter((runner) => runner.team === team);
       for (const [index, runner] of members.entries()) {
         const row = group.insertRow();

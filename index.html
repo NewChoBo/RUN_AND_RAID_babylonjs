@@ -6,6 +6,9 @@
     <meta name="theme-color" content="#161513" />
     <script>
       // Classify before the first paint so a narrow desktop window never flashes the rotated splash.
+      const gameFrame = window.frameElement;
+      if (gameFrame && 'requestGameLandscape' in gameFrame)
+        document.documentElement.dataset.gameFrame = '';
       if (
         navigator.userAgentData?.mobile ||
         /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
@@ -37,6 +40,8 @@
     <title data-i18n="gameName">런앤레이드</title>
     <link rel="icon" href="./favicon.ico" />
     <link rel="stylesheet" href="./src/ui/styles/shell.css" />
+    <link rel="stylesheet" href="./src/ui/styles/icons.css" />
+    <link rel="stylesheet" href="./src/ui/styles/dialog.css" />
     <link rel="stylesheet" href="./src/ui/styles/loading.css" />
     <link rel="stylesheet" href="./src/ui/styles/home.css" />
     <link rel="stylesheet" href="./src/ui/styles/ready.css" />
@@ -44,7 +49,7 @@
   </head>
   <body>
     <!-- ui: loading -->
-    <!-- ui: toolbar-icons -->
+    <!-- ui: ui-icons -->
     <main data-i18n-aria="lobbyArea" class="lobby" aria-label="런앤레이드 로비" inert>
       <!-- ui: toolbar -->
       <!-- ui: home -->

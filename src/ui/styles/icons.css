@@ -1,0 +1,22 @@
+.symbols {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ui-icon {
+  display: inline-block;
+  flex: none;
+  width: var(--ui-icon-size, 1.2em);
+  height: var(--ui-icon-size, 1.2em);
+  vertical-align: middle;
+  fill: currentColor;
+  pointer-events: none;
+}
+:where(.ui-icon-button) {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  line-height: 1;
+}

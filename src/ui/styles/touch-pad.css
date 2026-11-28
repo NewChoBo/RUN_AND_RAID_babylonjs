@@ -3,8 +3,8 @@
   width: clamp(112px, 32dvh, 158px);
   height: clamp(90px, 26dvh, 126px);
   position: absolute;
-  left: max(14px, env(safe-area-inset-left));
-  bottom: max(10px, env(safe-area-inset-bottom));
+  left: max(14px, var(--safe-left));
+  bottom: max(10px, var(--safe-bottom));
   pointer-events: auto;
   touch-action: none;
   user-select: none;

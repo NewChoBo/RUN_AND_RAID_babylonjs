@@ -66,10 +66,9 @@
   flex-wrap: wrap;
   font-size: clamp(0.72rem, 1.6vw, 1rem);
 }
-.lobby[data-screen='ready']:has(.drafting) {
+#overlay:has(.drafting) {
   width: min(100%, 166.667dvh);
   margin-inline: auto;
-  --toolbar-height: clamp(44px, 14dvh, 76px);
 }
 .lobby[data-screen='ready'] .play:lang(en) {
   font-size: clamp(14px, calc(3.1 * var(--unit)), 26px);
@@ -381,6 +380,9 @@
   background: #202733;
 }
 .runner-picker .raid-pick-grid button small {
+  --ui-icon-size: 1em;
+  display: grid;
+  place-items: center;
   position: absolute;
   inset: auto 1px 1px auto;
   padding: 1px 3px;
@@ -516,7 +518,7 @@
   }
 }
 @media (max-height: 290px) {
-  .lobby[data-screen='ready']:has(.drafting) {
+  #overlay:has(.drafting) {
     width: min(100%, 194dvh);
   }
   #overlay .raid-lobby.drafting {
@@ -613,24 +615,10 @@
 .touch-picker {
   width: min(94vw, 780px);
   max-height: 90dvh;
-  padding: 0;
-  color: #fff1d4;
-  background: #2a2724;
-  border: 3px ridge #a89878;
-}
-.touch-picker::backdrop {
-  background: #15110dd9;
 }
 .touch-picker[open] {
   display: flex;
   flex-direction: column;
-}
-.touch-picker header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 3px 8px;
-  background: linear-gradient(#564d40, #312b25);
 }
 .touch-picker > div {
   display: flex;
@@ -658,13 +646,10 @@
   overflow: auto;
   padding: 5px;
 }
-.choice-card,
-.touch-picker header button {
+.choice-card {
   color: #312b21;
   background: linear-gradient(#f8eed8, #b7a78f);
   border: 1px solid #86765d;
-}
-.choice-card {
   display: grid;
   justify-items: center;
   align-content: center;
@@ -738,44 +723,6 @@
 }
 #overlay #menu-actions {
   grid-template-columns: minmax(0, 1fr);
-}
-:is(#match-menu, #game-settings) {
-  width: min(30rem, calc(100% - 24px));
-  max-height: calc(100dvh - 16px);
-  overflow: auto;
-  padding: 0;
-  color: #f8f0de;
-  background: #302c29;
-  border: 2px ridge #b6a589;
-  border-radius: 6px;
-  box-shadow: 0 12px 40px #0008;
-}
-:is(#match-menu, #game-settings)::backdrop {
-  background: #100e0bb8;
-}
-:is(#match-menu, #game-settings) header {
-  display: grid;
-  grid-template-columns: 44px 1fr 44px;
-  align-items: center;
-  color: #352d23;
-  background: linear-gradient(#fff5df, #c7b99e);
-}
-:is(#match-heading, #settings-heading) {
-  grid-column: 2;
-  margin: 0;
-  font-size: clamp(1.05rem, 2.8vw, 1.4rem);
-  text-align: center;
-}
-:is(#match-menu, #game-settings) header button {
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  font: 1.6rem/1 var(--font-ui);
-}
-#game-settings header button {
-  color: inherit;
 }
 .settings-body {
   display: grid;

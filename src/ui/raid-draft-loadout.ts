@@ -24,6 +24,9 @@ import {
 import { officialGuides } from '../content/raid/official-guides.ts';
 import './styles/draft-loadout.css';
 import { setSkillIcon } from './raid-skill-icon.ts';
+import { uiIcon } from './icons.ts';
+
+const battleSkills = ['Pulse', 'Bolt', 'Field', 'Fury'] as const;
 
 function selectField(parent: HTMLElement, label: UiMessage) {
   const row = document.createElement('label');
@@ -71,7 +74,7 @@ export function createDraftLoadout(changePreference: () => void) {
   const note = document.createElement('small');
   const previewNote = document.createTextNode('');
   const reference = document.createElement('a');
-  reference.textContent = t('skinReference');
+  reference.append(t('skinReference'), ' ', uiIcon('external'));
   reference.target = '_blank';
   reference.rel = 'noopener noreferrer';
   note.append(previewNote, ' · ', reference);
@@ -118,7 +121,8 @@ export function createDraftLoadout(changePreference: () => void) {
     const step = (delta: number) => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = delta > 0 ? '+' : '−';
+      button.className = 'ui-icon-button';
+      button.append(uiIcon(delta > 0 ? 'plus' : 'minus'));
       button.onclick = () => {
         const i = index - 1;
         const n = preset.ranks[i];
@@ -147,8 +151,8 @@ export function createDraftLoadout(changePreference: () => void) {
   function explainRank(i: number) {
     if (!selected) return;
     const rank = preset.ranks[i]!;
-    const name = officialGuides[selected]!.skills[i]!;
     const slot = i as 0 | 1 | 2;
+    const name = raidText(`${selected}${battleSkills[slot]}`);
     const seconds = originalCooldownSeconds(selected, slot, rank);
     const battle = raidSkillCooldown(selected, slot) / RAID_HZ;
     info.textContent =
@@ -156,7 +160,7 @@ export function createDraftLoadout(changePreference: () => void) {
       (seconds === undefined ? '' : ' · ' + t('originalCooldown', { seconds })) +
       ' · ' +
       t('battleCooldown', {
-        skill: raidText(`${selected}${(['Pulse', 'Bolt', 'Field'] as const)[slot]}`),
+        skill: name,
         seconds: Number(battle.toFixed(2)),
       });
     info.hidden = false;
@@ -284,18 +288,20 @@ export function createDraftLoadout(changePreference: () => void) {
       );
       info.hidden = true;
       reference.href = 'https://cafe.naver.com/runandraid/' + draftCatalog[hero].article;
-      const guide = officialGuides[hero]!;
       slots.forEach(({ up, down, icon, image }, i) => {
-        const name = i ? guide.skills[i - 1]! : guide.passive;
+        const suffix = battleSkills[i - 1];
+        const name = suffix ? raidText(`${hero}${suffix}`) : t('passiveSlot');
         icon.title =
-          i === 0
-            ? t('passiveSlot') + ' · ' + name
+          i === 0 && getLocale() === 'ko'
+            ? name + ' · ' + officialGuides[hero]!.passive
             : i === 4
               ? t('ultimateSlot') + ' · ' + name
               : name;
         icon.setAttribute('aria-label', icon.title);
         up.setAttribute('aria-label', t('rankUp', { skill: name }));
         down.setAttribute('aria-label', t('rankDown', { skill: name }));
+        up.title = t('rankUp', { skill: name });
+        down.title = t('rankDown', { skill: name });
         setSkillIcon(image, hero, i);
       });
       updateRanks();

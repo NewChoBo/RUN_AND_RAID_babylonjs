@@ -21,7 +21,7 @@ export const korean = {
   adaptedSkill: '플레이판 각색',
   originalGuide: '원작 스킬표',
   originalPassive: '패시브 · {name}',
-  originalCafe: '카페 원문 열기 ↗',
+  originalCafe: '카페 원문 열기',
   magnusCharge: '돌격전차',
   magnusTaunt: '도발',
   magnusCry: '전투의 외침',

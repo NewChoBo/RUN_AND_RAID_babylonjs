@@ -145,6 +145,9 @@ function mode(next: typeof catalog) {
     b.setAttribute('aria-pressed', String((b.dataset.mode === 'art') === (catalog === art)));
   list(currentItem?.outfitId);
 }
-for (const b of root.querySelectorAll<HTMLButtonElement>('[data-mode]'))
+for (const b of root.querySelectorAll<HTMLButtonElement>('[data-mode]')) {
   b.onclick = () => mode(b.dataset.mode === 'art' ? art : models);
+  b.disabled = false;
+}
 mode(art);
+hero.disabled = false;

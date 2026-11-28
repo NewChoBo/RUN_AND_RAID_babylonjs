@@ -1,9 +1,8 @@
 dialog.raid-panel[open] {
-  --menu-top: max(4px, env(safe-area-inset-top));
-  --menu-bottom: max(4px, env(safe-area-inset-bottom));
+  --menu-top: max(4px, var(--safe-top));
+  --menu-bottom: max(4px, var(--safe-bottom));
   position: fixed;
-  inset: var(--menu-top) max(4px, env(safe-area-inset-right)) var(--menu-bottom)
-    max(4px, env(safe-area-inset-left));
+  inset: var(--menu-top) max(4px, var(--safe-right)) var(--menu-bottom) max(4px, var(--safe-left));
   display: flex;
   flex-direction: column;
   box-sizing: border-box;

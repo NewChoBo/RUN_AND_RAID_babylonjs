@@ -1,8 +1,16 @@
-<dialog id="game-settings" aria-labelledby="settings-heading">
-  <header>
+<dialog id="game-settings" class="ui-dialog" aria-labelledby="settings-heading">
+  <header class="ui-dialog-header">
     <h2 id="settings-heading" data-i18n="settings">설정</h2>
     <form method="dialog">
-      <button type="submit" aria-label="닫기" data-i18n-aria="close" autofocus>×</button>
+      <button
+        class="ui-icon-button"
+        type="submit"
+        aria-label="닫기"
+        data-i18n-aria="close"
+        autofocus
+      >
+        <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#ui-close" /></svg>
+      </button>
     </form>
   </header>
   <div class="settings-body">

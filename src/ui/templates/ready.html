@@ -6,10 +6,12 @@
   <div class="room-layout">
     <div id="menu-actions" class="raid-setup"></div>
   </div>
-  <dialog id="match-menu" aria-labelledby="match-heading">
-    <header>
+  <dialog id="match-menu" class="ui-dialog" aria-labelledby="match-heading">
+    <header class="ui-dialog-header">
       <h2 data-i18n="chooseMode" id="match-heading" tabindex="-1">게임 모드 선택</h2>
-      <button data-i18n-aria="close" type="button" aria-label="닫기">×</button>
+      <button class="ui-icon-button" data-i18n-aria="close" type="button" aria-label="닫기">
+        <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#ui-close" /></svg>
+      </button>
     </header>
     <div id="startup-error" hidden>
       <p role="alert" data-i18n="arenaError">경기장을 열지 못했습니다. 다시 시도해 주세요.</p>

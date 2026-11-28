@@ -9,6 +9,7 @@ import { setRunnerArt } from './raid-runner-art.ts';
 import { officialGuides } from '../content/raid/official-guides.ts';
 import { battleIconIndex, skillLabel } from './raid-skill-icon.ts';
 import { createDraftChat } from './raid-draft-chat.ts';
+import { uiIcon } from './icons.ts';
 import {
   isRaidRoster,
   pickNumber,
@@ -131,7 +132,7 @@ export function createRaidLobby(
   const originalSkills = document.createElement('div');
   originalSkills.lang = 'ko';
   const source = document.createElement('a');
-  source.textContent = t('originalCafe');
+  source.append(t('originalCafe'), ' ', uiIcon('external'));
   source.target = '_blank';
   source.rel = 'noopener noreferrer';
   guide.append(guideTitle, originalSkills, source);
@@ -173,7 +174,7 @@ export function createRaidLobby(
     card.type = 'button';
     addPickFace(card, hero);
     const taken = document.createElement('small');
-    taken.textContent = '✓';
+    taken.append(uiIcon('check'));
     taken.setAttribute('aria-hidden', 'true');
     const badge =
       heroKit(hero) !== hero

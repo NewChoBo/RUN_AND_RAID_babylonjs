@@ -6,6 +6,7 @@ import {
   type RaidHudSettings,
 } from '../platform/browser/preferences.ts';
 import { button, element } from './elements.ts';
+import { setButtonIcon } from './icons.ts';
 import { createBattleSettings } from './battle-settings.ts';
 import { openSettings } from './settings.ts';
 import './styles/raid-menu.css';
@@ -18,6 +19,7 @@ interface MenuActions {
 
 export function createRaidMenu(root: HTMLElement, actions: MenuActions, saved: RaidHudSettings) {
   const panel = element('dialog', document.body);
+  panel.id = 'raid-match-settings';
   panel.className = 'raid-panel';
   panel.hidden = true;
   panel.dataset.screen = 'settings';
@@ -26,7 +28,7 @@ export function createRaidMenu(root: HTMLElement, actions: MenuActions, saved: R
   const title = element('h2', header, ui('settings'));
   title.id = 'raid-menu-title';
   let moreSettings: HTMLDialogElement | undefined;
-  const settings = button(header, '···', () => {
+  const settings = button(header, '', () => {
     moreSettings = openSettings();
     moreSettings.addEventListener(
       'close',
@@ -37,14 +39,12 @@ export function createRaidMenu(root: HTMLElement, actions: MenuActions, saved: R
       { once: true },
     );
   });
-  settings.title = ui('moreSettings');
-  settings.setAttribute('aria-label', settings.title);
+  setButtonIcon(settings, 'more', ui('moreSettings'));
   settings.setAttribute('aria-haspopup', 'dialog');
   settings.setAttribute('aria-controls', 'game-settings');
-  const resume = button(header, '×', actions.resume);
+  const resume = button(header, '', actions.resume);
   resume.dataset.resumeRaid = '';
-  resume.setAttribute('aria-label', t('resume'));
-  resume.title = t('resume');
+  setButtonIcon(resume, 'close', t('resume'));
   const body = element('div', panel);
   body.className = 'raid-menu-body';
   const reason = element('p', body);
