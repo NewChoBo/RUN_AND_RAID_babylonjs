@@ -1,6 +1,12 @@
 // Use the change's commit time in KST (YYYY-MM-DDTHH:mm+09:00), newest first.
 export const devLog = [
   {
+    updatedAt: '2026-11-28T20:38+09:00',
+    tag: 'arena',
+    title: '바닥 전격의 원형 복원',
+    body: '낮은 전격이 다시 칸마다 둥글게 빛납니다. 예고부터 원형 테두리가 보이고, 방전할 때 원 안에서 짧은 번개가 갈라집니다.',
+  },
+  {
     updatedAt: '2026-11-28T20:31+09:00',
     tag: 'arena',
     title: '원작 화면에 맞춘 번개 간격과 기절 표시',

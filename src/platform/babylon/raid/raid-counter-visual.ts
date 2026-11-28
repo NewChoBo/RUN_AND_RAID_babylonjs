@@ -34,7 +34,7 @@ const electricShader = {
     precision highp float;
     varying vec2 coord;
     varying float upright;
-    uniform float age, seed, strength, pillarWave;
+    uniform float age, seed, strength, pillarWave, groundAspect;
     uniform vec3 glowColor, coreColor;
 
     float hash(float x) { return fract(sin(x * 12.9898 + seed) * 4375.17); }
@@ -47,7 +47,8 @@ const electricShader = {
       vec2 p = coord * 2.0 - 1.0;
       float frame = 7.0 * floor(age / 3.0);
       float discharge = smoothstep(0.60, 0.92, strength);
-      float d, fade;
+      float d, fade, pool = 0.0;
+      vec2 warningLight = vec2(0.78, 0.60);
       if (upright > 0.5) {
         float h = coord.y;
         float trunk = (0.32 * jag(h * 9.0, frame) + 0.09 * jag(h * 19.0, frame + 15.0))
@@ -67,16 +68,19 @@ const electricShader = {
         gl_FragColor = vec4(foot * (1.0 - smoothstep(0.75, 1.0, r2)), strength);
         return;
       } else {
+        // Ground UVs span the rectangular damage cell. Measure the circle in road units.
+        p.y *= groundAspect;
+        float radius = length(p);
+        pool = 0.75 * exp(-5.5 * radius * radius) + 0.28 * exp(-15.0 * abs(radius - 0.52));
         float arc = 0.52 * jag(p.x * 5.0, frame) + 0.16 * jag(p.x * 11.0, frame + 2.0);
         float fork = abs(p.y - arc - 0.56 * (p.x + 0.12) - 0.1 * jag(p.x * 13.0, frame + 8.0));
         d = min(abs(p.y - arc), p.x > -0.12 ? fork * 1.5 : 2.0);
-        float spur = abs(p.y - arc - 0.50 * (p.x - 0.20) - 0.1 * jag(p.x * 12.0, frame + 5.0));
-        if (p.x < 0.20) d = min(d, spur * 1.5);
-        fade = (1.0 - smoothstep(0.76, 1.0, abs(p.x))) * (1.0 - smoothstep(0.7, 1.0, abs(p.y)));
+        fade = 1.0 - smoothstep(0.64, 1.0, radius);
+        warningLight = vec2(0.35, 0.23);
       }
       float glow = exp(-9.0 * d), core = exp(-42.0 * d);
-      vec3 glowLight = glowColor * glow * mix(0.78, 1.0, discharge);
-      vec3 coreLight = coreColor * core * mix(0.60, 1.0, discharge);
+      vec3 glowLight = glowColor * (pool + glow * mix(warningLight.x, 1.0, discharge));
+      vec3 coreLight = coreColor * (0.28 * pool + core * mix(warningLight.y, 1.0, discharge));
       gl_FragColor = vec4((glowLight + coreLight) * fade, strength);
     }`,
 };
@@ -92,11 +96,13 @@ function electricTile(scene: Scene, index: number) {
       'seed',
       'strength',
       'pillarWave',
+      'groundAspect',
       'glowColor',
       'coreColor',
     ],
     needAlphaBlending: true,
   });
+  material.setFloat('groundAspect', depth / width);
   material.backFaceCulling = false;
   material.disableDepthWrite = true;
   material.alphaMode = Constants.ALPHA_ADD;

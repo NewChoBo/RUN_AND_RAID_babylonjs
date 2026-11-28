@@ -363,7 +363,9 @@ test('electric tells follow road cells and reuse their meshes when switching bet
       const { minimumWorld, maximumWorld } = worldBox(pool);
       assert.ok(Math.abs(maximumWorld.x - minimumWorld.x - width) < 1e-6);
       assert.ok(Math.abs(maximumWorld.z - minimumWorld.z - depth) < 1e-6);
-      assert.equal(pool.material.serialize().floats.pillarWave, 0);
+      const { pillarWave, groundAspect } = pool.material.serialize().floats;
+      assert.equal(pillarWave, 0);
+      assert.equal(groundAspect, depth / width);
     }
   }
   checkGroundArcs(0.5);
