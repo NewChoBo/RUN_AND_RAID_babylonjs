@@ -22,6 +22,17 @@ test('each published Player outfit embeds the advertised clips and renders its b
     assert.equal(createHash('sha256').update(data).digest('hex'), checksums.get(path), path);
     const doc = JSON.parse(data.toString('utf8', 20, 20 + data.readUInt32LE(12)));
     assert.ok(doc.meshes?.length, outfit.model);
+    if (outfit.group === 'magnus' && outfit.skin === 'armoredforces') {
+      // The equipped shields live on the body rig. Loose copies from the workshop
+      // used to render next to the runner and inflate its loading bounds.
+      const meshNodes = doc.nodes.filter((node) => node.mesh !== undefined);
+      assert.ok(
+        meshNodes.every((node) => node.skin !== undefined),
+        outfit.model,
+      );
+      const joints = doc.skins[meshNodes[0].skin].joints.map((index) => doc.nodes[index].name);
+      for (const bone of ['ShieldboneL001', 'ShieldboneR001']) assert.ok(joints.includes(bone));
+    }
     assert.deepEqual(
       (doc.animations ?? []).map((clip) => clip.name),
       outfit.clips,

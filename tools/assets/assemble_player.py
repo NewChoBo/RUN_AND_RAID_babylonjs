@@ -275,9 +275,13 @@ def assemble(blend, outfit=None, item=None, plan=None):
     for ob in world:
         # Loose workshop objects next to the outfit have no counterpart in its takes.
         # Keep bone-parented accessories and the original archive scenes intact.
-        if (ob.type == "MESH" and not ob.find_armature() and ob.parent is None
-                and re.sub(r"\.\d{3}$", "", ob.name).casefold() not in motion_nodes):
-            continue
+        if ob.type == "MESH" and not ob.find_armature():
+            name = re.sub(r"\.\d{3}$", "", ob.name).casefold()
+            # These spare shields also appear beside the switch-mode take. The equipped
+            # shields are already weighted to the main body in both combat modes.
+            spare_shield = (hero, skin) == ("magnus", "armoredforces") and name in {"object220", "object222"}
+            if spare_shield or (ob.parent is None and name not in motion_nodes):
+                continue
         ob.select_set(True)
     bpy.context.view_layer.objects.active = target
     folder = WORK / "player-release" / "Playable"

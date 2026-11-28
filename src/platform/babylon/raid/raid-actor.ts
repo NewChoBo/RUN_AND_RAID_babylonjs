@@ -11,6 +11,7 @@ import {
   MeshBuilder,
   type StandardMaterial,
   TransformNode,
+  type Vector3,
   type Scene,
 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader.js';
@@ -59,13 +60,19 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
       : undefined;
     model.addAllToScene();
     const root = model.meshes[0]!;
-    let bodyHeight: number | undefined;
+    let modelSize: Vector3 | undefined;
     if (source.authored) {
-      root.normalizeToUnitCube(true);
-      root.scaling.scaleInPlace(2);
+      if (hero === 'magnus') {
+        // All three skins share the source rig's units. Use Kaiken's calibrated
+        // 1.93-unit reference instead of fitting each wide shield span into a cube.
+        root.scaling.scaleInPlace(2 / 1.93);
+      } else {
+        root.normalizeToUnitCube(true);
+        root.scaling.scaleInPlace(2);
+      }
       const bounds = root.getHierarchyBoundingVectors(true);
       root.position.y -= bounds.min.y;
-      bodyHeight = (bounds.max.y - bounds.min.y) * RAID_RUNNER_SCALE * rig.scaling.y;
+      modelSize = bounds.max.subtract(bounds.min);
     }
     root.parent = rig;
     if (!source.authored) {
@@ -82,7 +89,7 @@ async function loadModel(scene: Scene, hero: RaidHero, rig: TransformNode, outfi
     // Rildin's default run repeats in about 0.70 s in match footage (see ORIGINAL-ROSTER).
     const runCycle =
       hero === 'rildin' && (!outfit || outfit === 'rildin/default') ? 0.7 : undefined;
-    return { model, motion, bodyHeight, runCycle };
+    return { model, motion, modelSize, runCycle };
   } catch (error) {
     model.dispose();
     throw error;
@@ -105,13 +112,14 @@ export function createRaidActor(
   rig.parent = body;
   rig.scaling.setAll((art.scale ?? 0.8) * RAID_MODEL_SCALE);
   // The moving hand, cape and weapon do not change the touch target's size.
+  const capsuleHeight = 1.86;
   const hit = MeshBuilder.CreateCapsule(
     hero + ' body target',
-    { height: 1.86, radius: 0.42 },
+    { height: capsuleHeight, radius: 0.42 },
     scene,
   );
   hit.parent = body;
-  hit.position.y = 0.93;
+  hit.position.y = capsuleHeight / 2;
   let motion: ModelMotion | undefined;
   let playback = new RaidActionPlayback();
   let greatsword: TransformNode | undefined;
@@ -140,10 +148,17 @@ export function createRaidActor(
         }
         current = loaded;
         motion = loaded.motion;
-        bar.position.y =
-          loaded.bodyHeight === undefined
-            ? defaultBarHeight * RAID_MODEL_SCALE
-            : Math.max(defaultBarHeight, loaded.bodyHeight + 0.26);
+        const size = loaded.modelSize;
+        if (size) {
+          const height = size.y * rig.scaling.y;
+          bar.position.y = Math.max(defaultBarHeight, height * RAID_RUNNER_SCALE + 0.26);
+          if (hero === 'magnus') {
+            hit.scaling.setAll(height / capsuleHeight);
+            hit.position.y = height / 2;
+            ward.position.y = size.y / 2;
+            ward.scaling.copyFrom(size).scaleInPlace(1.15 / wardDiameter);
+          }
+        } else bar.position.y = defaultBarHeight * RAID_MODEL_SCALE;
         loading = false;
         if (art.empoweredMesh)
           greatsword = rig.getChildMeshes().find((mesh) => mesh.name === art.empoweredMesh);
@@ -204,8 +219,13 @@ export function createRaidActor(
   material.backFaceCulling = false;
   bar.material = material;
   const paintHp = healthMeterPainter(texture.getContext(), 256, 32);
-  const ward = MeshBuilder.CreateSphere(hero + ' ward', { diameter: 1.5, segments: 14 }, scene);
-  ward.parent = body;
+  const wardDiameter = 1.5;
+  const ward = MeshBuilder.CreateSphere(
+    hero + ' ward',
+    { diameter: wardDiameter, segments: 14 },
+    scene,
+  );
+  ward.parent = hero === 'magnus' ? rig : body;
   ward.position.y = 0.99;
   ward.scaling.y = 1.39;
   const shield = raidMaterial(scene, hero + ' ward glow', raidColors.jade, 0.8);
