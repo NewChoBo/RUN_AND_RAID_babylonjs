@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   LoadAssetContainerAsync,
+  Matrix,
   NullEngine,
   Scene,
   TransformNode,
@@ -12,6 +13,108 @@ import {
 import '@babylonjs/loaders/glTF/index.js';
 import { ModelMotion } from '../../src/platform/babylon/actors/model-motion.ts';
 import { createSwordAfterimage } from '../../src/platform/babylon/raid/raid-sword-afterimage.ts';
+
+test('sweeps round between measured poses while thrusts, stops and reversals stay on their line', async (t) => {
+  const engine = new NullEngine();
+  t.after(() => engine.dispose());
+  const scene = new Scene(engine);
+  const asset = await LoadAssetContainerAsync(
+    new Uint8Array(
+      readFileSync(new URL('../../public/assets/fighters/hammer-default.glb', import.meta.url)),
+    ),
+    scene,
+    {
+      pluginExtension: '.glb',
+      pluginOptions: { gltf: { animationStartMode: 0, skipMaterials: true } },
+    },
+  );
+  asset.addAllToScene();
+  const pose = new TransformNode('controlled weapon motion', scene);
+  asset.meshes[0].parent = pose;
+  const effect = createSwordAfterimage('hammer', asset.meshes);
+  const ribbon = scene.getMeshByName('hammer blade afterimage');
+  const origin = Vector3.Zero();
+  const swing = { id: 1, skill: 'basic' };
+  const edge = (row, side) =>
+    Vector3.FromArray(ribbon.getVerticesData(VertexBuffer.PositionKind), row * 6 + side * 3);
+  const close = (a, b) => assert.ok(Vector3.Distance(a, b) < 1e-5, `${a} vs ${b}`);
+  const radius = 1.2;
+  const orbit = (time) =>
+    new Vector3(radius * Math.cos(time * 0.6), 0, radius * Math.sin(time * 0.6));
+  // Uneven gaps between poses, all large enough to be retained in the history.
+  const times = [0, 0.8, 1.45, 2.7];
+  for (const time of times) {
+    pose.position.copyFrom(orbit(time));
+    effect.draw(swing, time, origin);
+  }
+  assert.ok(ribbon.isEnabled());
+  const offsets = [0, 1].map((side) => edge(0, side).subtract(pose.position));
+  for (const [side, offset] of offsets.entries()) {
+    for (const [i, time] of times.toReversed().entries())
+      close(edge(i * 4, side), orbit(time).add(offset));
+    // The interior strike should follow the circle more closely than the old flat facet.
+    const chordMid = Vector3.Center(orbit(times[1]), orbit(times[2]));
+    const mid = edge(6, side).subtract(offset);
+    assert.ok(Math.abs(radius - mid.length()) < (radius - chordMid.length()) * 0.6);
+  }
+
+  const thrust = { id: 2, skill: 'basic' };
+  const distances = [0, 0.35, 1, 1, 0.35, 0];
+  const axis = new Vector3(1, 0.3, -0.7);
+  for (const [i, distance] of distances.entries()) {
+    pose.position.copyFrom(axis.scale(distance));
+    effect.draw(thrust, 3 + i, origin);
+    if (!i) assert.equal(ribbon.isEnabled(), false);
+  }
+  assert.ok(ribbon.isEnabled());
+  const history = distances.toReversed();
+  for (const [side, offset] of offsets.entries()) {
+    for (let span = 0; span < 4; span++) {
+      const start = history[span],
+        end = history[span + 1];
+      for (let part = 0; part <= 4; part++) {
+        const point = edge(span * 4 + part, side).subtract(offset);
+        assert.ok(point.x >= Math.min(start, end) - 1e-5 && point.x <= Math.max(start, end) + 1e-5);
+        close(point, axis.scale(point.x));
+      }
+    }
+  }
+  pose.position.copyFrom(axis.scale(3));
+  effect.draw(thrust, 20, origin);
+  assert.equal(ribbon.isEnabled(), false, 'do not bridge a long frame gap');
+  // At 10 FPS, the four-tick tail falls between the samples at ticks 20 and 23.
+  for (const time of [23, 26]) {
+    pose.position.copyFrom(axis.scale(time - 17));
+    effect.draw(thrust, time, origin);
+  }
+  assert.ok(ribbon.isEnabled());
+  const colors = ribbon.getVerticesData(VertexBuffer.ColorKind);
+  for (const [side, offset] of offsets.entries()) {
+    close(edge(colors.length / 8 - 1, side), axis.scale(5).add(offset));
+    assert.equal(colors[colors.length - 5 + side * 4], 0);
+  }
+
+  // Identical tip samples form hard corners on a thrust, but a circular sweep on a turning weapon.
+  const angle = (110 * Math.PI) / 180;
+  const tipAt = (frame) =>
+    Vector3.TransformCoordinates(offsets[1], Matrix.RotationY(frame * angle));
+  const chord = Vector3.Center(tipAt(1), tipAt(2));
+  for (const rotate of [false, true]) {
+    const cue = { id: rotate ? 4 : 3, skill: 'basic' };
+    for (let frame = 0; frame < 4; frame++) {
+      pose.rotation.y = rotate ? frame * angle : 0;
+      pose.position.copyFrom(rotate ? origin : tipAt(frame).subtract(offsets[1]));
+      effect.draw(cue, 28 + frame, origin);
+    }
+    close(edge(4, 1), tipAt(2));
+    close(edge(8, 1), tipAt(1));
+    const mid = edge(6, 1);
+    if (rotate) {
+      const arc = tipAt(1.5);
+      assert.ok(Vector3.Distance(mid, arc) < Vector3.Distance(chord, arc) * 0.6);
+    } else close(mid, chord);
+  }
+});
 
 test('each afterimage reaches the equipped, animated blade and resets between swings', async (t) => {
   const engine = new NullEngine();
